@@ -11,63 +11,63 @@ module.exports.setup = function(sdk, cc){
 };
 
 module.exports.process_msg = function(ws, data){
-	if(data.v === 2){
-		if(data.type == 'create'){
-			console.log('its a create!');
-			if(data.name && data.color && data.size && data.user){
-				chaincode.init_marble([data.name, data.color, data.size, data.user], cb_invoked);				//create a new marble
-			}
-		}
-		else if(data.type == 'get'){
-			console.log('get marbles msg');
-			chaincode.read('_marbleindex', cb_got_index);
-		}
-		else if(data.type == 'transfer'){
-			console.log('transfering msg');
-			if(data.name && data.user){
-				chaincode.set_user([data.name, data.user]);
-			}
-		}
-		else if(data.type == 'remove'){
-			console.log('removing msg');
-			if(data.name){
-				chaincode.remove(data.name);
-			}
-		}
-		else if(data.type == 'chainstats'){
-			console.log('chainstats msg');
-			ibc.chain_stats(cb_chainstats);
-		}
-		else if(data.type == 'open_trade'){
-			console.log('open_trade msg');
-			if(!data.willing || data.willing.length < 0){
-				console.log('error, "willing" is empty');
-			}
-			else if(!data.want){
-				console.log('error, "want" is empty');
-			}
-			else{
-				var args = [data.user, data.want.color, data.want.size];
-				for(var i in data.willing){
-					args.push(data.willing[i].color);
-					args.push(data.willing[i].size);
-				}
-				chaincode.open_trade(args);
-			}
-		}
-		else if(data.type == 'get_open_trades'){
-			console.log('get open trades msg');
-			chaincode.read('_opentrades', cb_got_trades);
-		}
-		else if(data.type == 'perform_trade'){
-			console.log('perform trade msg');
-			chaincode.perform_trade([data.id, data.closer.user, data.closer.name, data.opener.user, data.opener.color, data.opener.size]);
-		}
-		else if(data.type == 'remove_trade'){
-			console.log('remove trade msg');
-			chaincode.remove_trade([data.id]);
+	if(data.type == 'create'){
+		console.log('its a create!');
+		if(data.paper && data.paper.cusip && data.paper.ticker){
+			console.log('!', data.paper);
+			chaincode.issueCommercialPaper([JSON.stringify(data.paper)], cb_invoked);				//create a new paper
 		}
 	}
+	/*else if(data.type == 'get'){
+		console.log('get marbles msg');
+		chaincode.read('_marbleindex', cb_got_index);
+	}
+	else if(data.type == 'transfer'){
+		console.log('transfering msg');
+		if(data.name && data.user){
+			chaincode.set_user([data.name, data.user]);
+		}
+	}
+	else if(data.type == 'remove'){
+		console.log('removing msg');
+		if(data.name){
+			chaincode.remove(data.name);
+		}
+	}*/
+	else if(data.type == 'chainstats'){
+		console.log('chainstats msg');
+		ibc.chain_stats(cb_chainstats);
+	}
+	/*else if(data.type == 'open_trade'){
+		console.log('open_trade msg');
+		if(!data.willing || data.willing.length < 0){
+			console.log('error, "willing" is empty');
+		}
+		else if(!data.want){
+			console.log('error, "want" is empty');
+		}
+		else{
+			var args = [data.user, data.want.color, data.want.size];
+			for(var i in data.willing){
+				args.push(data.willing[i].color);
+				args.push(data.willing[i].size);
+			}
+			chaincode.open_trade(args);
+		}
+	}
+	else if(data.type == 'get_open_trades'){
+		console.log('get open trades msg');
+		chaincode.read('_opentrades', cb_got_trades);
+	}
+	else if(data.type == 'perform_trade'){
+		console.log('perform trade msg');
+		chaincode.perform_trade([data.id, data.closer.user, data.closer.name, data.opener.user, data.opener.color, data.opener.size]);
+	}
+	else if(data.type == 'remove_trade'){
+		console.log('remove trade msg');
+		chaincode.remove_trade([data.id]);
+	}*/
+	
 	
 	
 	//got the marble index, lets get each marble

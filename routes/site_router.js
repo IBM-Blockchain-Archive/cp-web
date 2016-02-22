@@ -26,7 +26,13 @@ router.route("/").get(function(req, res){
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
 });
 
-router.route("/:page?").get(function(req, res){
+router.route("/home").get(function(req, res){
+	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
+});
+router.route("/create").get(function(req, res){
+	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
+});
+router.route("/trade").get(function(req, res){
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
 });
 

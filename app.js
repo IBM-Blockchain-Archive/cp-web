@@ -230,12 +230,12 @@ var options = 	{
 						users: users,
 					},
 					chaincode:{
-						zip_url: 'https://github.com/ibm-blockchain/marbles-chaincode/archive/master.zip',
-						unzip_dir: 'marbles-chaincode-master/part2',											//subdirectroy name of chaincode after unzipped
-						git_url: 'https://github.com/ibm-blockchain/marbles-chaincode/part2',					//GO git http url
+						zip_url: 'https://github.com/mastersingh24/chaincode/archive/master.zip',
+						unzip_dir: 'chaincode-master/cp_demo',											//subdirectroy name of chaincode after unzipped
+						git_url: 'https://github.com/mastersingh24/chaincode/cp_demo',			//GO git http url
 					
 						//hashed cc name from prev deployment
-						deployed_name: '8fe7b3d9a3d43c5b6b91d65b0585366fa3d560d5362e11f0eea11ff614a296fdec8607b17de429c919975d5386953e4dac486a09ce6c965f5844d7d183825efb'
+						deployed_name: '6d4435f9db20f16cb6307cb00033d4d82c688c25bcad381c44945e9e6ea34f6c8489024388f9726ac7ba333d5d2c386e52625e2794d36c5461126d0a84b84863'
 					}
 				};
 if(process.env.VCAP_SERVICES){
@@ -254,7 +254,7 @@ function cb_ready(err, cc){																	//response has chaincode functions
 		chaincode = cc;
 		part2.setup(ibc, cc);
 		if(cc.details.deployed_name === ""){												//decide if i need to deploy
-			cc.deploy('init', ['99'], './cc_summaries', cb_deployed);
+			cc.deploy('createAccounts', ['5'], './cc_summaries', cb_deployed);
 		}
 		else{
 			console.log('chaincode summary file indicates chaincode has been previously deployed');
@@ -306,8 +306,8 @@ function cb_deployed(e, d){
 				console.log('hey new block, lets refresh and broadcast to all');
 				ibc.block_stats(chain_stats.height - 1, cb_blockstats);
 				wss.broadcast({msg: 'reset'});
-				chaincode.read('_marbleindex', cb_got_index);
-				chaincode.read('_opentrades', cb_got_trades);
+				//chaincode.read('_marbleindex', cb_got_index);
+				//chaincode.read('_opentrades', cb_got_trades);
 			}
 			
 			//got the block's stats, lets send the statistics

@@ -1,3 +1,4 @@
+/* global in_array */
 /* global new_block */
 /* global formatDate */
 /* global nDig */
@@ -7,7 +8,8 @@
 var ws = {};
 var user = {username: bag.setup.USER1};
 var bgcolors = ["whitebg", "blackbg", "redbg", "greenbg", "bluebg", "purplebg", "pinkbg", "orangebg", "yellowbg"];
-
+var valid_users = ["company1", "company2", "company3"];
+		
 // =================================================================================
 // On Load
 // =================================================================================
@@ -20,22 +22,31 @@ $(document).on('ready', function() {
 	// jQuery UI Events
 	// =================================================================================
 	$("#submit").click(function(){
-		var obj = 	{
-						type: "create",
-						name: $("input[name='name']").val().replace(" ", ""),
-						color: $(".colorSelected").attr('color'),
-						size: $("select[name='size']").val(),
-						user: $("select[name='user']").val(),
-						v: 2
-					};
-		if(obj.user && obj.name && obj.color){
-			console.log('creating marble, sending', obj);
-			ws.send(JSON.stringify(obj));
-			$(".panel").hide();
-			$("#homePanel").show();
-			$(".colorValue").html('Color');											//reset
-			for(var i in bgcolors) $(".createball").removeClass(bgcolors[i]);			//reset
-			$(".createball").css("border", "2px dashed #fff");						//reset
+		if(!in_array(user.username, valid_users)){
+			$("#loginWrap").fadeIn();
+		}
+		else{
+			var obj = 	{
+							type: "create",
+							paper: {
+								cusip: $("input[name='cusip']").val().replace(" ", ""),
+								ticker: $("input[name='ticker']").val(),
+								par: Number($("select[name='par']").val()),
+								qty: Number($("select[name='qty']").val()),
+								discount: Number($("select[name='discount']").val()),
+								maturity: Number($("select[name='maturity']").val()),
+								owner: user.username,
+								issuer: user.username,
+								issueDate: Date.now().toString()
+							}
+						};
+			if(obj.paper && obj.paper.cusip && obj.paper.ticker){
+				obj.paper.ticker = obj.paper.ticker.toUpperCase();
+				console.log('creating paper, sending', obj);
+				ws.send(JSON.stringify(obj));
+				$(".panel").hide();
+				$("#homePanel").show();
+			}
 		}
 		return false;
 	});
@@ -133,19 +144,18 @@ $(document).on('ready', function() {
 	});*/
 	
 	$("#loginWrap").submit(function(){
-		var valid_users = ["test", "guy1", "guy2"];
-		var user = $("input[name='username']").val();
-		if(in_array(user, valid_users)){
+		user.username = $("input[name='username']").val();
+		if(in_array(user.username, valid_users)){
 			console.log('yes');
 			$("input[name='username']").css("color", "#fff").val("");
 			$("#loginWrap").fadeOut();
-			user.username = name.toLowerCase();
-			$("#userField").html(user.toUpperCase() + ' ');
+			$("#userField").html(user.username.toUpperCase() + ' ');
 		}
 		else{
 			console.log('no');
 			$("input[name='username']").css("color", "#cc0000");
 		}
+		return false;
 	});
 	
 	$("input[name='username']").keydown(function(){
@@ -347,8 +357,8 @@ function connect_to_server(){
 		clear_blocks();
 		$("#errorNotificationPanel").fadeOut();
 		ws.send(JSON.stringify({type: "chainstats", v:2}));
-		ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
-		ws.send(JSON.stringify({type: "get", v:2}));
+		//ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
+		//ws.send(JSON.stringify({type: "get", v:2}));
 	}
 
 	function onClose(evt){

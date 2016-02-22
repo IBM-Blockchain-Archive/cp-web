@@ -3,31 +3,36 @@
 	hr
 	
 	#innerWrap
-		span.createball
+		span.fa.fa-file-text-o(style="font-size: 250px; float:left;")
 		
 		form(action="/create" method="POST")#createform
 			legend 
-				input(type="text" name="name" placeholder="Name Your Marble")
-				span.hint &nbsp;&nbsp;RANDOM OR CUSTOM STRING
-			
-			br
-			legend
-				include ./template/color_options.jade
-				
-			br
+				input(type="text" name="cusip" placeholder="CUSIP")
 			legend 
-				select(name="size")
-					option(value="35" disabled="disabled" selected="selected") Size
-					option(value="35") Large
-					option(value="16") Small
-			br
+				input(type="text" name="ticker" placeholder="TICKER")
 			legend 
-				select(name="user")
-					option(value="#{bag.setup.USER1}" disabled="disabled" selected="selected") User
-					option(value="#{bag.setup.USER1}") #{bag.setup.USER1.substring(0,1).toUpperCase() + bag.setup.USER1.substring(1)}
-					option(value="#{bag.setup.USER2}") #{bag.setup.USER2.substring(0,1).toUpperCase() + bag.setup.USER2.substring(1)}
+				select(name="par")
+					option(value="100000")$100,000
+					option(value="1000000")$1,000,000
+					option(value="10000000")$10,000,000
+			legend 
+				select(name="qty")
+					option 1
+					option 5
+					option 10
+					option 11
+			legend 
+				select(name="discount")
+					option(value="3.25") 3.25%
+					option(value="7.35") 7.35%
+					option(value="10.0") 10.0%
+			legend 
+				select(name="maturity")
+					option 15
+					option 30
+					option 90
+				span.hint days
+
 			button(type="button")#submit
 				span.fa.fa-check &nbsp;&nbsp;
 				span CREATE
-			
-			
