@@ -18,11 +18,11 @@ module.exports.process_msg = function(ws, data){
 			chaincode.issueCommercialPaper([JSON.stringify(data.paper)], cb_invoked);				//create a new paper
 		}
 	}
-	/*else if(data.type == 'get'){
-		console.log('get marbles msg');
-		chaincode.read('_marbleindex', cb_got_index);
+	else if(data.type == 'get_papers'){
+		console.log('get papers msg');
+		chaincode.read('GetAllCPs', cb_got_papers);
 	}
-	else if(data.type == 'transfer'){
+	/*else if(data.type == 'transfer'){
 		console.log('transfering msg');
 		if(data.name && data.user){
 			chaincode.set_user([data.name, data.user]);
@@ -68,7 +68,15 @@ module.exports.process_msg = function(ws, data){
 		chaincode.remove_trade([data.id]);
 	}*/
 	
-	
+	function cb_got_papers(e, papers){
+		if(e != null){
+			console.log('papers e', e);
+		}
+		else{
+			console.log('papers', papers);
+			sendMsg({msg: 'papers', papers: papers});
+		}
+	}
 	
 	//got the marble index, lets get each marble
 	function cb_got_index(e, index){

@@ -230,12 +230,12 @@ var options = 	{
 						users: users,
 					},
 					chaincode:{
-						zip_url: 'https://github.com/dshuffma-ibm/chaincode/archive/master.zip',
+						zip_url: 'https://github.com/mrshah-at-ibm/chaincode/archive/master.zip',
 						unzip_dir: 'chaincode-master/cp_demo',									//subdirectroy name of chaincode after unzipped
-						git_url: 'https://github.com/dshuffma-ibm/chaincode/cp_demo',			//GO git http url
+						git_url: 'https://github.com/mrshah-at-ibm/chaincode/cp_demo',			//GO git http url
 					
 						//hashed cc name from prev deployment
-						//deployed_name: '0869da2b968e42826d84b4744d1cb0ea168ae4131abc0e299c356f8296f9c5ac80aaaf631f3984bf9d0a90141e48d6b1e45673de583407596dd55058a461a846'
+						deployed_name: 'a9bbb83503bec44dd589c33f65d3234b1cca551ef489bbab23239fe1dbdf1a9a81095aba87ae90234312807a6971b149d6ea8684349bc64f7293ea0965ba2c0f'
 					}
 				};
 if(process.env.VCAP_SERVICES){

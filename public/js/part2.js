@@ -155,25 +155,14 @@ $(document).on('ready', function() {
 	
 	
 	//trade events
-	$(document).on("click", ".confirmTrade", function(){
+	//build_trades([temp]);
+	$(document).on("click", ".buyPaper", function(){
 		console.log('trading...');
 		var i = $(this).attr('trade_pos');
-		var x = $(this).attr('willing_pos');
+
 		var msg = 	{
-						type: 'perform_trade',
-						v: 2,
-						id: bag.trades[i].timestamp.toString(),
-						opener:{											//marble he is giving up
-							user: bag.trades[i].user,
-							color: bag.trades[i].willing[x].color,
-							size: bag.trades[i].willing[x].size.toString(),
-						},
-						closer:{											//marble hs ig giving up
-							user: user.username,							//guy who is logged in
-							name: $(this).attr('name'),
-							color: '',										//dsh to do, add these and remove above
-							size: ''
-						}
+						type: 'buy_paper',
+						v: 2
 					};
 		ws.send(JSON.stringify(msg));
 		$("#notificationPanel").animate({width:'toggle'});
@@ -236,7 +225,7 @@ var temp = {
 			issuer: 'company2',
 			issueDate: Date.now().toString()
 		};
-build_trades([temp]);
+
 // =================================================================================
 // Socket Stuff
 // =================================================================================
@@ -259,7 +248,7 @@ function connect_to_server(){
 		clear_blocks();
 		$("#errorNotificationPanel").fadeOut();
 		ws.send(JSON.stringify({type: "chainstats", v:2}));
-		//ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
+		ws.send(JSON.stringify({type: "get_papers", v: 2}));
 		//ws.send(JSON.stringify({type: "get", v:2}));
 	}
 
@@ -273,9 +262,9 @@ function connect_to_server(){
 		try{
 			var data = JSON.parse(msg.data);
 			console.log('rec', data);
-			if(data.marble){
-				build_ball(data.marble);
-				set_my_color_options(user.username);
+			if(data.msg === 'papers'){
+				console.log('!', data.papers);
+				build_trades(JSON.parse(data.papers));
 			}
 			else if(data.msg === 'chainstats'){
 				var e = formatDate(data.blockstats.transactions[0].timestamp.seconds * 1000, '%M/%d/%Y &nbsp;%I:%m%P');
@@ -289,9 +278,6 @@ function connect_to_server(){
 			else if(data.msg === 'reset'){							//clear marble knowledge, prepare of incoming marble states
 				$("#user2wrap").html('');
 				$("#user1wrap").html('');
-			}
-			else if(data.msg === 'open_trades'){
-				build_trades(data.open_trades);
 			}
 		}
 		catch(e){
@@ -356,7 +342,7 @@ function build_trades(trades){
 		var style = ' ';
 		var buttonStatus = '';
 		
-		if(user.username.toLowerCase() != trades[i].issuer.toLowerCase()){	//don't show trades with myself
+		if(trades[i].qty > 0 && user.username.toLowerCase() != trades[i].issuer.toLowerCase()){	//don't show trades with myself
 			console.log('building');
 			html += '<tr class="' + style +'">';
 			html +=		'<td>' + formatDate(Number(trades[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
@@ -368,15 +354,17 @@ function build_trades(trades){
 			html +=		'<td>' + trades[i].maturity + ' days</td>';
 			html +=		'<td>' + trades[i].issuer + '</td>';
 			html +=		'<td>';
-			html +=			'<button type="button" class="confirmTrade altButton" ' + buttonStatus +' trade_pos="' + i + '">';
-			html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;TRADE</span>';
+			html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
+			html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY</span>';
 			html +=			'</button>';
 			html += 	'</td>';
 			html += '</tr>';
 		}
 	}
-	console.log('html', html);
+	//console.log('html', html);
 	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+	
+	console.log('html', html);
 	$("#tradesBody").html(html);
 }
 
