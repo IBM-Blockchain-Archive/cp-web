@@ -1,8 +1,8 @@
 ---
 applications:
 - disk_quota: 1024M
-  host: marbles
-  name: marbles
+  host: r3
+  name: r3
   command: "node app.js"
   path: "."
   instances: 1

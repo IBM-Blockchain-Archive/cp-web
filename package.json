@@ -1,5 +1,5 @@
 {
-	"name": "marbles",
+	"name": "r3",
 	"version": "0.0.1",
 	"description": "A Node.js web application that demonstrates utilizing IBM Blockchain JS to call REST APIs on the blockchain.",
 	"main":"app.js",
