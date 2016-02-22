@@ -29,18 +29,20 @@ $(document).on('ready', function() {
 			var obj = 	{
 							type: "create",
 							paper: {
-								cusip: $("input[name='cusip']").val().replace(" ", ""),
 								ticker: $("input[name='ticker']").val(),
 								par: Number($("select[name='par']").val()),
 								qty: Number($("select[name='qty']").val()),
 								discount: Number($("select[name='discount']").val()),
 								maturity: Number($("select[name='maturity']").val()),
-								owner: user.username,
+								owner: [{
+										company: user.username,
+										quantity: 1
+										}],
 								issuer: user.username,
 								issueDate: Date.now().toString()
 							}
 						};
-			if(obj.paper && obj.paper.cusip && obj.paper.ticker){
+			if(obj.paper && obj.paper.ticker){
 				obj.paper.ticker = obj.paper.ticker.toUpperCase();
 				console.log('creating paper, sending', obj);
 				ws.send(JSON.stringify(obj));
@@ -132,17 +134,6 @@ $(document).on('ready', function() {
 		}
 	});
 	
-	/*$(".userLine").click(function(){												//log in as someone else
-		var name = $(this).attr("name");
-		user.username = name.toLowerCase();
-		$("#userField").html("HI " + user.username.toUpperCase() + ' ');
-		$("#userSelect").fadeOut(300);
-		$("select option[value='" + user.username +"']").attr('selected', true);
-		//ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
-		set_my_color_options(user.username);
-		build_trades(bag.trades);
-	});*/
-	
 	$("#loginWrap").submit(function(){
 		user.username = $("input[name='username']").val();
 		if(in_array(user.username, valid_users)){
@@ -164,81 +155,6 @@ $(document).on('ready', function() {
 	
 	
 	//trade events
-	$("#setupTradeButton").click(function(){
-		build_trades(bag.trades);
-		$(".inactiveButton").removeClass("inactiveButton");
-		$("#viewTradeButton").addClass("inactiveButton");
-		$("#openTrades").fadeOut();
-		$("#createTrade").fadeIn();
-	});
-	
-	$("#viewTradeButton").click(function(){
-		build_trades(bag.trades);
-		$(".inactiveButton").removeClass("inactiveButton");
-		$("#setupTradeButton").addClass("inactiveButton");
-		$("#openTrades").fadeIn();
-		$("#createTrade").fadeOut();
-	});
-	
-	$(".removeWilling:first").hide();
-	$("#addMarbleButton").click(function(){
-		var count = 0;
-		var marble_count = 0;
-		$(".willingWrap").each(function(){
-			count++;
-		});
-		for(var i in bag.marbles){
-			if(bag.marbles[i].user.toLowerCase() == user.username.toLowerCase()){
-				marble_count++;
-			}
-		}
-		if(count+1 <= marble_count && count <= 3){									//lets limit the total number... might get out of hand
-			var temp = $(".willingWrap:first").html();
-			$(".willingWrap:first").parent().append('<div class="willingWrap">' + temp + '</div>');
-			$(".removeWilling").show();
-			$(".removeWilling:first").hide();
-		}
-		else{
-			$("#cannotAdd").fadeIn();
-			setTimeout(function(){ $("#cannotAdd").fadeOut(); }, 1500);
-		}
-	});
-	
-	$(document).on("click", ".removeWilling", function(){
-		$(this).parent().remove();
-	});
-	
-	$("#tradeSubmit").click(function(){
-		var msg = 	{
-						type: 'open_trade',
-						v: 2,
-						user: user.username,
-						want: {
-							color: $("#wantColorWrap").find(".colorSelected").attr("color"),
-							size: $("select[name='want_size']").val()
-						},
-						willing: []
-					};
-					
-		$(".willingWrap").each(function(){
-			//var q = $(this).find("select[name='will_quantity']").val();
-			var color = $(this).find(".colorSelected").attr('color');
-			var size = $(this).find("select[name='will_size']").val();
-			//console.log('!', q, color, size);
-			var temp = 	{
-							color: color,
-							size: size
-						};
-			msg.willing.push(temp);
-		});
-		
-		console.log('sending', msg);
-		ws.send(JSON.stringify(msg));
-		$(".panel").hide();
-		$("#homePanel").show();
-		$(".colorValue").html('Color');
-	});
-	
 	$(document).on("click", ".confirmTrade", function(){
 		console.log('trading...');
 		var i = $(this).attr('trade_pos');
@@ -261,31 +177,6 @@ $(document).on('ready', function() {
 					};
 		ws.send(JSON.stringify(msg));
 		$("#notificationPanel").animate({width:'toggle'});
-	});
-	
-	$(document).on("click", ".willingWrap .colorOption", function(){
-		set_my_size_options(user.username, this);
-	});
-	
-	$("input[name='showMyTrades']").change(function(){
-		if($(this).is(":checked")){
-			$("#myTradesTable").fadeIn();
-		}
-		else{
-			$("#myTradesTable").fadeOut();
-		}
-	});
-	
-	$(document).on("click", ".removeTrade", function(){
-		var trade = find_trade($(this).attr('trade_timestamp'));
-		$(this).parent().parent().addClass("invalid");
-		console.log('trade', trade);
-		var msg = 	{
-						type: 'remove_trade',
-						v: 2,
-						id: trade.timestamp.toString(),
-					};
-		ws.send(JSON.stringify(msg));
 	});
 });
 
@@ -334,7 +225,18 @@ function find_valid_marble(user, color, size){				//return true if user owns mar
 	return null;
 }
 
-
+var temp = {
+			cusip: 'abadf',
+			ticker: 'ibm',
+			par:10000,
+			qty:10,
+			discount: 7.5,
+			maturity: 30,
+			owner: 'company1',
+			issuer: 'company2',
+			issueDate: Date.now().toString()
+		};
+build_trades([temp]);
 // =================================================================================
 // Socket Stuff
 // =================================================================================
@@ -450,63 +352,32 @@ function build_trades(trades){
 	console.log('trades:', bag.trades);
 	
 	for(var i in trades){
-		for(var x in trades[i].willing){
-			//console.log(trades[i]);
-			var style = ' ';
-			var buttonStatus = '';
-			
-			if(user.username.toLowerCase() != trades[i].user.toLowerCase()){				//don't show trades with myself
-				var name = find_valid_marble(user.username, trades[i].want.color, trades[i].want.size);
-				if(name == null) {								//don't allow trade if I don't have the correct marble
-					style = 'invalid';
-					buttonStatus = 'disabled="disabled"';
-				}
-				html += '<tr class="' + style +'">';
-				html +=		'<td>' + formatDate(Number(trades[i].timestamp), '%M/%d %I:%m%P') + '</td>';
-				html +=		'<td>1</td>';
-				html +=		'<td><span class="fa fa-2x fa-circle ' + trades[i].want.color + '"></span></td>';
-				html +=		'<td>' + sizeMe(trades[i].want.size) + '</td>';
-				html +=		'<td>1</td>';
-				html +=		'<td><span class="fa fa-2x fa-circle ' + trades[i].willing[x].color + '"></span></td>';
-				html +=		'<td>' + sizeMe(trades[i].willing[x].size) + '</td>';
-				html +=		'<td>';
-				html +=			'<button type="button" class="confirmTrade altButton" ' + buttonStatus +' name="' + name + '" trade_pos="' + i + '" willing_pos="' + x + '">';
-				html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;TRADE</span>';
-				html +=			'</button>';
-				html += 	'</td>';
-				html += '</tr>';
-			}
-		}
-	}
-	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
-	$("#openTradesBody").html(html);
-	
-	build_my_trades(trades);
-}
-
-function build_my_trades(trades){
-	var html = '';
-	for(var i in trades){
-		//console.log(trades[i]);
+		console.log('!', trades[i]);
 		var style = ' ';
+		var buttonStatus = '';
 		
-		if(user.username.toLowerCase() == trades[i].user.toLowerCase()){				//only show trades with myself
+		if(user.username.toLowerCase() != trades[i].issuer.toLowerCase()){	//don't show trades with myself
+			console.log('building');
 			html += '<tr class="' + style +'">';
-			html +=		'<td>' + formatDate(Number(trades[i].timestamp), '%M/%d %I:%m%P') + '</td>';
-			html +=		'<td>1</td>';
-			html +=		'<td><span class="fa fa-2x fa-circle ' + trades[i].want.color + '"></span></td>';
-			html +=		'<td>' + sizeMe(trades[i].want.size) + '</td>';
+			html +=		'<td>' + formatDate(Number(trades[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
+			html +=		'<td>' + trades[i].cusip + '</td>';
+			html +=		'<td>' + trades[i].ticker.toUpperCase() + '</td>';
+			html +=		'<td>' + trades[i].par + '</td>';
+			html +=		'<td>' + trades[i].qty + '</td>';
+			html +=		'<td>' + trades[i].discount + '%</td>';
+			html +=		'<td>' + trades[i].maturity + ' days</td>';
+			html +=		'<td>' + trades[i].issuer + '</td>';
 			html +=		'<td>';
-			for(var x in trades[i].willing){
-				html +=		'<p>1 <span class="fa fa-2x fa-circle ' + trades[i].willing[x].color + '"></span>&nbsp; &nbsp;' + sizeMe(trades[i].willing[x].size) + '</p>';
-			}
+			html +=			'<button type="button" class="confirmTrade altButton" ' + buttonStatus +' trade_pos="' + i + '">';
+			html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;TRADE</span>';
+			html +=			'</button>';
 			html += 	'</td>';
-			html +=		'<td><span class="fa fa-remove removeTrade" trade_timestamp="' + trades[i].timestamp + '"></span></td>';
 			html += '</tr>';
 		}
 	}
-	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td></tr>';
-	$("#myTradesBody").html(html);
+	console.log('html', html);
+	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+	$("#tradesBody").html(html);
 }
 
 function set_my_color_options(username){

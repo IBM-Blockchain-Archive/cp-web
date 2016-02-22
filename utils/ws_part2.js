@@ -13,7 +13,7 @@ module.exports.setup = function(sdk, cc){
 module.exports.process_msg = function(ws, data){
 	if(data.type == 'create'){
 		console.log('its a create!');
-		if(data.paper && data.paper.cusip && data.paper.ticker){
+		if(data.paper && data.paper.ticker){
 			console.log('!', data.paper);
 			chaincode.issueCommercialPaper([JSON.stringify(data.paper)], cb_invoked);				//create a new paper
 		}

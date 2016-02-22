@@ -760,9 +760,6 @@ button:disabled, .inactiveButton {
   cursor: pointer;
   color: orange; }
 
-#myTradesTable {
-  display: none; }
-
 .removeTrade {
   padding: 5px;
   cursor: pointer; }
