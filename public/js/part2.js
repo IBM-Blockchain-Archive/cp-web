@@ -113,15 +113,15 @@ $(document).on('ready', function() {
 	
 	//login events
 	$("#whoAmI").click(function(){													//drop down for login
-		if($("#userSelect").is(":visible")){
-			$("#userSelect").fadeOut();
+		if($("#loginWrap").is(":visible")){
+			$("#loginWrap").fadeOut();
 		}
 		else{
-			$("#userSelect").fadeIn();
+			$("#loginWrap").fadeIn();
 		}
 	});
 	
-	$(".userLine").click(function(){												//log in as someone else
+	/*$(".userLine").click(function(){												//log in as someone else
 		var name = $(this).attr("name");
 		user.username = name.toLowerCase();
 		$("#userField").html("HI " + user.username.toUpperCase() + ' ');
@@ -130,6 +130,26 @@ $(document).on('ready', function() {
 		//ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
 		set_my_color_options(user.username);
 		build_trades(bag.trades);
+	});*/
+	
+	$("#loginWrap").submit(function(){
+		var valid_users = ["test", "guy1", "guy2"];
+		var user = $("input[name='username']").val();
+		if(in_array(user, valid_users)){
+			console.log('yes');
+			$("input[name='username']").css("color", "#fff").val("");
+			$("#loginWrap").fadeOut();
+			user.username = name.toLowerCase();
+			$("#userField").html(user.toUpperCase() + ' ');
+		}
+		else{
+			console.log('no');
+			$("input[name='username']").css("color", "#cc0000");
+		}
+	});
+	
+	$("input[name='username']").keydown(function(){
+		$("input[name='username']").css("color", "#fff");
 	});
 	
 	
@@ -401,7 +421,7 @@ function build_ball(data){
 		if(data.size == 16) size = 'fa-3x';
 		if(data.color) colorClass = data.color.toLowerCase();
 		
-		html += '<span id="' + data.name +'" class=" fa fa-circle ' + size + ' ball ' + colorClass + '" title="' + data.name +'" user="' + data.user + '"></span>';
+		html += '<span id="' + data.name +'" class=" fa fa-file-text-o ' + size + ' ball ' + colorClass + '" title="' + data.name +'" user="' + data.user + '"></span>';
 		if(data.user && data.user.toLowerCase() == bag.setup.USER1){
 			$("#user1wrap").append(html);
 		}

@@ -294,3 +294,27 @@
 .colorValue{
 	margin-left:10px;
 }
+
+
+
+
+
+
+
+
+#loginWrap{
+	display:none;
+	margin: auto;
+	width: 500px;
+	padding: 40px 60px;
+	background: #222832;
+	border-radius: 10px;
+	text-align: center;
+	margin-top: 10px;
+	z-index: 9;
+	position: relative;
+}
+#loginButton{
+	display: block;
+	margin:auto;
+}

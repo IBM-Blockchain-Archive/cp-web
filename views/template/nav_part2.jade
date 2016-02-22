@@ -10,7 +10,7 @@
 	
 #whoAmI
 	span.fa.fa-user#userIcon
-	span#userField HI #{bag.setup.USER1.toUpperCase()} 
+	span#userField LOGIN
 	span &nbsp;
 	span.fa.fa-angle-down
 	
@@ -19,3 +19,8 @@
 			span #{bag.setup.USER1.toUpperCase()} &nbsp;&nbsp;
 		.userLine(name="#{bag.setup.USER2}")
 			span #{bag.setup.USER2.toUpperCase()}&nbsp;&nbsp;
+			
+			
+form#loginWrap
+	input(type="text" placeholder="username" name="username")
+	button(type="submit")#loginButton Login
