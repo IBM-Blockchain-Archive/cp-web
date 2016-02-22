@@ -39,9 +39,8 @@ html
 					showPanel(show);
 				});
 				function showPanel(show){
-					if(show == '') show = 'home';										//default
-					var part = window.location.pathname.substring(0,3);
-					window.history.pushState({},'', part + '/' + show);					//put it in url so we can f5
+					if(show == '') show = 'home';									//default
+					window.history.pushState({},'', show);					//put it in url so we can f5
 
 					$(".panel").hide();
 					if($("#" + show + "Panel").length == 0){

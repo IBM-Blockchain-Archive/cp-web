@@ -122,7 +122,6 @@ else console.log('Running using Developer settings');
 // ============================================================================================================================
 // 														Test Area
 // ============================================================================================================================
-var part1 = require('./utils/ws_part1');
 var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
@@ -253,7 +252,6 @@ function cb_ready(err, cc){																	//response has chaincode functions
 	}
 	else{
 		chaincode = cc;
-		part1.setup(ibc, cc);
 		part2.setup(ibc, cc);
 		if(cc.details.deployed_name === ""){												//decide if i need to deploy
 			cc.deploy('init', ['99'], './cc_summaries', cb_deployed);
@@ -282,7 +280,6 @@ function cb_deployed(e, d){
 			ws.on('message', function incoming(message) {
 				console.log('received ws msg:', message);
 				var data = JSON.parse(message);
-				part1.process_msg(ws, data);
 				part2.process_msg(ws, data);
 			});
 			
