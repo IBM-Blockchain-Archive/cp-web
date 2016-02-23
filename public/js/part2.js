@@ -1,3 +1,5 @@
+/* global clear_blocks */
+/* global formatMoney */
 /* global in_array */
 /* global new_block */
 /* global formatDate */
@@ -260,7 +262,7 @@ function connect_to_server(){
 		$("#errorNotificationPanel").fadeOut();
 		ws.send(JSON.stringify({type: "chainstats", v:2}));
 		ws.send(JSON.stringify({type: "get_papers", v: 2}));
-		//ws.send(JSON.stringify({type: "get", v:2}));
+		if(in_array(user.username, valid_users)) ws.send(JSON.stringify({type: 'get_company', company: user.username}));
 	}
 
 	function onClose(evt){
@@ -288,6 +290,10 @@ function connect_to_server(){
 			}
 			else if(data.msg === 'company'){							//clear marble knowledge, prepare of incoming marble states
 				$("#accountBalance").html(formatMoney(data.company.cashBalance));
+			}
+			else if(data.msg === 'reset'){							//clear marble knowledge, prepare of incoming marble states
+				ws.send(JSON.stringify({type: "get_papers", v: 2}));
+				ws.send(JSON.stringify({type: 'get_company', company: user.username}));
 			}
 		}
 		catch(e){
@@ -317,31 +323,6 @@ function connect_to_server(){
 // =================================================================================
 //	UI Building
 // =================================================================================
-function build_ball(data){
-	var html = '';
-	var colorClass = '';
-	var size = 'fa-5x';
-	
-	if(!bag.marbles) bag.marbles = {};
-	bag.marbles[data.name] = data;								//store the marble for posterity
-	
-	if(!$("#" + data.name).length){								//only populate if it doesn't exists
-		if(data.size == 16) size = 'fa-3x';
-		if(data.color) colorClass = data.color.toLowerCase();
-		
-		html += '<span id="' + data.name +'" class=" fa fa-file-text-o ' + size + ' ball ' + colorClass + '" title="' + data.name +'" user="' + data.user + '"></span>';
-		if(data.user && data.user.toLowerCase() == bag.setup.USER1){
-			$("#user1wrap").append(html);
-		}
-		else{
-			$("#user2wrap").append(html);
-		}
-	}
-	//console.log('marbles', bag.marbles);
-	
-	return html;
-}
-
 function build_trades(papers){
 	var html = '';
 	bag.papers = papers;						//store the trades for posterity
@@ -354,7 +335,7 @@ function build_trades(papers){
 			var style = ' ';
 			var buttonStatus = '';
 			
-			if(papers[i].qty > 0){	//don't show papers with myself
+			if(papers[i].qty > 0 && papers[i].owner[x].quantity > 0){
 				if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';
 				console.log('building');
 				html += '<tr class="' + style +'">';

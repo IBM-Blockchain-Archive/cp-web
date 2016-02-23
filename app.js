@@ -63,15 +63,13 @@ app.use(function(req, res, next){
 	req.session.count = eval(req.session.count) + 1;
 	req.bag.session = req.session;
 	
-	console.log('body', req.body);
-	
-	/*var url_parts = url.parse(req.url, true);
+	var url_parts = url.parse(req.url, true);
 	req.parameters = url_parts.query;
 	keys = Object.keys(req.parameters);
 	if(req.parameters && keys.length > 0) console.log({parameters: req.parameters});		//print request parameters
 	keys = Object.keys(req.body);
 	if (req.body && keys.length > 0) console.log({body: req.body});						//print request body
-	*/next();
+	next();
 });
 
 //// Router ////
@@ -237,7 +235,7 @@ var options = 	{
 						git_url: 'https://github.com/mrshah-at-ibm/chaincode/cp_demo',			//GO git http url
 					
 						//hashed cc name from prev deployment
-						//deployed_name: '1809ced778c3d19db5ed6beb6f0cdd5aa1ea12b95dc4eb779fe804f8b3d3d8c7846135e13ebf6e985b106f4fc58f82a02559f17b800c491ea532926cd1d3c977'
+						deployed_name: 'c9b0b88aad25e7db9108ad61e058d818f70a3a6a5f5fd5c504f68d7f4aded6c4e677b9fe1fe959f2074131426e1d34097ffb96fd357c9f04a203f125f7129f77'
 					}
 				};
 if(process.env.VCAP_SERVICES){
