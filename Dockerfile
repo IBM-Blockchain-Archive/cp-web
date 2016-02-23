@@ -1,4 +1,4 @@
-FROM    node:0.10
+FROM    node:5
 
 RUN mkdir -p /r3demo
 COPY . /r3demo/
