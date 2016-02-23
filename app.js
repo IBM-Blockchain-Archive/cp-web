@@ -237,7 +237,7 @@ var options = 	{
 						git_url: 'https://github.com/mrshah-at-ibm/chaincode/cp_demo',			//GO git http url
 					
 						//hashed cc name from prev deployment
-						deployed_name: '1809ced778c3d19db5ed6beb6f0cdd5aa1ea12b95dc4eb779fe804f8b3d3d8c7846135e13ebf6e985b106f4fc58f82a02559f17b800c491ea532926cd1d3c977'
+						//deployed_name: '1809ced778c3d19db5ed6beb6f0cdd5aa1ea12b95dc4eb779fe804f8b3d3d8c7846135e13ebf6e985b106f4fc58f82a02559f17b800c491ea532926cd1d3c977'
 					}
 				};
 if(process.env.VCAP_SERVICES){
