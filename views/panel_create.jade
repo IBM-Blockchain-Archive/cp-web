@@ -13,23 +13,26 @@
 					option(value="100000")$100,000
 					option(value="1000000")$1,000,000
 					option(value="10000000")$10,000,000
+				span.hint PAR
 			legend 
 				select(name="qty")
 					option 1
 					option 5
 					option 10
 					option 11
+				span.hint QTY
 			legend 
 				select(name="discount")
 					option(value="3.25") 3.25%
 					option(value="7.35") 7.35%
 					option(value="10.0") 10.0%
+				span.hint DISCOUNT
 			legend 
 				select(name="maturity")
-					option 15
-					option 30
-					option 90
-				span.hint days
+					option(value="15") 15 days
+					option(value="30") 30 days
+					option(value="90") 90 days
+				span.hint MATURITY
 
 			button(type="button")#submit
 				span.fa.fa-check &nbsp;&nbsp;
