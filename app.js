@@ -256,7 +256,7 @@ function cb_ready(err, cc){																	//response has chaincode functions
 		chaincode = cc;
 		part2.setup(ibc, cc);
 		if(cc.details.deployed_name === ""){												//decide if i need to deploy
-			cc.deploy('createAccounts', ['5'], './cc_summaries', cb_deployed);
+			cc.deploy('createAccounts', ['10'], './cc_summaries', cb_deployed);
 		}
 		else{
 			console.log('chaincode summary file indicates chaincode has been previously deployed');

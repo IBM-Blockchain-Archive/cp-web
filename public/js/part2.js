@@ -8,7 +8,7 @@
 var ws = {};
 var user = {username: bag.setup.USER1};
 var bgcolors = ["whitebg", "blackbg", "redbg", "greenbg", "bluebg", "purplebg", "pinkbg", "orangebg", "yellowbg"];
-var valid_users = ["company1", "company2", "company3"];
+var valid_users = ["company1", "company2", "company3", "company4", "company5", "company6","company7","company8", "company9", "company10" ];
 		
 // =================================================================================
 // On Load
@@ -139,14 +139,14 @@ $(document).on('ready', function() {
 			$("#loginWrap").fadeOut();
 			$("#userField").html(user.username.toUpperCase() + ' ');
 			
-			//ws.send(JSON.stringify({type: "get_papers", v: 2}));
-			//ws.send(JSON.stringify({type: 'get_company', company: user.username}));
+			ws.send(JSON.stringify({type: "get_papers", v: 2}));
+			ws.send(JSON.stringify({type: 'get_company', company: user.username}));
 		}
-		/*else{
+		else{
 			console.log('no');
 			$("input[name='username']").css("color", "#cc0000");
-		}*/
-		//return false;
+		}
+		return false;
 	});
 	
 	$("input[name='username']").keydown(function(){
