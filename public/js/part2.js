@@ -34,10 +34,7 @@ $(document).on('ready', function() {
 								qty: Number($("select[name='qty']").val()),
 								discount: Number($("select[name='discount']").val()),
 								maturity: Number($("select[name='maturity']").val()),
-								owner: [{
-										company: user.username,
-										quantity: 1
-										}],
+								owner: [],
 								issuer: user.username,
 								issueDate: Date.now().toString()
 							}
@@ -47,7 +44,7 @@ $(document).on('ready', function() {
 				console.log('creating paper, sending', obj);
 				ws.send(JSON.stringify(obj));
 				$(".panel").hide();
-				$("#homePanel").show();
+				$("#tradePanel").show();
 			}
 		}
 		return false;
@@ -141,12 +138,15 @@ $(document).on('ready', function() {
 			$("input[name='username']").css("color", "#fff").val("");
 			$("#loginWrap").fadeOut();
 			$("#userField").html(user.username.toUpperCase() + ' ');
+			
+			//ws.send(JSON.stringify({type: "get_papers", v: 2}));
+			//ws.send(JSON.stringify({type: 'get_company', company: user.username}));
 		}
-		else{
+		/*else{
 			console.log('no');
 			$("input[name='username']").css("color", "#cc0000");
-		}
-		return false;
+		}*/
+		//return false;
 	});
 	
 	$("input[name='username']").keydown(function(){
@@ -157,15 +157,26 @@ $(document).on('ready', function() {
 	//trade events
 	//build_trades([temp]);
 	$(document).on("click", ".buyPaper", function(){
-		console.log('trading...');
-		var i = $(this).attr('trade_pos');
+		if(!in_array(user.username, valid_users)){
+			$("#loginWrap").fadeIn();
+		}
+		else{
+			console.log('trading...');
+			var i = $(this).attr('trade_pos');
 
-		var msg = 	{
-						type: 'buy_paper',
-						v: 2
-					};
-		ws.send(JSON.stringify(msg));
-		$("#notificationPanel").animate({width:'toggle'});
+			var msg = 	{
+							type: 'transfer_paper',
+							transfer: {
+								CUSIP: bag.papers[i].cusip,
+								fromCompany: bag.papers[i].issuer,
+								toCompany: user.username,
+								quantity: 1
+							}
+						};
+			console.log('sending', msg);
+			ws.send(JSON.stringify(msg));
+			$("#notificationPanel").animate({width:'toggle'});
+		}
 	});
 });
 
@@ -263,7 +274,7 @@ function connect_to_server(){
 			var data = JSON.parse(msg.data);
 			console.log('rec', data);
 			if(data.msg === 'papers'){
-				console.log('!', data.papers);
+				//console.log('!', data.papers);
 				build_trades(JSON.parse(data.papers));
 			}
 			else if(data.msg === 'chainstats'){
@@ -275,9 +286,8 @@ function connect_to_server(){
 							};
 				new_block(temp);									//send to blockchain.js
 			}
-			else if(data.msg === 'reset'){							//clear marble knowledge, prepare of incoming marble states
-				$("#user2wrap").html('');
-				$("#user1wrap").html('');
+			else if(data.msg === 'company'){							//clear marble knowledge, prepare of incoming marble states
+				$("#accountBalance").html(formatMoney(data.company.cashBalance));
 			}
 		}
 		catch(e){
@@ -332,33 +342,38 @@ function build_ball(data){
 	return html;
 }
 
-function build_trades(trades){
+function build_trades(papers){
 	var html = '';
-	bag.trades = trades;						//store the trades for posterity
-	console.log('trades:', bag.trades);
+	bag.papers = papers;						//store the trades for posterity
+	//console.log('papers:', bag.papers);
 	
-	for(var i in trades){
-		console.log('!', trades[i]);
-		var style = ' ';
-		var buttonStatus = '';
+	for(var i in papers){
+		console.log('!', papers[i]);
 		
-		if(trades[i].qty > 0 && user.username.toLowerCase() != trades[i].issuer.toLowerCase()){	//don't show trades with myself
-			console.log('building');
-			html += '<tr class="' + style +'">';
-			html +=		'<td>' + formatDate(Number(trades[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
-			html +=		'<td>' + trades[i].cusip + '</td>';
-			html +=		'<td>' + trades[i].ticker.toUpperCase() + '</td>';
-			html +=		'<td>' + trades[i].par + '</td>';
-			html +=		'<td>' + trades[i].qty + '</td>';
-			html +=		'<td>' + trades[i].discount + '%</td>';
-			html +=		'<td>' + trades[i].maturity + ' days</td>';
-			html +=		'<td>' + trades[i].issuer + '</td>';
-			html +=		'<td>';
-			html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
-			html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY</span>';
-			html +=			'</button>';
-			html += 	'</td>';
-			html += '</tr>';
+		for(var x in papers[i].owner){
+			var style = ' ';
+			var buttonStatus = '';
+			
+			if(papers[i].qty > 0){	//don't show papers with myself
+				if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';
+				console.log('building');
+				html += '<tr class="' + style +'">';
+				html +=		'<td>' + formatDate(Number(papers[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
+				html +=		'<td>' + papers[i].cusip + '</td>';
+				html +=		'<td>' + papers[i].ticker.toUpperCase() + '</td>';
+				html +=		'<td>' + formatMoney(papers[i].par) + '</td>';
+				html +=		'<td>' + papers[i].owner[x].quantity + '</td>';
+				html +=		'<td>' + papers[i].discount + '%</td>';
+				html +=		'<td>' + papers[i].maturity + ' days</td>';
+				html +=		'<td>' + papers[i].issuer + '</td>';
+				html +=		'<td>' + papers[i].owner[x].company + '</td>';
+				html +=		'<td>';
+				html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
+				html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY</span>';
+				html +=			'</button>';
+				html += 	'</td>';
+				html += '</tr>';
+			}
 		}
 	}
 	//console.log('html', html);

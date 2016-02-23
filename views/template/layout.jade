@@ -40,7 +40,7 @@ html
 				});
 				function showPanel(show){
 					console.log('show', show);
-					if(show == '') show = 'home';									//default
+					if(show == '') show = 'trade';									//default
 					window.history.pushState({},'', show);					//put it in url so we can f5
 
 					$(".panel").hide();

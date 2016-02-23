@@ -23,17 +23,28 @@ var rest    = require("../utils/rest.js");
 // Home
 // ============================================================================================================================
 router.route("/").get(function(req, res){
-	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
+	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 
 router.route("/home").get(function(req, res){
-	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
+	res.redirect("/trade");
 });
 router.route("/create").get(function(req, res){
-	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
+	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 router.route("/trade").get(function(req, res){
-	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error}} );
+	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
+});
+
+router.route("/:page").post(function(req, res){
+	var valid_users = ["company1", "company2", "company3"];
+	var user = req.body.username;
+	if(!in_array(user, valid_users)){
+
+		req.session.user = user;
+		console.log('storing user', user, req.session);
+		res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
+	}
 });
 
 // ============================================================================================================================
@@ -64,3 +75,12 @@ router.route("/cci/:filename?").get(function(req, res){
 });
 
 module.exports = router;
+
+
+
+function in_array(name, array){
+	for(var i in array){
+		if(array[i] == name) return true;
+	}
+	return false;
+}

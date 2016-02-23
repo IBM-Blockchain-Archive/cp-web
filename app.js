@@ -63,13 +63,15 @@ app.use(function(req, res, next){
 	req.session.count = eval(req.session.count) + 1;
 	req.bag.session = req.session;
 	
-	var url_parts = url.parse(req.url, true);
+	console.log('body', req.body);
+	
+	/*var url_parts = url.parse(req.url, true);
 	req.parameters = url_parts.query;
 	keys = Object.keys(req.parameters);
 	if(req.parameters && keys.length > 0) console.log({parameters: req.parameters});		//print request parameters
 	keys = Object.keys(req.body);
 	if (req.body && keys.length > 0) console.log({body: req.body});						//print request body
-	next();
+	*/next();
 });
 
 //// Router ////
@@ -235,7 +237,7 @@ var options = 	{
 						git_url: 'https://github.com/mrshah-at-ibm/chaincode/cp_demo',			//GO git http url
 					
 						//hashed cc name from prev deployment
-						deployed_name: 'a9bbb83503bec44dd589c33f65d3234b1cca551ef489bbab23239fe1dbdf1a9a81095aba87ae90234312807a6971b149d6ea8684349bc64f7293ea0965ba2c0f'
+						deployed_name: '1809ced778c3d19db5ed6beb6f0cdd5aa1ea12b95dc4eb779fe804f8b3d3d8c7846135e13ebf6e985b106f4fc58f82a02559f17b800c491ea532926cd1d3c977'
 					}
 				};
 if(process.env.VCAP_SERVICES){
@@ -306,8 +308,7 @@ function cb_deployed(e, d){
 				console.log('hey new block, lets refresh and broadcast to all');
 				ibc.block_stats(chain_stats.height - 1, cb_blockstats);
 				wss.broadcast({msg: 'reset'});
-				//chaincode.read('_marbleindex', cb_got_index);
-				//chaincode.read('_opentrades', cb_got_trades);
+				chaincode.read('GetAllCPs', cb_got_papers);
 			}
 			
 			//got the block's stats, lets send the statistics
@@ -316,28 +317,13 @@ function cb_deployed(e, d){
 				wss.broadcast({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
 			}
 			
-			//got the marble index, lets get each marble
-			function cb_got_index(e, index){
-				if(e != null) console.log('error:', e);
-				else{
-					try{
-						var json = JSON.parse(index);
-						for(var i in json){
-							console.log('!', i, json[i]);
-							chaincode.read(json[i], cb_got_marble);							//iter over each, read their values
-						}
-					}
-					catch(e){
-						console.log('error:', e);
-					}
+			function cb_got_papers(e, papers){
+				if(e != null){
+					console.log('papers error', e);
 				}
-			}
-			
-			//call back for getting a marble, lets send a message
-			function cb_got_marble(e, marble){
-				if(e != null) console.log('error:', e);
-				else {
-					wss.broadcast({msg: 'marbles', marble: marble});
+				else{
+					//console.log('papers', papers);
+					wss.broadcast({msg: 'papers', papers: papers});
 				}
 			}
 			

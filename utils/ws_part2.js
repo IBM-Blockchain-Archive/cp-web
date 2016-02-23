@@ -22,21 +22,17 @@ module.exports.process_msg = function(ws, data){
 		console.log('get papers msg');
 		chaincode.read('GetAllCPs', cb_got_papers);
 	}
-	/*else if(data.type == 'transfer'){
-		console.log('transfering msg');
-		if(data.name && data.user){
-			chaincode.set_user([data.name, data.user]);
-		}
+	else if(data.type == 'transfer_paper'){
+		console.log('transfering msg', data.transfer);
+		chaincode.transferPaper([JSON.stringify(data.transfer)]);
 	}
-	else if(data.type == 'remove'){
-		console.log('removing msg');
-		if(data.name){
-			chaincode.remove(data.name);
-		}
-	}*/
 	else if(data.type == 'chainstats'){
 		console.log('chainstats msg');
 		ibc.chain_stats(cb_chainstats);
+	}
+	else if(data.type == 'get_company'){
+		console.log('get company msg');
+		chaincode.query(['GetCompany', data.company], cb_got_company);
 	}
 	/*else if(data.type == 'open_trade'){
 		console.log('open_trade msg');
@@ -70,7 +66,7 @@ module.exports.process_msg = function(ws, data){
 	
 	function cb_got_papers(e, papers){
 		if(e != null){
-			console.log('papers e', e);
+			console.log('papers error', e);
 		}
 		else{
 			console.log('papers', papers);
@@ -78,28 +74,13 @@ module.exports.process_msg = function(ws, data){
 		}
 	}
 	
-	//got the marble index, lets get each marble
-	function cb_got_index(e, index){
-		if(e != null) console.log('error:', e);
-		else{
-			try{
-				var json = JSON.parse(index);
-				for(var i in json){
-					console.log('!', i, json[i]);
-					chaincode.read(json[i], cb_got_marble);												//iter over each, read their values
-				}
-			}
-			catch(e){
-				console.log('error:', e);
-			}
+	function cb_got_company(e, company){
+		if(e != null){
+			console.log('company error', e);
 		}
-	}
-	
-	//call back for getting a marble, lets send a message
-	function cb_got_marble(e, marble){
-		if(e != null) console.log('error:', e);
-		else {
-			sendMsg({msg: 'marbles', marble: marble});
+		else{
+			console.log('company', company);
+			sendMsg({msg: 'company', company: company});
 		}
 	}
 	
