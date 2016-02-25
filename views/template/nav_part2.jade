@@ -21,6 +21,7 @@
 			span #{bag.setup.USER2.toUpperCase()}&nbsp;&nbsp;
 			
 			
-form#loginWrap
+form#loginWrap(method="POST" action="#")
 	input(type="text" placeholder="username" name="username")
+	input(type="password" placeholder="password" name="password")
 	button(type="submit")#loginButton Login

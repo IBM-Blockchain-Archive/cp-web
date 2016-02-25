@@ -337,3 +337,30 @@ function cb_deployed(e, d){
 		});
 	}
 }
+
+
+/*
+var valid_users = [];
+valid_users.push({username: "company1", password: "blockdudes"});
+for(i=2; i <= 45; i++){
+	valid_users.push({username: "company" + i, password: randStr(6)});
+}
+console.log(valid_users);
+
+fs.writeFile('./user_creds.json', JSON.stringify(valid_users), function(e){
+	if(e != null){
+		console.log(e);
+	}
+	else {
+		console.log(' - saved ');
+	}
+});
+
+
+function randStr(length){
+	var text = "";
+	var possible = "abcdefghijkmnpqrstuvwxyz0123456789";
+	for(var i=0; i < length; i++ ) text += possible.charAt(Math.floor(Math.random() * possible.length));
+	return text;
+}
+*/

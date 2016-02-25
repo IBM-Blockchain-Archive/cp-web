@@ -133,7 +133,7 @@ $(document).on('ready', function() {
 		}
 	});
 	
-	$("#loginWrap").submit(function(){
+	/*$("#loginWrap").submit(function(){
 		user.username = $("input[name='username']").val();
 		if(in_array(user.username, valid_users)){
 			console.log('yes');
@@ -149,7 +149,7 @@ $(document).on('ready', function() {
 			$("input[name='username']").css("color", "#cc0000");
 		}
 		return false;
-	});
+	});*/
 	
 	$("input[name='username']").keydown(function(){
 		$("input[name='username']").css("color", "#fff");
