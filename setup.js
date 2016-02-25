@@ -54,7 +54,7 @@ else{
 							HOST:'localhost',
 							PORT: 3000,
 							DESCRIPTION: 'Localhost',
-							EXTURI: 'localhost:3000',
+							EXTURI: process.env.EXTURI || 'localhost:3000',
 						 };
 }
 
