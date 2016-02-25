@@ -24,7 +24,7 @@ $(document).on('ready', function() {
 	// jQuery UI Events
 	// =================================================================================
 	$("#submit").click(function(){
-		if(!in_array(user.username, valid_users)){
+		if(user.username){
 			$("#loginWrap").fadeIn();
 		}
 		else{
@@ -61,7 +61,6 @@ $(document).on('ready', function() {
 	});
 	
 	$("#tradeLink").click(function(){
-		set_my_color_options(user.username);
 		ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
 	});
 	
@@ -84,7 +83,7 @@ $(document).on('ready', function() {
 	
 	
 	//drag and drop marble
-	$("#user2wrap, #user1wrap, #trashbin").sortable({connectWith: ".sortable"}).disableSelection();
+	/*$("#user2wrap, #user1wrap, #trashbin").sortable({connectWith: ".sortable"}).disableSelection();
 	$("#user2wrap").droppable({drop:
 		function( event, ui ) {
 			var user = $(ui.draggable).attr('user');
@@ -121,7 +120,7 @@ $(document).on('ready', function() {
 			}
 		}
 	});
-	
+	*/
 	
 	//login events
 	$("#whoAmI").click(function(){													//drop down for login
@@ -159,7 +158,7 @@ $(document).on('ready', function() {
 	//trade events
 	//build_trades([temp]);
 	$(document).on("click", ".buyPaper", function(){
-		if(!in_array(user.username, valid_users)){
+		if(user.username){
 			$("#loginWrap").fadeIn();
 		}
 		else{
@@ -262,7 +261,7 @@ function connect_to_server(){
 		$("#errorNotificationPanel").fadeOut();
 		ws.send(JSON.stringify({type: "chainstats", v:2}));
 		ws.send(JSON.stringify({type: "get_papers", v: 2}));
-		if(in_array(user.username, valid_users)) ws.send(JSON.stringify({type: 'get_company', company: user.username}));
+		if(user.username) ws.send(JSON.stringify({type: 'get_company', company: user.username}));
 	}
 
 	function onClose(evt){

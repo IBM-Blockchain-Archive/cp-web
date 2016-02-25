@@ -37,6 +37,10 @@ router.route("/trade").get(function(req, res){
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 
+router.route("/login").get(function(req, res){
+	res.render('login', {title: 'Login', bag: {setup: setup, e: process.error, session: req.session}} );
+});
+
 router.route("/logout").get(function(req, res){
 	req.session.destroy();
 	res.redirect("/trade");

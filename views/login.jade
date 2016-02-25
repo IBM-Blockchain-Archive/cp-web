@@ -1,0 +1,30 @@
+extends ./template/layout.jade
+	
+	
+// --------------- Header -------------- //
+block custom_header
+	script(src='/js/part2.js')
+	script(src='/js/blockchain.js')
+	script(type='text/javascript').
+		$(document).ready(function(){
+			
+		});
+		
+		
+// --------------- Navigation Bar  -------------- //
+block navpanel
+	include ./template/nav_part2.jade
+	
+	
+// --------------- Main Stuff  -------------- //
+block content
+	#contentPanel
+		h1 Login
+		hr
+		
+		form(method="POST" action="#" style="text-align: center;")
+			p
+				input(type="text" placeholder="username" name="username")
+			p
+				input(type="password" placeholder="password" name="password")
+			button(type="submit")#loginButton Login
