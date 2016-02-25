@@ -37,6 +37,11 @@ router.route("/trade").get(function(req, res){
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 
+router.route("/logout").get(function(req, res){
+	req.session.destroy();
+	res.redirect("/trade");
+});
+
 router.route("/:page").post(function(req, res){
 	//console.log('req', req.body.username);
 	req.session.error_msg = 'Invalid username or password';

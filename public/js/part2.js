@@ -8,7 +8,7 @@
 /* global bag */
 /* global $ */
 var ws = {};
-var user = {username: bag.setup.USER1};
+var user = {username: bag.session.username};
 var bgcolors = ["whitebg", "blackbg", "redbg", "greenbg", "bluebg", "purplebg", "pinkbg", "orangebg", "yellowbg"];
 var valid_users = ["company1", "company2", "company3", "company4", "company5", "company6","company7","company8", "company9", "company10" ];
 		
@@ -17,8 +17,8 @@ var valid_users = ["company1", "company2", "company3", "company4", "company5", "
 // =================================================================================
 $(document).on('ready', function() {
 	connect_to_server();
-	$("input[name='name']").val('r' + randStr(6));
-	$("select option[value='" + bag.setup.USER1 + "']").attr('selected', true);
+	if(user.username) $("#userField").html(user.username.toUpperCase() + ' ');
+
 	
 	// =================================================================================
 	// jQuery UI Events
