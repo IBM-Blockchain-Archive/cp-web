@@ -13,5 +13,7 @@ COPY . /cp-demoi/
 RUN cd /cp-demo ; npm install --production
 WORKDIR /cp-demo
 
+chmod +x start.sh
+
 CMD ["start.sh"]
 
