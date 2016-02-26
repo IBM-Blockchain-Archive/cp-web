@@ -47,7 +47,7 @@ router.route("/login").get(function(req, res){
 
 router.route("/logout").get(function(req, res){
 	req.session.destroy();
-	res.redirect("/trade");
+	res.redirect("/login");
 });
 
 router.route("/:page").post(function(req, res){
