@@ -530,6 +530,19 @@ label {
   display: block;
   margin: auto; }
 
+th.headerSortDown {
+  background-image: url(../imgs/asc.gif); }
+
+th.headerSortUp {
+  background-image: url(../imgs/desc.gif); }
+
+th.header {
+  cursor: pointer;
+  font-weight: bold;
+  background-repeat: no-repeat;
+  background-position: center left;
+  padding-left: 20px; }
+
 #blockWrap {
   position: relative;
   margin: 15px 25px; }

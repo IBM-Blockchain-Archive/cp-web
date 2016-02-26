@@ -17,6 +17,7 @@ var valid_users = ["company1", "company2", "company3", "company4", "company5", "
 $(document).on('ready', function() {
 	connect_to_server();
 	if(user.username) $("#userField").html(user.username.toUpperCase() + ' ');
+	//$("#tradesTable").tablesorter(); 
 
 	
 	// =================================================================================
@@ -27,7 +28,7 @@ $(document).on('ready', function() {
 			var obj = 	{
 							type: "create",
 							paper: {
-								ticker: $("input[name='ticker']").val(),
+								ticker: escapeHtml($("input[name='ticker']").val()),
 								par: Number($("select[name='par']").val()),
 								qty: Number($("select[name='qty']").val()),
 								discount: Number($("select[name='discount']").val()),
@@ -98,7 +99,11 @@ $(document).on('ready', function() {
 // =================================================================================
 // Helper Fun
 // =================================================================================
-
+function escapeHtml(str) {
+	var div = document.createElement('div');
+	div.appendChild(document.createTextNode(str));
+	return div.innerHTML;
+};
 
 // =================================================================================
 // Socket Stuff
@@ -203,7 +208,7 @@ function build_trades(papers){
 				html += '<tr class="' + style +'">';
 				html +=		'<td>' + formatDate(Number(papers[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
 				html +=		'<td>' + papers[i].cusip + '</td>';
-				html +=		'<td>' + papers[i].ticker.toUpperCase() + '</td>';
+				html +=		'<td>' + escapeHtml(papers[i].ticker.toUpperCase()) + '</td>';
 				html +=		'<td>' + formatMoney(papers[i].par) + '</td>';
 				html +=		'<td>' + papers[i].owner[x].quantity + '</td>';
 				html +=		'<td>' + papers[i].discount + '%</td>';
@@ -222,4 +227,5 @@ function build_trades(papers){
 	//console.log('html', html);
 	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
 	$("#tradesBody").html(html);
+	$("#tradesTable").tablesorter({sortList: [[1,0]]});
 }
