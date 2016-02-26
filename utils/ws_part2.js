@@ -34,35 +34,6 @@ module.exports.process_msg = function(ws, data){
 		console.log('get company msg');
 		chaincode.query(['GetCompany', data.company], cb_got_company);
 	}
-	/*else if(data.type == 'open_trade'){
-		console.log('open_trade msg');
-		if(!data.willing || data.willing.length < 0){
-			console.log('error, "willing" is empty');
-		}
-		else if(!data.want){
-			console.log('error, "want" is empty');
-		}
-		else{
-			var args = [data.user, data.want.color, data.want.size];
-			for(var i in data.willing){
-				args.push(data.willing[i].color);
-				args.push(data.willing[i].size);
-			}
-			chaincode.open_trade(args);
-		}
-	}
-	else if(data.type == 'get_open_trades'){
-		console.log('get open trades msg');
-		chaincode.read('_opentrades', cb_got_trades);
-	}
-	else if(data.type == 'perform_trade'){
-		console.log('perform trade msg');
-		chaincode.perform_trade([data.id, data.closer.user, data.closer.name, data.opener.user, data.opener.color, data.opener.size]);
-	}
-	else if(data.type == 'remove_trade'){
-		console.log('remove trade msg');
-		chaincode.remove_trade([data.id]);
-	}*/
 	
 	function cb_got_papers(e, papers){
 		if(e != null){

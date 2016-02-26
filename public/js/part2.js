@@ -9,7 +9,6 @@
 /* global $ */
 var ws = {};
 var user = {username: bag.session.username};
-var bgcolors = ["whitebg", "blackbg", "redbg", "greenbg", "bluebg", "purplebg", "pinkbg", "orangebg", "yellowbg"];
 var valid_users = ["company1", "company2", "company3", "company4", "company5", "company6","company7","company8", "company9", "company10" ];
 		
 // =================================================================================
@@ -72,11 +71,6 @@ $(document).on('ready', function() {
 		}
 	});
 	
-	$("input[name='username']").keydown(function(){
-		$("input[name='username']").css("color", "#fff");
-	});
-	
-	
 	//trade events
 	//build_trades([temp]);
 	$(document).on("click", ".buyPaper", function(){
@@ -104,28 +98,7 @@ $(document).on('ready', function() {
 // =================================================================================
 // Helper Fun
 // =================================================================================
-//transfer selected ball to user
-function transfer(marbleName, user){
-	if(marbleName){
-		console.log('transfering', marbleName);
-		var obj = 	{
-						type: "transfer",
-						name: marbleName,
-						user: user,
-						v: 2
-					};
-		ws.send(JSON.stringify(obj));
-	}
-}
 
-function find_trade(timestamp){
-	for(var i in bag.trades){
-		if(bag.trades[i].timestamp){
-			return bag.trades[i];
-		}
-	}
-	return null;
-}
 
 // =================================================================================
 // Socket Stuff
