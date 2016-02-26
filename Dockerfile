@@ -9,7 +9,7 @@ RUN mkdir -p /opt/certis
 COPY blockchain.ibm.com.pem /opt/certs/blockchain.ibm.com.pem
 
 RUN mkdir -p /cp-demo
-COPY . /cp-demoi/
+COPY . /cp-demo/
 RUN cd /cp-demo ; npm install --production
 WORKDIR /cp-demo
 
