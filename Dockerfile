@@ -10,8 +10,7 @@ COPY blockchain.ibm.com.pem /opt/certs/blockchain.ibm.com.pem
 
 RUN mkdir -p /cp-demo
 COPY . /cp-demoi/
-RUN cd /cp-demo ; 
-npm install --production
+RUN cd /cp-demo ; npm install --production
 WORKDIR /cp-demo
 
 CMD ["start.sh"]
