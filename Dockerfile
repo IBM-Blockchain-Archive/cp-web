@@ -1,10 +1,11 @@
 FROM    node:5
 
 WORKDIR /
+RUN apt-get update
 RUN apt-get install haproxy -y
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
 
-RUN mkdir -p /opt/certs
+RUN mkdir -p /opt/certis
 COPY blockchain.ibm.com.pem /opt/certs/blockchain.ibm.com.pem
 
 RUN mkdir -p /cp-demo
