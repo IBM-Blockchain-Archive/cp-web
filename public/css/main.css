@@ -515,15 +515,16 @@ label {
 
 #loginWrap {
   display: none;
-  margin: auto;
-  width: 500px;
-  padding: 40px 60px;
+  margin: 10px auto auto;
+  width: 150px;
+  /* padding: 40px 60px; */
   background: #222832;
   border-radius: 10px;
-  text-align: center;
-  margin-top: 10px;
   z-index: 9;
-  position: relative; }
+  position: absolute;
+  right: 7px;
+  top: 55px;
+  text-align: center; }
 
 #loginButton {
   display: block;

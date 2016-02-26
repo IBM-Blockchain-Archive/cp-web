@@ -349,7 +349,7 @@ function build_trades(papers){
 				html +=		'<td>' + papers[i].owner[x].company + '</td>';
 				html +=		'<td>';
 				html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
-				html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY</span>';
+				html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY 1</span>';
 				html +=			'</button>';
 				html += 	'</td>';
 				html += '</tr>';
