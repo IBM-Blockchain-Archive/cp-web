@@ -22,7 +22,9 @@ block content
 		h1 Login
 		hr
 		
+		
 		form(method="POST" action="#" style="text-align: center;")
+			p.hint!{bag.session.error_msg}
 			p
 				input(type="text" placeholder="username" name="username")
 			p

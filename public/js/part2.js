@@ -357,7 +357,7 @@ function build_trades(papers){
 		}
 	}
 	//console.log('html', html);
-	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
 	$("#tradesBody").html(html);
 }
 
