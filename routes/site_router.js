@@ -72,7 +72,6 @@ module.exports = router;
 
 
 function check_login(res, req){
-	console.log('!', req.session.username);
 	if(!req.session.username || req.session.username == ''){
 		console.log('! not logged in, redirecting to login');
 		res.redirect('/login');
