@@ -17,7 +17,7 @@ var valid_users = ["company1", "company2", "company3", "company4", "company5", "
 $(document).on('ready', function() {
 	connect_to_server();
 	if(user.username) $("#userField").html(user.username.toUpperCase() + ' ');
-	//$("#tradesTable").tablesorter(); 
+	//$("#tradesTable").tablesorter();
 
 	
 	// =================================================================================
@@ -202,6 +202,13 @@ function build_trades(papers){
 	bag.papers = papers;						//store the trades for posterity
 	//console.log('papers:', bag.papers);
 	
+	
+	papers.sort(function(a, b) {								//alpha sort me
+		var textA = a.cusip.toUpperCase();
+		var textB = b.cusip.toUpperCase();
+		return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+	});
+	
 	for(var i in papers){
 		console.log('!', papers[i]);
 		
@@ -232,8 +239,12 @@ function build_trades(papers){
 			}
 		}
 	}
-	//console.log('html', html);
+
 	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
 	$("#tradesBody").html(html);
-	$("#tradesTable").tablesorter({sortList: [[1,0]]});
+
+	/*$("#tradesTable").trigger("update");
+	var sorting = [[1, 0]];
+	$("#tradesTable").trigger("sorton", [sorting]);*/
+
 }
