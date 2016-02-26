@@ -62,63 +62,6 @@ $(document).on('ready', function() {
 	});
 	
 	
-	//marble color picker
-	$(document).on("click", ".colorInput", function(){
-		$('.colorOptionsWrap').hide();											//hide any others
-		$(this).parent().find('.colorOptionsWrap').show();
-	});
-	$(document).on("click", ".colorOption", function(){
-		var color = $(this).attr('color');
-		var html = '<span class="fa fa-circle colorSelected ' + color + '" color="' + color +'"></span>';
-		
-		$(this).parent().parent().find('.colorValue').html(html);
-		$(this).parent().hide();
-
-		for(var i in bgcolors) $(".createball").removeClass(bgcolors[i]);		//remove prev color
-		$(".createball").css("border", "0").addClass(color + 'bg');				//set new color
-	});
-	
-	
-	//drag and drop marble
-	/*$("#user2wrap, #user1wrap, #trashbin").sortable({connectWith: ".sortable"}).disableSelection();
-	$("#user2wrap").droppable({drop:
-		function( event, ui ) {
-			var user = $(ui.draggable).attr('user');
-			if(user.toLowerCase() != bag.setup.USER2){
-				$(ui.draggable).addClass("invalid");
-				transfer($(ui.draggable).attr('id'), bag.setup.USER2);
-			}
-		}
-	});
-	$("#user1wrap").droppable({drop:
-		function( event, ui ) {
-			var user = $(ui.draggable).attr('user');
-			if(user.toLowerCase() != bag.setup.USER1){
-				$(ui.draggable).addClass("invalid");
-				transfer($(ui.draggable).attr('id'), bag.setup.USER1);
-			}
-		}
-	});
-	$("#trashbin").droppable({drop:
-		function( event, ui ) {
-			var id = $(ui.draggable).attr('id');
-			if(id){
-				console.log('removing marble', id);
-				var obj = 	{
-								type: "remove",
-								name: id,
-								v: 2
-							};
-				ws.send(JSON.stringify(obj));
-				$(ui.draggable).fadeOut();
-				setTimeout(function(){
-					$(ui.draggable).remove();
-				}, 300);
-			}
-		}
-	});
-	*/
-	
 	//login events
 	$("#whoAmI").click(function(){													//drop down for login
 		if($("#loginWrap").is(":visible")){
@@ -128,24 +71,6 @@ $(document).on('ready', function() {
 			$("#loginWrap").fadeIn();
 		}
 	});
-	
-	/*$("#loginWrap").submit(function(){
-		user.username = $("input[name='username']").val();
-		if(in_array(user.username, valid_users)){
-			console.log('yes');
-			$("input[name='username']").css("color", "#fff").val("");
-			$("#loginWrap").fadeOut();
-			$("#userField").html(user.username.toUpperCase() + ' ');
-			
-			ws.send(JSON.stringify({type: "get_papers", v: 2}));
-			ws.send(JSON.stringify({type: 'get_company', company: user.username}));
-		}
-		else{
-			console.log('no');
-			$("input[name='username']").css("color", "#cc0000");
-		}
-		return false;
-	});*/
 	
 	$("input[name='username']").keydown(function(){
 		$("input[name='username']").css("color", "#fff");
@@ -193,12 +118,6 @@ function transfer(marbleName, user){
 	}
 }
 
-function sizeMe(mm){
-	var size = 'Large';
-	if(Number(mm) == 16) size = 'Small';
-	return size;
-}
-
 function find_trade(timestamp){
 	for(var i in bag.trades){
 		if(bag.trades[i].timestamp){
@@ -207,30 +126,6 @@ function find_trade(timestamp){
 	}
 	return null;
 }
-
-function find_valid_marble(user, color, size){				//return true if user owns marble of this color and size
-	for(var i in bag.marbles){
-		if(bag.marbles[i].user.toLowerCase() == user.toLowerCase()){
-			//console.log('!', bag.marbles[i].color, color.toLowerCase(), bag.marbles[i].size, size);
-			if(bag.marbles[i].color.toLowerCase() == color.toLowerCase() && bag.marbles[i].size == size){
-				return bag.marbles[i].name;
-			}
-		}
-	}
-	return null;
-}
-
-var temp = {
-			cusip: 'abadf',
-			ticker: 'ibm',
-			par:10000,
-			qty:10,
-			discount: 7.5,
-			maturity: 30,
-			owner: 'company1',
-			issuer: 'company2',
-			issueDate: Date.now().toString()
-		};
 
 // =================================================================================
 // Socket Stuff
@@ -328,9 +223,10 @@ function build_trades(papers){
 			var style = ' ';
 			var buttonStatus = '';
 			
-			if(papers[i].qty > 0 && papers[i].owner[x].quantity > 0){
-				if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';
-				console.log('building');
+			if(papers[i].qty > 0 && papers[i].owner[x].quantity > 0){													//cannot buy when there are none
+				if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
+				if(papers[i].issuer.toLowerCase() != papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
+				
 				html += '<tr class="' + style +'">';
 				html +=		'<td>' + formatDate(Number(papers[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
 				html +=		'<td>' + papers[i].cusip + '</td>';
@@ -353,49 +249,4 @@ function build_trades(papers){
 	//console.log('html', html);
 	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
 	$("#tradesBody").html(html);
-}
-
-function set_my_color_options(username){
-	var has_colors = {};
-	for(var i in bag.marbles){
-		if(bag.marbles[i].user.toLowerCase() == username.toLowerCase()){		//mark it as needed
-			has_colors[bag.marbles[i].color] = true;
-		}
-	}
-	
-	//console.log('has_colors', has_colors);
-	var colors = ["white", "black", "red", "green", "blue", "purple", "pink", "orange", "yellow"];
-	$(".willingWrap").each(function(){
-		for(var i in colors){
-			//console.log('checking if user has', colors[i]);
-			if(!has_colors[colors[i]]) {
-				//console.log('removing', colors[i]);
-				$(this).find('.' + colors[i] + ':first').hide();
-			}
-			else {
-				$(this).find('.' + colors[i] + ':first').show();
-				//console.log('yep');
-			}
-		}
-	});
-}
-
-function set_my_size_options(username, colorOption){
-	var color = $(colorOption).attr('color');
-	//console.log('color', color);
-	var html = '';
-	var sizes = {};
-	for(var i in bag.marbles){
-		if(bag.marbles[i].user.toLowerCase() == username.toLowerCase()){		//mark it as needed
-			if(bag.marbles[i].color.toLowerCase() == color.toLowerCase()){
-				sizes[bag.marbles[i].size] = true;
-			}
-		}
-	}
-	
-	console.log('valid sizes:', sizes);
-	for(var i in sizes){
-		html += '<option value="' + i + '">' + sizeMe(i) + '</option>';					//build it
-	}
-	$(colorOption).parent().parent().next("select[name='will_size']").html(html);
 }
