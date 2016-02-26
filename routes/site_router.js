@@ -56,6 +56,7 @@ router.route("/:page").post(function(req, res){
 	for(var i in creds){
 		if(creds[i].username == req.body.username){
 			if(creds[i].password == req.body.password){
+				console.log('user has logged in', req.body.username);
 				req.session.username = req.body.username;
 				req.session.error_msg = null;
 				res.redirect('/trade');
