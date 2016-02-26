@@ -113,7 +113,15 @@ function connect_to_server(){
 	connect();
 		
 	function connect(){
-		var wsUri = "ws://" + bag.setup.SERVER.EXTURI;
+		var wsUri = '';
+		console.log('protocol', window.location.protocol);
+		if(window.location.protocol === 'https:'){
+			wsUri = "wss://" + bag.setup.SERVER.EXTURI;
+		}
+		else{
+			wsUri = "ws://" + bag.setup.SERVER.EXTURI;
+		}
+
 		ws = new WebSocket(wsUri);
 		ws.onopen = function(evt) { onOpen(evt); };
 		ws.onclose = function(evt) { onClose(evt); };
