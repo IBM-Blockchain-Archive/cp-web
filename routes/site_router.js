@@ -24,16 +24,20 @@ var creds	= require("../user_creds.json");
 // Home
 // ============================================================================================================================
 router.route("/").get(function(req, res){
+	check_login(res, req);
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 
 router.route("/home").get(function(req, res){
+	check_login(res, req);
 	res.redirect("/trade");
 });
 router.route("/create").get(function(req, res){
+	check_login(res, req);
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 router.route("/trade").get(function(req, res){
+	check_login(res, req);
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
 
@@ -47,7 +51,6 @@ router.route("/logout").get(function(req, res){
 });
 
 router.route("/:page").post(function(req, res){
-	//console.log('req', req.body.username);
 	req.session.error_msg = 'Invalid username or password';
 	
 	for(var i in creds){
@@ -55,38 +58,23 @@ router.route("/:page").post(function(req, res){
 			if(creds[i].password == req.body.password){
 				req.session.username = req.body.username;
 				req.session.error_msg = null;
+				res.redirect('/trade');
+				return;
 			}
 			break;
 		}
 	}
-	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
-});
-
-// ============================================================================================================================
-// Chaincode Summary File List
-// ============================================================================================================================
-router.route("/cc/summary").get(function(req, res){
-	fs.readdir('./cc_summaries/', cb_got_names);											//get file names
-	function cb_got_names(err, obj){
-		res.status(200).json(obj);
-	}
-});
-
-// ============================================================================================================================
-// Chaincode Investigator
-// ============================================================================================================================
-router.route("/cci/:filename?").get(function(req, res){
-	var cc = {};
-	if(req.params.filename){
-		try{
-			console.log('loading cc summary:', req.params.filename);
-			cc = require('../cc_summaries/' + req.params.filename + '.json');
-		}
-		catch(e){
-			console.log('error loading chaincode summary file', e);
-		};
-	}
-	res.render('investigate', {title: 'Investigator', bag: {cc: cc, setup: setup}} );
+	res.redirect('/login');
 });
 
 module.exports = router;
+
+
+
+function check_login(res, req){
+	console.log('!', req.session.username);
+	if(!req.session.username || req.session.username == ''){
+		console.log('! not logged in, redirecting to login');
+		res.redirect('/login');
+	}
+}
