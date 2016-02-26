@@ -24,9 +24,14 @@ block content
 		
 		
 		form(method="POST" action="#" style="text-align: center;")
-			p.hint!{bag.session.error_msg}
+			p.hint 
+				!{bag.session.error_msg}
+				br
+				br
 			p
+				.hint Username
 				input(type="text" placeholder="username" name="username")
 			p
+				.hint Password
 				input(type="password" name="password")
 			button(type="submit")#loginButton Login
