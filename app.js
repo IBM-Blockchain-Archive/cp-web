@@ -230,12 +230,12 @@ var options = 	{
 						users: users,
 					},
 					chaincode:{
-						zip_url: 'https://github.com/mrshah-at-ibm/chaincode/archive/master.zip',
-						unzip_dir: 'chaincode-master/cp_demo',									//subdirectroy name of chaincode after unzipped
-						git_url: 'https://github.com/mrshah-at-ibm/chaincode/cp_demo',			//GO git http url
+						zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',
+						unzip_dir: 'cp-chaincode-master',									//subdirectroy name of chaincode after unzipped
+						git_url: 'https://github.com/IBM-Blockchain/cp-chaincode',			//GO git http url
 					
 						//hashed cc name from prev deployment
-						deployed_name: 'c9b0b88aad25e7db9108ad61e058d818f70a3a6a5f5fd5c504f68d7f4aded6c4e677b9fe1fe959f2074131426e1d34097ffb96fd357c9f04a203f125f7129f77'
+						deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
 					}
 				};
 if(process.env.VCAP_SERVICES){
