@@ -25,9 +25,6 @@ $(document).on('ready', function() {
 	// =================================================================================
 	$("#submit").click(function(){
 		if(user.username){
-			$("#loginWrap").fadeIn();
-		}
-		else{
 			var obj = 	{
 							type: "create",
 							paper: {
@@ -159,9 +156,6 @@ $(document).on('ready', function() {
 	//build_trades([temp]);
 	$(document).on("click", ".buyPaper", function(){
 		if(user.username){
-			$("#loginWrap").fadeIn();
-		}
-		else{
 			console.log('trading...');
 			var i = $(this).attr('trade_pos');
 
