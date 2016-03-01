@@ -1,0 +1,76 @@
+@import 'color_theme';
+
+.modalDialog {
+  position: fixed;
+  font-family: Arial, Helvetica, sans-serif;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  //background: rgba(0, 0, 0, 0.8);
+  z-index: 99999;
+  opacity: 0;
+  -webkit-transition: opacity 400ms ease-in;
+  -moz-transition: opacity 400ms ease-in;
+  transition: opacity 400ms ease-in;
+  pointer-events: none;
+}
+
+.modalDialog:target {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modalDialog > div {
+  width: 230px;
+  position: relative;
+  margin-top: 60px;
+  margin-left: 0;
+  padding: 5px 20px 13px 20px;
+  border-radius: 10px;
+  border: 2px solid $acc_color1;
+  background: $main_bg;
+}
+
+.modalDialog label {
+  width: 60px;
+}
+
+#filterForm {
+  text-align: right;
+
+  #qtyFilter {
+    padding:3px 10px;
+    margin:5px;
+    color:$main_color;
+    border: 1px solid $acc_color3;
+    border-radius:30px;
+    background:$main_bg;
+    width: 135px;
+  }
+}
+
+.close {
+  background: #606061;
+  color: #FFFFFF;
+  line-height: 25px;
+  position: absolute;
+  right: -12px;
+  text-align: center;
+  top: -10px;
+  width: 24px;
+  text-decoration: none;
+  font-weight: bold;
+  -webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  border-radius: 12px;
+  -moz-box-shadow: 1px 1px 3px #000;
+  -webkit-box-shadow: 1px 1px 3px #000;
+  box-shadow: 1px 1px 3px #000;
+}
+
+.close:hover {
+  background: #00d9ff;
+}
+
+

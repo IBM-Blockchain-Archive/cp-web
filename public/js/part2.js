@@ -71,7 +71,27 @@ $(document).on('ready', function() {
 			$("#loginWrap").fadeIn();
 		}
 	});
-	
+
+	// Capture submission from the trade filter form
+	/*
+	var form = document.getElementById("filterForm");
+	if (form.attachEvent) {
+		form.attachEvent("submit", processFilterForm);
+	} else {
+		form.addEventListener("submit", processFilterForm);
+	}
+	*/
+	$("#filterForm").change(function() {
+		"use strict";
+		console.log("Change in filter form detected");
+		processFilterForm(null);
+	});
+	$(".watch-changes").keyup(function() {
+		"use strict";
+		console.log("Change in cusip detected");
+		processFilterForm(null);
+	});
+
 	//trade events
 	//build_trades([temp]);
 	$(document).on("click", ".buyPaper", function(){
@@ -217,25 +237,28 @@ function build_trades(papers){
 			var buttonStatus = '';
 			
 			if(papers[i].qty > 0 && papers[i].owner[x].quantity > 0){													//cannot buy when there are none
-				if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
-				if(papers[i].issuer.toLowerCase() != papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
-				
-				html += '<tr class="' + style +'">';
-				html +=		'<td>' + formatDate(Number(papers[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
-				html +=		'<td>' + papers[i].cusip + '</td>';
-				html +=		'<td>' + escapeHtml(papers[i].ticker.toUpperCase()) + '</td>';
-				html +=		'<td>' + formatMoney(papers[i].par) + '</td>';
-				html +=		'<td>' + papers[i].owner[x].quantity + '</td>';
-				html +=		'<td>' + papers[i].discount + '%</td>';
-				html +=		'<td>' + papers[i].maturity + ' days</td>';
-				html +=		'<td>' + papers[i].issuer + '</td>';
-				html +=		'<td>' + papers[i].owner[x].company + '</td>';
-				html +=		'<td>';
-				html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
-				html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY 1</span>';
-				html +=			'</button>';
-				html += 	'</td>';
-				html += '</tr>';
+
+				if(excluded(papers[i], papers[i].owner[x], filter)) {
+					if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
+					if(papers[i].issuer.toLowerCase() != papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
+
+					html += '<tr class="' + style +'">';
+					html +=		'<td>' + formatDate(Number(papers[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
+					html +=		'<td>' + papers[i].cusip + '</td>';
+					html +=		'<td>' + escapeHtml(papers[i].ticker.toUpperCase()) + '</td>';
+					html +=		'<td>' + formatMoney(papers[i].par) + '</td>';
+					html +=		'<td>' + papers[i].owner[x].quantity + '</td>';
+					html +=		'<td>' + papers[i].discount + '%</td>';
+					html +=		'<td>' + papers[i].maturity + ' days</td>';
+					html +=		'<td>' + papers[i].issuer + '</td>';
+					html +=		'<td>' + papers[i].owner[x].company + '</td>';
+					html +=		'<td>';
+					html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
+					html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY 1</span>';
+					html +=			'</button>';
+					html += 	'</td>';
+					html += '</tr>';
+				}
 			}
 		}
 	}
@@ -247,4 +270,68 @@ function build_trades(papers){
 	var sorting = [[1, 0]];
 	$("#tradesTable").trigger("sorton", [sorting]);*/
 
+}
+
+// =================================================================================
+//	Helpers for the filtering of trades
+// =================================================================================
+var filter = {};
+
+var names = [
+	"cusip",
+	"ticker",
+	"par",
+	"qty",
+	"discount",
+	"maturity",
+	"issuer",
+	"owner",
+	"company"
+]
+
+
+function processFilterForm(e) {
+	"use strict";
+	// Don't want to actually submit this form
+	if (e !== null && e.preventDefault) e.preventDefault();
+
+	var form = document.forms["filterForm"];
+
+	console.log("Processing filter form");
+
+	console.log(form.getElementsByTagName("input"));
+
+	// Reset the filter parameters
+	filter = {};
+
+	// Build the filter based on the form inputs
+	for (var i in names) {
+		if(form[names[i]] && form[names[i]].value != "") {
+			filter[names[i]] = form[names[i]].value;
+		}
+	}
+
+
+	console.log("New filter parameters: " + JSON.stringify(filter));
+	console.log("Rebuilding paper list");
+	build_trades(bag.papers);
+}
+
+function excluded(paper, owner, filter) {
+	"use strict";
+
+	if(filter.cusip && filter.cusip !== ""  && paper.cusip.toUpperCase() !== filter.cusip.toUpperCase()) return false;
+
+	if(filter.ticker && filter.ticker !== "" && paper.ticker.toUpperCase() !== filter.ticker.toUpperCase()) return false;
+
+	if(filter.par && paper.par != filter.par) return false;
+
+	// TODO quantity
+
+	if(filter.owner && filter.owner !== "" && owner.company.toUpperCase() !== filter.owner.toUpperCase()) return false;
+
+	if(filter.issuer && filter.issuer !== "" && paper.issuer.toUpperCase() !== filter.issuer.toUpperCase()) return false;
+
+	// Must be a valid trade if we reach this point
+	return true;
 }

@@ -4,3 +4,5 @@
 **/temp
 **/public/logs/**
 .project
+
+.idea

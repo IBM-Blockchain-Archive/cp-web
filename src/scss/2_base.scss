@@ -61,7 +61,7 @@ input:focus, select:focus, button:focus{
 input[type="submit"]:hover,input[type="button"]:hover, button:hover{
 	background:$main_color;
 }
-input[type="text"], input[type="password"], select{
+input[type="text"], input[type="password"], input[type="number"] select{
 	padding:3px 10px; 
 	margin:5px; 
 	color:$main_color;
