@@ -10,7 +10,9 @@
 			span(style="font-weight:bold;") Account Balance: 
 			span#accountBalance Loading from blockchain...
 		br
-		a(href="#filterModal") Open Modal
+		a#filterToggle(href="#filterModal") Filter Trades
+		br
+		br
 		#filterModal.modalDialog
 			div
 				.modal-header
@@ -35,7 +37,7 @@
 						label(for="ownerFilter") OWNER
 						input#ownerFilter.watch-changes(type="text" name="owner")
 						br
-						input#createFilter.watch-changes(type="submit" name="create" value="Filter")
+						//input#createFilter.watch-changes(type="submit" name="create" value="Filter")
 		table#tradesTable.tablesorter
 			thead
 				tr 
