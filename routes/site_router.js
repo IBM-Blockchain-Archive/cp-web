@@ -40,6 +40,10 @@ router.route("/trade").get(function(req, res){
 	check_login(res, req);
 	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
 });
+router.route("/audit").get(function(req, res){
+	check_login(res, req);
+	res.render('part2', {title: 'R3 Demo', bag: {setup: setup, e: process.error, session: req.session}} );
+});
 
 router.route("/login").get(function(req, res){
 	res.render('login', {title: 'Login', bag: {setup: setup, e: process.error, session: req.session}} );

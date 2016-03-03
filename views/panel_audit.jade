@@ -1,0 +1,45 @@
+//
+   Created by davery on 3/3/2016.
+#auditPanel(hidden).panel
+    h1 Auditing Center
+    hr
+
+    br
+
+    #auditableTrades
+        br
+        p
+            span(style="font-weight:bold;") Account Balance:
+            span#accountBalance Loading from blockchain...
+        br
+        a.filter-button(href="#auditModal") Filter Trades
+        br
+        br
+        #auditModal.modalDialog
+            div
+                .modal-header
+                    h2 Filter Trades
+                    hr
+                .modal-content
+                    form#auditForm
+                        label(for="auditIssuer") ISSUER
+                        input#auditIssuer.watch-changes(type="text" name="issuer")
+                        br
+                        label(for="auditOwner") OWNER
+                        input#auditOwner.watch-changes(type="text" name="owner")
+                        br
+                        a.filter-button(href="#close" title="Close") Close
+        table#auditTable.tablesorter
+            thead
+                tr
+                    TH DATE
+                    th CUSIP
+                    th TICKER
+                    th PAR
+                    th QTY
+                    th DISCOUNT
+                    th MATURITY
+                    th ISSUER
+                    th OWNER
+                    th ACTION
+            tbody#auditBody

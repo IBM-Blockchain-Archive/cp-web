@@ -10,34 +10,23 @@
 			span(style="font-weight:bold;") Account Balance: 
 			span#accountBalance Loading from blockchain...
 		br
-		a#filterToggle(href="#filterModal") Filter Trades
+		a.filter-button(href="#filterModal") Filter Trades
 		br
 		br
 		#filterModal.modalDialog
 			div
 				.modal-header
-					a.close(href="#close" title="Close") X
 					h2 Filter Trades
 					hr
 				.modal-content
 					form#filterForm
-						//
-							label(for="cusipFilter") CUSIP
-							input#cusipFilter.watch-changes(type="text" name="cusip")
-							br
-							label(for="tickerFilter") TICKER
-							input#tickerFilter.watch-changes(type="text" name="ticker")
-							br
-							label(for="qtyFilter") QTY
-							input#qtyFilter.watch-changes(type="number" name="qty" min=0)
-							br
 						label(for="issuerFilter") ISSUER
 						input#issuerFilter.watch-changes(type="text" name="issuer")
 						br
 						label(for="ownerFilter") OWNER
 						input#ownerFilter.watch-changes(type="text" name="owner")
 						br
-						//input#createFilter.watch-changes(type="submit" name="create" value="Filter")
+						a.filter-button(href="#close" title="Close") Close
 		table#tradesTable.tablesorter
 			thead
 				tr 

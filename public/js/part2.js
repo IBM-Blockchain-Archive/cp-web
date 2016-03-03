@@ -72,20 +72,7 @@ $(document).on('ready', function() {
 		}
 	});
 
-	// Capture submission from the trade filter form
-	/*
-	var form = document.getElementById("filterForm");
-	if (form.attachEvent) {
-		form.attachEvent("submit", processFilterForm);
-	} else {
-		form.addEventListener("submit", processFilterForm);
-	}
-	*/
-	$("#filterForm").change(function() {
-		"use strict";
-		console.log("Change in filter form detected");
-		processFilterForm(null);
-	});
+	// Filter the trades whenever the filter modal changes
 	$(".watch-changes").keyup(function() {
 		"use strict";
 		console.log("Change in cusip detected");
