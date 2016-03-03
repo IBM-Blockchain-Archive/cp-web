@@ -7,24 +7,24 @@
 	#openTrades
 		br
 		p
-			span(style="font-weight:bold;") Account Balance: 
+			span(style="font-weight:bold;") Account Balance:
 			span#accountBalance Loading from blockchain...
 		br
-		a.filter-button(href="#filterModal") Filter Trades
+		a.filter-button(href="#tradeModal") Filter Trades
 		br
 		br
-		#filterModal.modalDialog
+		#tradeModal.modalDialog
 			div
 				.modal-header
 					h2 Filter Trades
 					hr
 				.modal-content
-					form#filterForm
-						label(for="issuerFilter") ISSUER
-						input#issuerFilter.watch-changes(type="text" name="issuer")
+					form#tradeFilter
+						label(for="trade_issuer") ISSUER
+						input#trade_issuer.trade-filter(type="text" name="issuer")
 						br
-						label(for="ownerFilter") OWNER
-						input#ownerFilter.watch-changes(type="text" name="owner")
+						label(for="trade_owner") OWNER
+						input#trade_owner.trade-filter(type="text" name="owner")
 						br
 						a.filter-button(href="#close" title="Close") Close
 		table#tradesTable.tablesorter

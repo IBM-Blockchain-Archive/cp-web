@@ -8,10 +8,6 @@
 
     #auditableTrades
         br
-        p
-            span(style="font-weight:bold;") Account Balance:
-            span#accountBalance Loading from blockchain...
-        br
         a.filter-button(href="#auditModal") Filter Trades
         br
         br
@@ -21,12 +17,12 @@
                     h2 Filter Trades
                     hr
                 .modal-content
-                    form#auditForm
-                        label(for="auditIssuer") ISSUER
-                        input#auditIssuer.watch-changes(type="text" name="issuer")
+                    form#auditFilter
+                        label(for="audit_issuer") ISSUER
+                        input#audit_issuer.audit-filter(type="text" name="issuer")
                         br
-                        label(for="auditOwner") OWNER
-                        input#auditOwner.watch-changes(type="text" name="owner")
+                        label(for="audit_owner") OWNER
+                        input#audit_owner.audit-filter(type="text" name="owner")
                         br
                         a.filter-button(href="#close" title="Close") Close
         table#auditTable.tablesorter
@@ -41,5 +37,4 @@
                     th MATURITY
                     th ISSUER
                     th OWNER
-                    th ACTION
             tbody#auditBody

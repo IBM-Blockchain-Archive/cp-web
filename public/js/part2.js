@@ -10,7 +10,21 @@
 var ws = {};
 var user = {username: bag.session.username};
 var valid_users = ["company1", "company2", "company3", "company4", "company5", "company6","company7","company8", "company9", "company10" ];
-		
+var panels = [
+	{
+		name: "trade",
+		formID: "tradeFilter",
+		tableID: "#tradesBody",
+		filterPrefix: "trade_"
+	},
+	{
+		name: "audit",
+		formID: "auditFilter",
+		tableID: "#auditBody",
+		filterPrefix: "audit_"
+	}
+];
+
 // =================================================================================
 // On Load
 // =================================================================================
@@ -73,10 +87,15 @@ $(document).on('ready', function() {
 	});
 
 	// Filter the trades whenever the filter modal changes
-	$(".watch-changes").keyup(function() {
+	$(".trade-filter").keyup(function() {
 		"use strict";
-		console.log("Change in cusip detected");
-		processFilterForm(null);
+		console.log("Change in trade filter detected.");
+		processFilterForm(panels[0]);
+	});
+	$(".audit-filter").keyup(function() {
+		"use strict";
+		console.log("Change in audit filter detected.");
+		processFilterForm(panels[1]);
 	});
 
 	//trade events
@@ -158,7 +177,10 @@ function connect_to_server(){
 			console.log('rec', data);
 			if(data.msg === 'papers'){
 				//console.log('!', data.papers);
-				build_trades(JSON.parse(data.papers));
+				if($('#auditPanel').is)
+				for(var i in panels) {
+					build_trades(JSON.parse(data.papers), panels[i]);
+				}
 			}
 			else if(data.msg === 'chainstats'){
 				var e = formatDate(data.blockstats.transactions[0].timestamp.seconds * 1000, '%M/%d/%Y &nbsp;%I:%m%P');
@@ -204,11 +226,22 @@ function connect_to_server(){
 // =================================================================================
 //	UI Building
 // =================================================================================
-function build_trades(papers){
+/**
+ * Process the list of trades from the server and displays them in the trade list.
+ * This function builds the tables for multiple panels, so an object is needed to
+ * identify which table it should be drawing to.
+ * @param papers The list of trades to display.
+ * @param panelDesc An object describing what panel the trades are being shown in.
+ */
+function build_trades(papers, panelDesc){
 	var html = '';
 	bag.papers = papers;						//store the trades for posterity
 	//console.log('papers:', bag.papers);
-	
+
+	// If no panel is given, assume this is the trade panel
+	if(!panelDesc) {
+		panelDesc = panels[0];
+	}
 	
 	papers.sort(function(a, b) {								//alpha sort me
 		var textA = a.cusip.toUpperCase();
@@ -239,19 +272,27 @@ function build_trades(papers){
 					html +=		'<td>' + papers[i].maturity + ' days</td>';
 					html +=		'<td>' + papers[i].issuer + '</td>';
 					html +=		'<td>' + papers[i].owner[x].company + '</td>';
-					html +=		'<td>';
-					html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
-					html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY 1</span>';
-					html +=			'</button>';
-					html += 	'</td>';
+
+					// Only the trade panel should allow you to interact with trades
+					if(panelDesc.name === "trade") {
+						html +=		'<td>';
+						html +=			'<button type="button" class="buyPaper altButton" ' + buttonStatus +' trade_pos="' + i + '">';
+						html +=				'<span class="fa fa-exchange"> &nbsp;&nbsp;BUY 1</span>';
+						html +=			'</button>';
+						html += 	'</td>';
+					}
+
 					html += '</tr>';
 				}
 			}
 		}
 	}
 
-	if(html == '') html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
-	$("#tradesBody").html(html);
+	// Placeholder for an empty table
+	if(html == '' && panelDesc.name === "trade") html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+	if(html == '' && panelDesc.name === "audit") html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
+
+	$(panelDesc.tableID).html(html);
 
 	/*$("#tradesTable").trigger("update");
 	var sorting = [[1, 0]];
@@ -264,6 +305,12 @@ function build_trades(papers){
 // =================================================================================
 var filter = {};
 
+/**
+ * Describes all the fields that describe a trade.  Used to create
+ * a filter that can be used to control which trades get shown in the
+ * table.
+ * @type {string[]}
+ */
 var names = [
 	"cusip",
 	"ticker",
@@ -274,15 +321,17 @@ var names = [
 	"issuer",
 	"owner",
 	"company"
-]
+];
 
-
-function processFilterForm(e) {
+/**
+ * Parses the filter forms in the UI into an object for filtering
+ * which trades are displayed in the table.
+ * @param panelDesc An object describing which panel
+ */
+function processFilterForm(panelDesc) {
 	"use strict";
-	// Don't want to actually submit this form
-	if (e !== null && e.preventDefault) e.preventDefault();
 
-	var form = document.forms["filterForm"];
+	var form = document.forms[panelDesc.formID];
 
 	console.log("Processing filter form");
 
@@ -293,27 +342,30 @@ function processFilterForm(e) {
 
 	// Build the filter based on the form inputs
 	for (var i in names) {
-		if(form[names[i]] && form[names[i]].value != "") {
-			filter[names[i]] = form[names[i]].value;
+
+		// Input ID example: "trade_owner"
+		var name = names[i];
+		var id = panelDesc.filterPrefix + name;
+
+		if(form[id] && form[id].value !== "") {
+			filter[name] = form[id].value;
 		}
 	}
 
-
 	console.log("New filter parameters: " + JSON.stringify(filter));
 	console.log("Rebuilding paper list");
-	build_trades(bag.papers);
+	build_trades(bag.papers, panelDesc);
 }
 
+/**
+ * Validates a trade object against a given set of filters.
+ * @param paper The object to be validated.
+ * @param owner The specific owner in the trade object that you want to validate.
+ * @param filter The filter object to validate the trade against.
+ * @returns {boolean} True if the trade is valid according to the filter, false otherwise.
+ */
 function excluded(paper, owner, filter) {
 	"use strict";
-
-	if(filter.cusip && filter.cusip !== ""  && paper.cusip.toUpperCase() !== filter.cusip.toUpperCase()) return false;
-
-	if(filter.ticker && filter.ticker !== "" && paper.ticker.toUpperCase() !== filter.ticker.toUpperCase()) return false;
-
-	if(filter.par && paper.par != filter.par) return false;
-
-	// TODO quantity
 
 	if(filter.owner && filter.owner !== "" && owner.company.toUpperCase() !== filter.owner.toUpperCase()) return false;
 

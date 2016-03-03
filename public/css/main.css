@@ -632,7 +632,7 @@ th.header {
 .modalDialog label {
   width: 60px; }
 
-#filterForm {
+#tradeFilter, #auditFilter {
   text-align: right; }
 
 .filter-button {
