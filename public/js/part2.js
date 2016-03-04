@@ -31,9 +31,19 @@ var panels = [
 $(document).on('ready', function() {
 	connect_to_server();
 	if(user.username) $("#userField").html(user.username.toUpperCase() + ' ');
-	//$("#tradesTable").tablesorter();
 
-	
+	// Customize which panels show up for which user
+	$(".nav").hide();
+	$(".panel").hide();
+	if(user.username && user.username.toUpperCase() === "AUDITOR") {
+		$("#auditLink").show();
+		$("#auditPanel").show();
+	} else {
+		$("#createLink").show();
+		$("#tradeLink").show();
+		$("#tradePanel").show();
+	}
+
 	// =================================================================================
 	// jQuery UI Events
 	// =================================================================================
@@ -75,7 +85,6 @@ $(document).on('ready', function() {
 		ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
 	});
 	
-	
 	//login events
 	$("#whoAmI").click(function(){													//drop down for login
 		if($("#loginWrap").is(":visible")){
@@ -99,7 +108,6 @@ $(document).on('ready', function() {
 	});
 
 	//trade events
-	//build_trades([temp]);
 	$(document).on("click", ".buyPaper", function(){
 		if(user.username){
 			console.log('trading...');
@@ -262,6 +270,7 @@ function build_trades(papers, panelDesc){
 					if(user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
 					if(papers[i].issuer.toLowerCase() != papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
 
+					// Create a row for each valid trade
 					html += '<tr class="' + style +'">';
 					html +=		'<td>' + formatDate(Number(papers[i].issueDate ), '%M/%d %I:%m%P') + '</td>';
 					html +=		'<td>' + papers[i].cusip + '</td>';
@@ -293,11 +302,6 @@ function build_trades(papers, panelDesc){
 	if(html == '' && panelDesc.name === "audit") html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
 
 	$(panelDesc.tableID).html(html);
-
-	/*$("#tradesTable").trigger("update");
-	var sorting = [[1, 0]];
-	$("#tradesTable").trigger("sorton", [sorting]);*/
-
 }
 
 // =================================================================================
