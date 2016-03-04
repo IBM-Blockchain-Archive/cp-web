@@ -3,17 +3,7 @@
 	hr
 	
 	br
-	
-	#openTrades
-		br
-		p
-			span(style="font-weight:bold;") Account Balance:
-			span#accountBalance Loading from blockchain...
-		br
-		a.filter-button(href="#tradeModal") Filter Trades
-		br
-		br
-		#tradeModal.modalDialog
+	#tradeModal.modalDialog
 			div
 				.modal-header
 					h2 Filter Trades
@@ -26,7 +16,20 @@
 						label(for="trade_owner") OWNER
 						input#trade_owner.trade-filter(type="text" name="owner")
 						br
+						label(for="trade_ticker") TICKER
+						input#trade_ticker.trade-filter(type="text" name="ticker")
+						br
 						a.filter-button(href="#close" title="Close") Close
+						
+	#openTrades
+		br
+		p
+			span(style="font-weight:bold;") Account Balance:
+			span#accountBalance Loading from blockchain...
+		br
+		a.filter-button(href="#tradeModal") Filter Trades
+		br
+		br
 		table#tradesTable.tablesorter
 			thead
 				tr 
