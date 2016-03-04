@@ -1,40 +1,43 @@
 //
-   Created by davery on 3/3/2016.
+	Created by davery on 3/3/2016.
 #auditPanel(hidden).panel
-    h1 Auditing Center
-    hr
+	h1 Auditing Center
+	hr
 
-    br
-
-    #auditableTrades
-        br
-        a.filter-button(href="#auditModal") Filter Trades
-        br
-        br
-        #auditModal.modalDialog
-            div
-                .modal-header
-                    h2 Filter Trades
-                    hr
-                .modal-content
-                    form#auditFilter
-                        label(for="audit_issuer") ISSUER
-                        input#audit_issuer.audit-filter(type="text" name="issuer")
-                        br
-                        label(for="audit_owner") OWNER
-                        input#audit_owner.audit-filter(type="text" name="owner")
-                        br
-                        a.filter-button(href="#close" title="Close") Close
-        table#auditTable.tablesorter
-            thead
-                tr
-                    TH DATE
-                    th CUSIP
-                    th TICKER
-                    th PAR
-                    th QTY
-                    th DISCOUNT
-                    th MATURITY
-                    th ISSUER
-                    th OWNER
-            tbody#auditBody
+	br
+	#auditModal.modalDialog
+			div
+				.modal-header
+					h2 Filter Trades
+					hr
+				.modal-content
+					form#auditFilter
+						label(for="audit_issuer") ISSUER
+						input#audit_issuer.audit-filter(type="text" name="issuer")
+						br
+						label(for="audit_owner") OWNER
+						input#audit_owner.audit-filter(type="text" name="owner")
+						br
+						label(for="audit_ticker") TICKER
+						input#audit_ticker.audit-filter(type="text" name="ticker")
+						br
+						a.filter-button(href="#close" title="Close") Close
+						
+	#auditableTrades
+		br
+		a.filter-button(href="#auditModal") Filter Trades
+		br
+		br
+		table#auditTable.tablesorter
+			thead
+				tr
+					TH DATE
+					th CUSIP
+					th TICKER
+					th PAR
+					th QTY
+					th DISCOUNT
+					th MATURITY
+					th ISSUER
+					th OWNER
+			tbody#auditBody

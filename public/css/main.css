@@ -602,38 +602,37 @@ th.header {
 
 
 .modalDialog {
-  position: fixed;
   font-family: Arial, Helvetica, sans-serif;
-  top: 0;
-  left: 0;
   z-index: 99999;
   opacity: 0;
   height: 100px;
-  width: 100px;
+  width: 100%;
   -webkit-transition: opacity 400ms ease-in;
   -moz-transition: opacity 400ms ease-in;
   transition: opacity 400ms ease-in;
-  pointer-events: none; }
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: -78px;
+  text-align: center; }
 
 .modalDialog:target {
   opacity: 1;
   pointer-events: auto; }
 
 .modalDialog > div {
-  width: 250px;
+  width: 300px;
   position: relative;
-  margin-top: 60px;
-  margin-left: 0;
   padding: 5px 20px 13px 20px;
   border-radius: 10px;
   border: 2px solid #222832;
-  background: #343D48; }
+  background: #343D48;
+  margin: auto;
+  margin-top: 10px; }
 
 .modalDialog label {
-  width: 60px; }
-
-#tradeFilter, #auditFilter {
-  text-align: right; }
+  width: 60px;
+  display: inline-block; }
 
 .filter-button {
   font-size: 11px;
@@ -651,6 +650,9 @@ th.header {
 .filter-button:visited {
   text-decoration: none;
   color: #222832; }
+
+#tradePanel, #audiPanel {
+  width: 100%; }
 
 /* Example
 <div class="loadingdiv">

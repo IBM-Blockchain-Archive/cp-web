@@ -375,9 +375,11 @@ function processFilterForm(panelDesc) {
 function excluded(paper, owner, filter) {
 	"use strict";
 
-	if(filter.owner && filter.owner !== "" && owner.company.toUpperCase() !== filter.owner.toUpperCase()) return false;
+	if(filter.owner && filter.owner !== "" && owner.company.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1 ) return false;
 
-	if(filter.issuer && filter.issuer !== "" && paper.issuer.toUpperCase() !== filter.issuer.toUpperCase()) return false;
+	if(filter.issuer && filter.issuer !== "" && paper.issuer.toUpperCase().indexOf(filter.issuer.toUpperCase()) == -1) return false;
+	
+	if(filter.ticker && filter.ticker !== "" && paper.ticker.toUpperCase().indexOf(filter.ticker.toUpperCase()) == -1) return false;
 
 	// Must be a valid trade if we reach this point
 	return true;

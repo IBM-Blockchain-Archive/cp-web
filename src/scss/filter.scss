@@ -1,18 +1,22 @@
 @import 'color_theme';
 
 .modalDialog {
-  position: fixed;
+  //position: fixed;
   font-family: Arial, Helvetica, sans-serif;
-  top: 0;
-  left: 0;
+ // top: 0;
+ // left: 0;
   z-index: 99999;
   opacity: 0;
   height: 100px;
-  width: 100px;
+  width: 100%;
   -webkit-transition: opacity 400ms ease-in;
   -moz-transition: opacity 400ms ease-in;
   transition: opacity 400ms ease-in;
   pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: -78px;
+  text-align: center;
 }
 
 .modalDialog:target {
@@ -21,22 +25,23 @@
 }
 
 .modalDialog > div {
-  width: 250px;
+  width: 300px;
   position: relative;
-  margin-top: 60px;
-  margin-left: 0;
   padding: 5px 20px 13px 20px;
   border-radius: 10px;
   border: 2px solid $acc_color1;
   background: $main_bg;
+  margin:auto;
+  margin-top: 10px;
 }
 
 .modalDialog label {
   width: 60px;
+  display:inline-block;
 }
 
 #tradeFilter, #auditFilter {
-  text-align: right;
+  //text-align: right;
 }
 
 .filter-button {
@@ -56,6 +61,10 @@
 .filter-button:visited {
   text-decoration: none;
   color: #222832;
+}
+
+#tradePanel, #audiPanel{
+	width:100%;
 }
 
 
