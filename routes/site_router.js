@@ -63,7 +63,22 @@ router.route("/:page").post(function(req, res){
 				console.log('user has logged in', req.body.username);
 				req.session.username = req.body.username;
 				req.session.error_msg = null;
-				res.redirect('/trade');
+
+				// Roles are used to control access to various UI elements
+				if(creds[i].role) {
+					console.log("user has specific role:", creds[i].role);
+					req.session.user_role = creds[i].role;
+				} else {
+					console.log("user role not specified, assuming:", "user");
+					req.session.user_role = "user";
+				}
+
+				// Redirect to the appropriate UI based on role
+				if(req.session.user_role.toUpperCase() === 'auditor'.toUpperCase()) {
+					res.redirect('/audit');
+				} else {
+					res.redirect('/trade');
+				}
 				return;
 			}
 			break;

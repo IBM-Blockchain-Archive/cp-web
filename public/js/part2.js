@@ -34,14 +34,18 @@ $(document).on('ready', function() {
 
 	// Customize which panels show up for which user
 	$(".nav").hide();
-	$(".panel").hide();
-	if(user.username && user.username.toUpperCase() === "AUDITOR") {
-		$("#auditLink").show();
-		$("#auditPanel").show();
-	} else {
-		$("#createLink").show();
-		$("#tradeLink").show();
-		$("#tradePanel").show();
+	console.log("user role", bag.session.user_role);
+
+	// Only show tabs if a user is logged in
+	if(user.username) {
+
+		// Display tabs based on user's role
+		if(bag.session.user_role && bag.session.user_role.toUpperCase() === "auditor".toUpperCase()) {
+			$("#auditLink").show();
+		} else if(user.username) {
+			$("#createLink").show();
+			$("#tradeLink").show();
+		}
 	}
 
 	// =================================================================================
