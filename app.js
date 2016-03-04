@@ -253,7 +253,7 @@ function cb_ready(err, cc){																	//response has chaincode functions
 	else{
 		chaincode = cc;
 		part2.setup(ibc, cc);
-		if(cc.details.deployed_name === ""){												//decide if i need to deploy
+		if(!cc.details.deployed_name || cc.details.deployed_name === ""){												//decide if i need to deploy
 			cc.deploy('createAccounts', ['50'], './cc_summaries', cb_deployed);
 		}
 		else{
