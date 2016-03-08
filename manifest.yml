@@ -1,8 +1,8 @@
 ---
 applications:
 - disk_quota: 1024M
-  host: r3
-  name: r3
+  host: comm-paper
+  name: comm-paper
   command: "node app.js"
   path: "."
   instances: 1
