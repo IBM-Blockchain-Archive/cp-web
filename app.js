@@ -8,6 +8,7 @@
  *
  * Contributors:
  *   David Huffman - Initial implementation
+ *   Dale Avery
  *******************************************************************************/
 /////////////////////////////////////////
 ///////////// Setup Node.js /////////////
@@ -235,9 +236,72 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
     }
 }
 
+// Credentials from ****_creds.json should work as aliases for service users
+var user_creds = require('./user_creds.json');
+var auditor_creds = require('./auditor_creds.json');
+var aliased_users = [];
+console.log("Merging the blockchain users and user_creds.json");
+var vcap_ind = 0, user_ind = 0, auditor_ind = 0;
+var user_logged = false, auditor_logged = false;
+while (vcap_ind < users.length && (user_ind < user_creds.length || auditor_ind < auditor_creds.length)) {
+
+    // Ignore Type0's, as they should only be associated with peers
+    if (users[vcap_ind].username.toLowerCase().indexOf('type0') < 0) {
+
+        // Combine the users!
+        var new_user = {
+            username: users[vcap_ind].username,
+            secret: users[vcap_ind].secret,
+            name: "",
+            password: "",
+            role: ""
+        };
+
+        // Check for auditors (type4 users)
+        if (new_user.username.toLowerCase().indexOf('type4') > -1) {
+
+            // Can't make a user if we don't have enough aliases
+            if (auditor_ind < auditor_creds.length) {
+
+                // Add the use user to the list
+                new_user.name = auditor_creds[auditor_ind].username;
+                new_user.password = auditor_creds[auditor_ind].password;
+                new_user.role = "auditor";
+                aliased_users.push(new_user);
+                auditor_ind++;
+            } else {
+                if (!user_logged) {
+                    console.log("Didn't provide enough auditors to cover type4 service credentials");
+                    user_logged = true;
+                }
+            }
+        } else {
+
+            // Must be a regular user
+            if (user_ind < user_creds.length) {
+                // Add the use user to the list
+                new_user.name = user_creds[user_ind].username;
+                new_user.password = user_creds[user_ind].password;
+                new_user.role = "user";
+                aliased_users.push(new_user);
+                user_ind++;
+            } else {
+                if(!auditor_logged) {
+                    console.log("Didn't provide enough users to cover service credentials");
+                    auditor_logged = true;
+                }
+            }
+        }
+    }
+    vcap_ind++;
+}
+if (aliased_users.length < 1) {
+    console.error("There aren't enough users for the app to work!");
+}
+
 // Make sure the router has all these credentials.  It actually lets users log in to
 // the app.
-router.setupCreds(users);
+router.setupCreds(aliased_users);
 
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -245,7 +309,7 @@ router.setupCreds(users);
 var options = {
     network: {
         peers: peers,
-        users: users,
+        users: users
     },
     chaincode: {
         zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',

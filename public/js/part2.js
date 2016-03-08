@@ -10,9 +10,9 @@
 var ws = {};
 var user = {
     username: bag.session.username,
-    company: bag.session.company
+    name: bag.session.name,
+    role: bag.session.role
 };
-var valid_users = ["company1", "company2", "company3", "company4", "company5", "company6", "company7", "company8", "company9", "company10"];
 var panels = [
     {
         name: "trade",
@@ -33,7 +33,7 @@ var panels = [
 // =================================================================================
 $(document).on('ready', function () {
     connect_to_server();
-    if (user.username) $("#userField").html(user.username.toUpperCase() + ' ');
+    if (user.name) $("#userField").html(user.name.toUpperCase() + ' ');
 
     // Customize which panels show up for which user
     $(".nav").hide();
@@ -43,7 +43,7 @@ $(document).on('ready', function () {
     if (user.username) {
 
         // Display tabs based on user's role
-        if (bag.session.user_role && bag.session.user_role.toUpperCase() === "auditor".toUpperCase()) {
+        if (user.role && user.role.toUpperCase() === "auditor".toUpperCase()) {
             $("#auditLink").show();
         } else if (user.username) {
             $("#createLink").show();
@@ -65,7 +65,7 @@ $(document).on('ready', function () {
                     discount: Number($("select[name='discount']").val()),
                     maturity: Number($("select[name='maturity']").val()),
                     owner: [],
-                    issuer: user.username,
+                    issuer: user.name,
                     issueDate: Date.now().toString()
                 }
             };
@@ -125,7 +125,7 @@ $(document).on('ready', function () {
                 transfer: {
                     CUSIP: bag.papers[i].cusip,
                     fromCompany: bag.papers[i].issuer,
-                    toCompany: user.username,
+                    toCompany: user.name,
                     quantity: 1
                 }
             };
@@ -185,8 +185,8 @@ function connect_to_server() {
         $("#errorNotificationPanel").fadeOut();
         ws.send(JSON.stringify({type: "chainstats", v: 2}));
         ws.send(JSON.stringify({type: "get_papers", v: 2}));
-        if (user.username && user.company) {
-            ws.send(JSON.stringify({type: 'get_company', company: user.company}));
+        if (user.name) {
+            ws.send(JSON.stringify({type: 'get_company', company: user.name}));
         }
     }
 
@@ -223,7 +223,7 @@ function connect_to_server() {
             }
             else if (data.msg === 'reset') {							//clear marble knowledge, prepare of incoming marble states
                 ws.send(JSON.stringify({type: "get_papers", v: 2}));
-                ws.send(JSON.stringify({type: 'get_company', company: user.company}));
+                ws.send(JSON.stringify({type: 'get_company', company: user.name}));
             }
         }
         catch (e) {
@@ -286,8 +286,8 @@ function build_trades(papers, panelDesc) {
             if (papers[i].qty > 0 && papers[i].owner[x].quantity > 0) {													//cannot buy when there are none
 
                 if (excluded(papers[i], papers[i].owner[x], filter)) {
-                    if (user.username.toLowerCase() == papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
-                    if (papers[i].issuer.toLowerCase() != papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
+                    if (user.name.toLowerCase() === papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
+                    if (papers[i].issuer.toLowerCase() !== papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
 
                     // Create a row for each valid trade
                     html += '<tr class="' + style + '">';
