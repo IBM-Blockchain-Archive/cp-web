@@ -21,6 +21,9 @@ var util = require('util');
 var rest = require("../utils/rest.js");
 var creds = require("../user_creds.json");
 
+// Need to be able to switch peer users when a new user logs in
+var login_handler;
+
 // ============================================================================================================================
 // Home
 // ============================================================================================================================
@@ -97,15 +100,25 @@ module.exports = router;
 /**
  * Have app.js pass in credentials instead of checking the environment.  This
  * lets us pass hardcoded credentials through the app whenever we aren't running
- * on Bluemix.
+ * on Bluemix.  We will also need a handler for switching the user that we are invoking
+ * chaincode with.
  * @param vcap_credentials The credentials to extract the users.
+ * @param handler The function that will handle switching obc users when a new user
+ *          logs in to the app.
  */
-module.exports.setupCreds = function setupCreds(vcap_users) {
-    if (vcap_users != null) {
+module.exports.setupRouter = function (vcap_users, handler) {
+    if (vcap_users) {
         console.log("Loading credentials into router");
         creds = vcap_users;
     } else {
         console.log("Credentials not given to router.  Using user_creds.json");
+    }
+
+    if (handler) {
+        console.log("Site router received login handler");
+        login_handler = handler;
+    } else {
+        console.log("No login handler received by site router.  Can't switch users.");
     }
 };
 

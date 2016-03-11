@@ -28,6 +28,7 @@ var async = require('async');
 var setup = require('./setup');
 var cors = require("cors");
 var fs = require("fs");
+var util = require('util');
 
 //// Set Server Parameters ////
 var host = setup.SERVER.HOST;
@@ -236,11 +237,27 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
     }
 }
 
-// Credentials from ****_creds.json should work as aliases for service users
-var user_creds = require('./user_creds.json');
-var auditor_creds = require('./auditor_creds.json');
+// Credentials from user_creds.json should work as aliases for service users
+var user_list = require('./user_creds.json');
+
+// Separate the user credentials into lists based on the user role
+var user_creds = [];
+var auditor_creds = [];
+for (var i = 0; i < user_list.length; i++) {
+    var current = user_list[i];
+
+    if (!current.role || current.role === "user") {
+        user_creds.push(current);
+    } else if (current.role === "auditor") {
+        auditor_creds.push(current);
+    } else {
+        var msg = util.format("Skipped user '%s': role '%s' is not defined.", current.username, current.role);
+        console.log(msg);
+    }
+}
+
+console.log("Merging the blockchain and user_creds.json users");
 var aliased_users = [];
-console.log("Merging the blockchain users and user_creds.json");
 var vcap_ind = 0, user_ind = 0, auditor_ind = 0;
 var user_logged = false, auditor_logged = false;
 while (vcap_ind < users.length && (user_ind < user_creds.length || auditor_ind < auditor_creds.length)) {
@@ -286,7 +303,7 @@ while (vcap_ind < users.length && (user_ind < user_creds.length || auditor_ind <
                 aliased_users.push(new_user);
                 user_ind++;
             } else {
-                if(!auditor_logged) {
+                if (!auditor_logged) {
                     console.log("Didn't provide enough users to cover service credentials");
                     auditor_logged = true;
                 }
@@ -300,8 +317,28 @@ if (aliased_users.length < 1) {
 }
 
 // Make sure the router has all these credentials.  It actually lets users log in to
-// the app.
-router.setupCreds(aliased_users);
+// the app.  Also, give it a handler for switching peer users on logins.
+/**
+ * Switches the user that chaincode requests are sent with.  Should be
+ * called whenever a different user logs in to the website.
+ * @param user The user that logged in.
+ */
+function loginHandler(user, callback) {
+    if(user.username && user.secret) {
+        console.log("Switching to peer user")
+        // TODO call the SDK's switch user function here
+        ibc.register(ibc.selectedPeer, user.username, user.secret, function(err, data) {
+            if(err) {
+                var msg = util.format("Error when logging in user: '%s': $s", JSON.stringify(user), JSON.stringify(err));
+                console.log(msg);
+            }
+            else {
+                console.log("Registered user:", JSON.stringify(user), JSON.stringify(data));
+            }
+        });
+    }
+}
+router.setupRouter(aliased_users, loginHandler);
 
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -317,7 +354,7 @@ var options = {
         git_url: 'https://github.com/IBM-Blockchain/cp-chaincode',			//GO git http url
 
         //hashed cc name from prev deployment
-        deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
+        //deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
     }
 };
 if (process.env.VCAP_SERVICES) {
