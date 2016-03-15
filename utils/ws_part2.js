@@ -1,39 +1,70 @@
 // ==================================
 // Part 2 - incoming messages, look for type
 // ==================================
+"use strict";
 var ibc = {};
 var chaincode = {};
 var async = require('async');
+var credentials = {};
 
-module.exports.setup = function (sdk, cc) {
+module.exports.setup = function (sdk, cc, creds) {
     ibc = sdk;
     chaincode = cc;
+    credentials = creds;
 };
 
 module.exports.process_msg = function (ws, data) {
-    if (data.type == 'create') {
-        console.log('its a create!');
-        if (data.paper && data.paper.ticker) {
-            console.log('!', data.paper);
-            chaincode.issueCommercialPaper([JSON.stringify(data.paper)], cb_invoked);				//create a new paper
+
+    // Must have a user to invoke chaincode
+    if (!data.user || data.user === '') {
+        sendMsg({type: "error", error: "user not provided in message"});
+        return;
+    }
+
+    // Verify that we actually have this user
+    var user_creds;
+    if (!(user_creds = getCredentials(credentials, data.user))) {
+        sendMsg({type: "error", error: "username not found"});
+        return;
+    }
+
+    // Register the user with the peer
+    // Default peer is 0, need to change this if we select a different peer
+    ibc.register(0, user_creds.username, user_creds.secret, function (err, body) {
+
+        // Make sure the user was actually registered
+        if (err) {
+            console.log("Failed to register user " + data.user + " with peer " + 0);
+            console.log("Error:", JSON.stringify(err));
+            sendMsg({type: "error", error: "Failed to register user"});
         }
-    }
-    else if (data.type == 'get_papers') {
-        console.log('get papers msg');
-        chaincode.read('GetAllCPs', cb_got_papers);
-    }
-    else if (data.type == 'transfer_paper') {
-        console.log('transfering msg', data.transfer);
-        chaincode.transferPaper([JSON.stringify(data.transfer)]);
-    }
-    else if (data.type == 'chainstats') {
-        console.log('chainstats msg');
-        ibc.chain_stats(cb_chainstats);
-    }
-    else if (data.type == 'get_company') {
-        console.log('get company msg');
-        chaincode.query(['GetCompany', data.company], cb_got_company);
-    }
+
+        console.log("Peer user registration:", JSON.stringify(body));
+
+        // Process the message
+        console.log('message type:', data.type);
+        console.log('message user:', data.user);
+        if (data.type == 'create') {
+            if (data.paper && data.paper.ticker) {
+                console.log('!', data.paper);
+                chaincode.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);				//create a new paper
+            }
+        }
+        else if (data.type == 'get_papers') {
+            chaincode.read('GetAllCPs', data.user, cb_got_papers);
+        }
+        else if (data.type == 'transfer_paper') {
+            console.log('transfering msg', data.transfer);
+            chaincode.transferPaper([JSON.stringify(data.transfer)], data.user);
+        }
+        else if (data.type == 'chainstats') {
+            ibc.chain_stats(cb_chainstats);
+        }
+        else if (data.type == 'get_company') {
+            chaincode.query(['GetCompany', data.company], data.user, cb_got_company);
+        }
+
+    });
 
     function cb_got_papers(e, papers) {
         if (e != null) {
@@ -85,7 +116,7 @@ module.exports.process_msg = function (ws, data) {
         }
     }
 
-    //call bacak for getting a block's stats, lets send the chain/block stats
+    //call back for getting a block's stats, lets send the chain/block stats
     function cb_blockstats(e, stats) {
         if (chain_stats.height) stats.height = chain_stats.height - 1;
         sendMsg({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
@@ -113,3 +144,23 @@ module.exports.process_msg = function (ws, data) {
         }
     }
 };
+
+/**
+ * Searches a list of user credentials for the given user.  Used
+ * to provide the username and secret for registering a user with a
+ * peer.
+ * @param list The list of user credentials to search.
+ * @param name The name of the user to search for.
+ * @returns {{}} The username and secret for the given user if found, undefined otherwise.
+ */
+function getCredentials(list, name) {
+    "use strict";
+    var ret;
+    for (var i = 0; i < list.length; i++) {
+        if (list[i].username === name) {
+            ret = list[i];
+            break;
+        }
+    }
+    return ret;
+}

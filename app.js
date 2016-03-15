@@ -139,66 +139,66 @@ var manual = {
     "credentials": {
         "peers": [
             {
-                "discovery_host": "169.44.38.111",
-                "discovery_port": "33901",
-                "api_host": "169.44.38.111",
-                "api_port": "33902",
+                "discovery_host": "169.44.63.199",
+                "discovery_port": "37137",
+                "api_host": "169.44.63.199",
+                "api_port": "37138",
                 "type": "peer",
-                "network_id": "4eaf14f9-65fd-4396-a446-7e84d9b46d40",
-                "id": "4eaf14f9-65fd-4396-a446-7e84d9b46d40_vp1",
-                "api_url": "http://169.44.38.111:33902"
+                "network_id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d",
+                "id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d_vp1",
+                "api_url": "http://169.44.63.199:37138"
             },
             {
-                "discovery_host": "169.44.38.111",
-                "discovery_port": "33903",
-                "api_host": "169.44.38.111",
-                "api_port": "33904",
+                "discovery_host": "169.44.38.109",
+                "discovery_port": "38594",
+                "api_host": "169.44.38.109",
+                "api_port": "38595",
                 "type": "peer",
-                "network_id": "4eaf14f9-65fd-4396-a446-7e84d9b46d40",
-                "id": "4eaf14f9-65fd-4396-a446-7e84d9b46d40_vp2",
-                "api_url": "http://169.44.38.111:33904"
+                "network_id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d",
+                "id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d_vp2",
+                "api_url": "http://169.44.38.109:38595"
             }
         ],
         "users": [
             {
-                "username": "user_type0_9da1a8be2f",
-                "secret": "61dcec682d"
+                "username": "user_type0_dd5846a68f",
+                "secret": "0654e6cd44"
             },
             {
-                "username": "user_type0_0ef7ba06ef",
-                "secret": "dc71226a54"
+                "username": "user_type0_a402acc1ff",
+                "secret": "be74f0855f"
             },
             {
-                "username": "user_type1_1a83a1fc44",
-                "secret": "4e81d75356"
+                "username": "user_type1_92e7b74842",
+                "secret": "3e9015d369"
             },
             {
-                "username": "user_type1_ac9d718c38",
-                "secret": "17e5db093e"
+                "username": "user_type1_1206686d11",
+                "secret": "7fb6a78191"
             },
             {
-                "username": "user_type2_43c7145b8e",
-                "secret": "3c518652c9"
+                "username": "user_type2_6fd23e3339",
+                "secret": "e542b7d66a"
             },
             {
-                "username": "user_type2_9a6a57fe70",
-                "secret": "ba5412269b"
+                "username": "user_type2_4d6c8d507c",
+                "secret": "b3324dfdf5"
             },
             {
-                "username": "user_type3_585408d022",
-                "secret": "d96888adca"
+                "username": "user_type3_393fdcba21",
+                "secret": "bfc62584bd"
             },
             {
-                "username": "user_type3_7d48e0e1a9",
-                "secret": "7dab248416"
+                "username": "user_type3_53381db07b",
+                "secret": "159aa356a9"
             },
             {
-                "username": "user_type4_a781d72759",
-                "secret": "4f31b2b008"
+                "username": "user_type4_4e4c7abd46",
+                "secret": "41b3d35890"
             },
             {
-                "username": "user_type4_43748f2eb6",
-                "secret": "90c08320e8"
+                "username": "user_type4_2caa868bba",
+                "secret": "89977fb045"
             }
         ]
     }
@@ -317,28 +317,8 @@ if (aliased_users.length < 1) {
 }
 
 // Make sure the router has all these credentials.  It actually lets users log in to
-// the app.  Also, give it a handler for switching peer users on logins.
-/**
- * Switches the user that chaincode requests are sent with.  Should be
- * called whenever a different user logs in to the website.
- * @param user The user that logged in.
- */
-function loginHandler(user, callback) {
-    if(user.username && user.secret) {
-        console.log("Switching to peer user")
-        // TODO call the SDK's switch user function here
-        ibc.register(ibc.selectedPeer, user.username, user.secret, function(err, data) {
-            if(err) {
-                var msg = util.format("Error when logging in user: '%s': $s", JSON.stringify(user), JSON.stringify(err));
-                console.log(msg);
-            }
-            else {
-                console.log("Registered user:", JSON.stringify(user), JSON.stringify(data));
-            }
-        });
-    }
-}
-router.setupRouter(aliased_users, loginHandler);
+// the app.
+router.setupRouter(aliased_users);
 
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -361,7 +341,48 @@ if (process.env.VCAP_SERVICES) {
     console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok budddy\n');
     options.chaincode.deployed_name = "";
 }
-ibc.load(options, cb_ready);																//parse/load chaincode
+
+// Filter out the valid user types
+function filter_users(users) {														//this is only needed in a permissioned network
+    var valid_users = [];
+    for (var i = 0; i < users.length; i++) {
+        if (users[i].username.indexOf('user_type1') === 0 || users[i].username.indexOf('user_type4') === 0) {							//type should be 1 for client
+            valid_users.push(users[i]);
+        }
+    }
+    return valid_users;
+}
+
+// 1. Load peer data
+ibc.network(options.network.peers);
+
+// 2. Register users with a peer
+if (options.network.users) {
+    options.network.users = filter_users(options.network.users);				//only use the appropriate IDs filter out the rest
+}
+if (options.network.users && options.network.users.length > 0) {
+    var arr = [];
+    for (var i in options.network.users) {
+        arr.push(i);															//build the list of indexes
+    }
+    async.each(arr, function (i, a_cb) {
+        if (options.network.users[i] && options.network.peers[0]) {											//make sure we still have a user for this network
+            ibc.register(0, options.network.users[i].username, options.network.users[i].secret, a_cb);
+        }
+        else a_cb();
+    }, function (err, data) {
+        load_cc();
+    });
+}
+else {
+    console.log('No membership users found after filtering, assuming this is a network w/o membership');
+    load_cc();
+}
+
+// 3. Deploy the commercial paper chaincode
+function load_cc() {
+    ibc.load_chaincode(options.chaincode, cb_ready);						//download/parse and load chaincode
+}
 
 var chaincode = null;
 function cb_ready(err, cc) {																	//response has chaincode functions
@@ -371,7 +392,7 @@ function cb_ready(err, cc) {																	//response has chaincode functions
     }
     else {
         chaincode = cc;
-        part2.setup(ibc, cc);
+        part2.setup(ibc, cc, users);
         if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
             cc.deploy('createAccounts', ['50'], './cc_summaries', cb_deployed);
         }

@@ -67,7 +67,8 @@ $(document).on('ready', function () {
                     owner: [],
                     issuer: user.name,
                     issueDate: Date.now().toString()
-                }
+                },
+                user: user.username
             };
             if (obj.paper && obj.paper.ticker) {
                 obj.paper.ticker = obj.paper.ticker.toUpperCase();
@@ -89,7 +90,7 @@ $(document).on('ready', function () {
     });
 
     $("#tradeLink").click(function () {
-        ws.send(JSON.stringify({type: "get_open_trades", v: 2}));
+        ws.send(JSON.stringify({type: "get_open_trades", v: 2, user: user.username}));
     });
 
     //login events
@@ -127,7 +128,8 @@ $(document).on('ready', function () {
                     fromCompany: bag.papers[i].issuer,
                     toCompany: user.name,
                     quantity: 1
-                }
+                },
+                user: user.username
             };
             console.log('sending', msg);
             ws.send(JSON.stringify(msg));
@@ -183,10 +185,10 @@ function connect_to_server() {
         connected = true;
         clear_blocks();
         $("#errorNotificationPanel").fadeOut();
-        ws.send(JSON.stringify({type: "chainstats", v: 2}));
-        ws.send(JSON.stringify({type: "get_papers", v: 2}));
+        ws.send(JSON.stringify({type: "chainstats", v: 2, user: user.username}));
+        ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
         if (user.name) {
-            ws.send(JSON.stringify({type: 'get_company', company: user.name}));
+            ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
         }
     }
 
@@ -218,12 +220,16 @@ function connect_to_server() {
                 };
                 new_block(temp);									//send to blockchain.js
             }
-            else if (data.msg === 'company') {							//clear marble knowledge, prepare of incoming marble states
+            else if (data.msg === 'company') {
                 $("#accountBalance").html(formatMoney(data.company.cashBalance));
             }
-            else if (data.msg === 'reset') {							//clear marble knowledge, prepare of incoming marble states
-                ws.send(JSON.stringify({type: "get_papers", v: 2}));
-                ws.send(JSON.stringify({type: 'get_company', company: user.name}));
+            else if (data.msg === 'reset') {
+                // Ask for all available trades and information for the current company
+                ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
+                ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
+            }
+            else if (data.type === 'error') {
+                console.log("Error:", data.error);
             }
         }
         catch (e) {
