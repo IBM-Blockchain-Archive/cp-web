@@ -28,43 +28,28 @@ module.exports.process_msg = function (ws, data) {
         return;
     }
 
-    // Register the user with the peer
-    // Default peer is 0, need to change this if we select a different peer
-    ibc.register(0, user_creds.username, user_creds.secret, function (err, body) {
-
-        // Make sure the user was actually registered
-        if (err) {
-            console.log("Failed to register user " + data.user + " with peer " + 0);
-            console.log("Error:", JSON.stringify(err));
-            sendMsg({type: "error", error: "Failed to register user"});
+    // Process the message
+    console.log('message type:', data.type);
+    console.log('message user:', data.user);
+    if (data.type == 'create') {
+        if (data.paper && data.paper.ticker) {
+            console.log('!', data.paper);
+            chaincode.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);				//create a new paper
         }
-
-        console.log("Peer user registration:", JSON.stringify(body));
-
-        // Process the message
-        console.log('message type:', data.type);
-        console.log('message user:', data.user);
-        if (data.type == 'create') {
-            if (data.paper && data.paper.ticker) {
-                console.log('!', data.paper);
-                chaincode.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);				//create a new paper
-            }
-        }
-        else if (data.type == 'get_papers') {
-            chaincode.read('GetAllCPs', data.user, cb_got_papers);
-        }
-        else if (data.type == 'transfer_paper') {
-            console.log('transfering msg', data.transfer);
-            chaincode.transferPaper([JSON.stringify(data.transfer)], data.user);
-        }
-        else if (data.type == 'chainstats') {
-            ibc.chain_stats(cb_chainstats);
-        }
-        else if (data.type == 'get_company') {
-            chaincode.query(['GetCompany', data.company], data.user, cb_got_company);
-        }
-
-    });
+    }
+    else if (data.type == 'get_papers') {
+        chaincode.read('GetAllCPs', data.user, cb_got_papers);
+    }
+    else if (data.type == 'transfer_paper') {
+        console.log('transfering msg', data.transfer);
+        chaincode.transferPaper([JSON.stringify(data.transfer)], data.user);
+    }
+    else if (data.type == 'chainstats') {
+        ibc.chain_stats(cb_chainstats);
+    }
+    else if (data.type == 'get_company') {
+        chaincode.query(['GetCompany', data.company], data.user, cb_got_company);
+    }
 
     function cb_got_papers(e, papers) {
         if (e != null) {

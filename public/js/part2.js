@@ -187,7 +187,7 @@ function connect_to_server() {
         $("#errorNotificationPanel").fadeOut();
         ws.send(JSON.stringify({type: "chainstats", v: 2, user: user.username}));
         ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
-        if (user.name) {
+        if (user.name && user.role !== "auditor") {
             ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
         }
     }
@@ -226,7 +226,9 @@ function connect_to_server() {
             else if (data.msg === 'reset') {
                 // Ask for all available trades and information for the current company
                 ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
-                ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
+                if(user.role !== "auditor") {
+                    ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
+                }
             }
             else if (data.type === 'error') {
                 console.log("Error:", data.error);

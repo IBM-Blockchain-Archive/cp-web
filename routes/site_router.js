@@ -21,9 +21,6 @@ var util = require('util');
 var rest = require("../utils/rest.js");
 var creds = require("../user_creds.json");
 
-// Need to be able to switch peer users when a new user logs in
-var login_handler;
-
 // ============================================================================================================================
 // Home
 // ============================================================================================================================

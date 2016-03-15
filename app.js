@@ -139,66 +139,66 @@ var manual = {
     "credentials": {
         "peers": [
             {
-                "discovery_host": "169.44.63.199",
-                "discovery_port": "37137",
-                "api_host": "169.44.63.199",
-                "api_port": "37138",
+                "discovery_host": "169.44.38.116",
+                "discovery_port": "34032",
+                "api_host": "169.44.38.116",
+                "api_port": "34033",
                 "type": "peer",
-                "network_id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d",
-                "id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d_vp1",
-                "api_url": "http://169.44.63.199:37138"
+                "network_id": "c08b03d9-00ce-47cb-987d-0fe734d931ae",
+                "id": "c08b03d9-00ce-47cb-987d-0fe734d931ae_vp1",
+                "api_url": "http://169.44.38.116:34033"
             },
             {
-                "discovery_host": "169.44.38.109",
-                "discovery_port": "38594",
-                "api_host": "169.44.38.109",
-                "api_port": "38595",
+                "discovery_host": "169.44.38.111",
+                "discovery_port": "33993",
+                "api_host": "169.44.38.111",
+                "api_port": "33994",
                 "type": "peer",
-                "network_id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d",
-                "id": "a55d8675-2176-4f79-bac4-b2aef4c7e80d_vp2",
-                "api_url": "http://169.44.38.109:38595"
+                "network_id": "c08b03d9-00ce-47cb-987d-0fe734d931ae",
+                "id": "c08b03d9-00ce-47cb-987d-0fe734d931ae_vp2",
+                "api_url": "http://169.44.38.111:33994"
             }
         ],
         "users": [
             {
-                "username": "user_type0_dd5846a68f",
-                "secret": "0654e6cd44"
+                "username": "user_type0_1f9b655d53",
+                "secret": "aae0fe705f"
             },
             {
-                "username": "user_type0_a402acc1ff",
-                "secret": "be74f0855f"
+                "username": "user_type0_fd39a3b1f9",
+                "secret": "724621eeeb"
             },
             {
-                "username": "user_type1_92e7b74842",
-                "secret": "3e9015d369"
+                "username": "user_type1_24f756743d",
+                "secret": "3b449445dd"
             },
             {
-                "username": "user_type1_1206686d11",
-                "secret": "7fb6a78191"
+                "username": "user_type1_1c90f046ef",
+                "secret": "2d5663275f"
             },
             {
-                "username": "user_type2_6fd23e3339",
-                "secret": "e542b7d66a"
+                "username": "user_type2_ac8a7301fe",
+                "secret": "fdc8af92a2"
             },
             {
-                "username": "user_type2_4d6c8d507c",
-                "secret": "b3324dfdf5"
+                "username": "user_type2_892cf904d9",
+                "secret": "736e76552e"
             },
             {
-                "username": "user_type3_393fdcba21",
-                "secret": "bfc62584bd"
+                "username": "user_type3_ed4e85eeea",
+                "secret": "3673274ac1"
             },
             {
-                "username": "user_type3_53381db07b",
-                "secret": "159aa356a9"
+                "username": "user_type3_e4e00deca7",
+                "secret": "3bbbb29c30"
             },
             {
-                "username": "user_type4_4e4c7abd46",
-                "secret": "41b3d35890"
+                "username": "user_type4_6a2fd6c79f",
+                "secret": "a3ad3dd8f3"
             },
             {
-                "username": "user_type4_2caa868bba",
-                "secret": "89977fb045"
+                "username": "user_type4_bd83146700",
+                "secret": "7ddbb3184a"
             }
         ]
     }
@@ -257,59 +257,58 @@ for (var i = 0; i < user_list.length; i++) {
 }
 
 console.log("Merging the blockchain and user_creds.json users");
+var auditor_tag = "type4";
+var user_tag = "type0";
 var aliased_users = [];
 var vcap_ind = 0, user_ind = 0, auditor_ind = 0;
 var user_logged = false, auditor_logged = false;
 while (vcap_ind < users.length && (user_ind < user_creds.length || auditor_ind < auditor_creds.length)) {
 
-    // Ignore Type0's, as they should only be associated with peers
-    if (users[vcap_ind].username.toLowerCase().indexOf('type0') < 0) {
+    // Combine the users!
+    var new_user = {
+        username: users[vcap_ind].username,
+        secret: users[vcap_ind].secret,
+        name: "",
+        password: "",
+        role: ""
+    };
 
-        // Combine the users!
-        var new_user = {
-            username: users[vcap_ind].username,
-            secret: users[vcap_ind].secret,
-            name: "",
-            password: "",
-            role: ""
-        };
+    // Check for auditors
+    if (new_user.username.toLowerCase().indexOf(auditor_tag) > -1) {
 
-        // Check for auditors (type4 users)
-        if (new_user.username.toLowerCase().indexOf('type4') > -1) {
+        // Can't make a user if we don't have enough aliases
+        if (auditor_ind < auditor_creds.length) {
 
-            // Can't make a user if we don't have enough aliases
-            if (auditor_ind < auditor_creds.length) {
-
-                // Add the use user to the list
-                new_user.name = auditor_creds[auditor_ind].username;
-                new_user.password = auditor_creds[auditor_ind].password;
-                new_user.role = "auditor";
-                aliased_users.push(new_user);
-                auditor_ind++;
-            } else {
-                if (!user_logged) {
-                    console.log("Didn't provide enough auditors to cover type4 service credentials");
-                    user_logged = true;
-                }
-            }
+            // Add the use user to the list
+            new_user.name = auditor_creds[auditor_ind].username;
+            new_user.password = auditor_creds[auditor_ind].password;
+            new_user.role = "auditor";
+            aliased_users.push(new_user);
+            auditor_ind++;
         } else {
+            if (!user_logged) {
+                console.log("Didn't provide enough auditors to cover type4 service credentials");
+                user_logged = true;
+            }
+        }
+    } else if (new_user.username.toLowerCase().indexOf(user_tag) > -1) {
 
-            // Must be a regular user
-            if (user_ind < user_creds.length) {
-                // Add the use user to the list
-                new_user.name = user_creds[user_ind].username;
-                new_user.password = user_creds[user_ind].password;
-                new_user.role = "user";
-                aliased_users.push(new_user);
-                user_ind++;
-            } else {
-                if (!auditor_logged) {
-                    console.log("Didn't provide enough users to cover service credentials");
-                    auditor_logged = true;
-                }
+        // Must be a regular user
+        if (user_ind < user_creds.length) {
+            // Add the use user to the list
+            new_user.name = user_creds[user_ind].username;
+            new_user.password = user_creds[user_ind].password;
+            new_user.role = "user";
+            aliased_users.push(new_user);
+            user_ind++;
+        } else {
+            if (!auditor_logged) {
+                console.log("Didn't provide enough users to cover service credentials");
+                auditor_logged = true;
             }
         }
     }
+
     vcap_ind++;
 }
 if (aliased_users.length < 1) {
@@ -326,7 +325,7 @@ router.setupRouter(aliased_users);
 var options = {
     network: {
         peers: peers,
-        users: users
+        users: aliased_users
     },
     chaincode: {
         zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',
@@ -342,24 +341,10 @@ if (process.env.VCAP_SERVICES) {
     options.chaincode.deployed_name = "";
 }
 
-// Filter out the valid user types
-function filter_users(users) {														//this is only needed in a permissioned network
-    var valid_users = [];
-    for (var i = 0; i < users.length; i++) {
-        if (users[i].username.indexOf('user_type1') === 0 || users[i].username.indexOf('user_type4') === 0) {							//type should be 1 for client
-            valid_users.push(users[i]);
-        }
-    }
-    return valid_users;
-}
-
 // 1. Load peer data
 ibc.network(options.network.peers);
 
 // 2. Register users with a peer
-if (options.network.users) {
-    options.network.users = filter_users(options.network.users);				//only use the appropriate IDs filter out the rest
-}
 if (options.network.users && options.network.users.length > 0) {
     var arr = [];
     for (var i in options.network.users) {
