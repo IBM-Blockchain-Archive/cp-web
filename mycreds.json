@@ -1,0 +1,68 @@
+{
+  "credentials": {
+    "peers": [
+      {
+        "discovery_host": "169.44.38.116",
+        "discovery_port": "34032",
+        "api_host": "169.44.38.116",
+        "api_port": "34033",
+        "type": "peer",
+        "network_id": "c08b03d9-00ce-47cb-987d-0fe734d931ae",
+        "id": "c08b03d9-00ce-47cb-987d-0fe734d931ae_vp1",
+        "api_url": "http://169.44.38.116:34033"
+      },
+      {
+        "discovery_host": "169.44.38.111",
+        "discovery_port": "33993",
+        "api_host": "169.44.38.111",
+        "api_port": "33994",
+        "type": "peer",
+        "network_id": "c08b03d9-00ce-47cb-987d-0fe734d931ae",
+        "id": "c08b03d9-00ce-47cb-987d-0fe734d931ae_vp2",
+        "api_url": "http://169.44.38.111:33994"
+      }
+    ],
+    "users": [
+      {
+        "username": "user_type0_1f9b655d53",
+        "secret": "aae0fe705f"
+      },
+      {
+        "username": "user_type0_fd39a3b1f9",
+        "secret": "724621eeeb"
+      },
+      {
+        "username": "user_type1_24f756743d",
+        "secret": "3b449445dd"
+      },
+      {
+        "username": "user_type1_1c90f046ef",
+        "secret": "2d5663275f"
+      },
+      {
+        "username": "user_type2_ac8a7301fe",
+        "secret": "fdc8af92a2"
+      },
+      {
+        "username": "user_type2_892cf904d9",
+        "secret": "736e76552e"
+      },
+      {
+        "username": "user_type3_ed4e85eeea",
+        "secret": "3673274ac1"
+      },
+      {
+        "username": "user_type3_e4e00deca7",
+        "secret": "3bbbb29c30"
+      },
+      {
+        "username": "user_type4_6a2fd6c79f",
+        "secret": "a3ad3dd8f3"
+      },
+      {
+        "username": "user_type4_bd83146700",
+        "secret": "7ddbb3184a"
+      }
+    ]
+  }
+}

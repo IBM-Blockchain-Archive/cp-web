@@ -135,74 +135,8 @@ var ibc = new Ibc1();
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
 // ==================================
-var manual = {
-    "credentials": {
-        "peers": [
-            {
-                "discovery_host": "169.44.38.116",
-                "discovery_port": "34032",
-                "api_host": "169.44.38.116",
-                "api_port": "34033",
-                "type": "peer",
-                "network_id": "c08b03d9-00ce-47cb-987d-0fe734d931ae",
-                "id": "c08b03d9-00ce-47cb-987d-0fe734d931ae_vp1",
-                "api_url": "http://169.44.38.116:34033"
-            },
-            {
-                "discovery_host": "169.44.38.111",
-                "discovery_port": "33993",
-                "api_host": "169.44.38.111",
-                "api_port": "33994",
-                "type": "peer",
-                "network_id": "c08b03d9-00ce-47cb-987d-0fe734d931ae",
-                "id": "c08b03d9-00ce-47cb-987d-0fe734d931ae_vp2",
-                "api_url": "http://169.44.38.111:33994"
-            }
-        ],
-        "users": [
-            {
-                "username": "user_type0_1f9b655d53",
-                "secret": "aae0fe705f"
-            },
-            {
-                "username": "user_type0_fd39a3b1f9",
-                "secret": "724621eeeb"
-            },
-            {
-                "username": "user_type1_24f756743d",
-                "secret": "3b449445dd"
-            },
-            {
-                "username": "user_type1_1c90f046ef",
-                "secret": "2d5663275f"
-            },
-            {
-                "username": "user_type2_ac8a7301fe",
-                "secret": "fdc8af92a2"
-            },
-            {
-                "username": "user_type2_892cf904d9",
-                "secret": "736e76552e"
-            },
-            {
-                "username": "user_type3_ed4e85eeea",
-                "secret": "3673274ac1"
-            },
-            {
-                "username": "user_type3_e4e00deca7",
-                "secret": "3bbbb29c30"
-            },
-            {
-                "username": "user_type4_6a2fd6c79f",
-                "secret": "a3ad3dd8f3"
-            },
-            {
-                "username": "user_type4_bd83146700",
-                "secret": "7ddbb3184a"
-            }
-        ]
-    }
-};
+//var manual = require('mycreds.json');
+var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
 
 var peers = manual.credentials.peers;
 console.log('loading hardcoded peers');
@@ -238,79 +172,12 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
 }
 
 // Credentials from user_creds.json should work as aliases for service users
-var user_list = require('./user_creds.json');
+var user_list = JSON.parse(fs.readFileSync('user_creds.json', 'utf8'));
 
-// Separate the user credentials into lists based on the user role
-var user_creds = [];
-var auditor_creds = [];
-for (var i = 0; i < user_list.length; i++) {
-    var current = user_list[i];
-
-    if (!current.role || current.role === "user") {
-        user_creds.push(current);
-    } else if (current.role === "auditor") {
-        auditor_creds.push(current);
-    } else {
-        var msg = util.format("Skipped user '%s': role '%s' is not defined.", current.username, current.role);
-        console.log(msg);
-    }
-}
-
-console.log("Merging the blockchain and user_creds.json users");
-var auditor_tag = "type4";
-var user_tag = "type0";
-var aliased_users = [];
-var vcap_ind = 0, user_ind = 0, auditor_ind = 0;
-var user_logged = false, auditor_logged = false;
-while (vcap_ind < users.length && (user_ind < user_creds.length || auditor_ind < auditor_creds.length)) {
-
-    // Combine the users!
-    var new_user = {
-        username: users[vcap_ind].username,
-        secret: users[vcap_ind].secret,
-        name: "",
-        password: "",
-        role: ""
-    };
-
-    // Check for auditors
-    if (new_user.username.toLowerCase().indexOf(auditor_tag) > -1) {
-
-        // Can't make a user if we don't have enough aliases
-        if (auditor_ind < auditor_creds.length) {
-
-            // Add the use user to the list
-            new_user.name = auditor_creds[auditor_ind].username;
-            new_user.password = auditor_creds[auditor_ind].password;
-            new_user.role = "auditor";
-            aliased_users.push(new_user);
-            auditor_ind++;
-        } else {
-            if (!user_logged) {
-                console.log("Didn't provide enough auditors to cover type4 service credentials");
-                user_logged = true;
-            }
-        }
-    } else if (new_user.username.toLowerCase().indexOf(user_tag) > -1) {
-
-        // Must be a regular user
-        if (user_ind < user_creds.length) {
-            // Add the use user to the list
-            new_user.name = user_creds[user_ind].username;
-            new_user.password = user_creds[user_ind].password;
-            new_user.role = "user";
-            aliased_users.push(new_user);
-            user_ind++;
-        } else {
-            if (!auditor_logged) {
-                console.log("Didn't provide enough users to cover service credentials");
-                auditor_logged = true;
-            }
-        }
-    }
-
-    vcap_ind++;
-}
+// Merge the user list and the service credentials so that the list users work as aliases for the
+// service users
+var user_parser = require('./utils/users');
+var aliased_users = user_parser(user_list, users);
 if (aliased_users.length < 1) {
     console.error("There aren't enough users for the app to work!");
 }
