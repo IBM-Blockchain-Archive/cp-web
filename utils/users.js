@@ -2,8 +2,16 @@
  * Created by davery on 3/16/2016.
  */
 "use strict";
+// This connector let's us register users against a CA
+var connector = require('./loopback-connector-obcca');
+var dataSource = {};
 
-module.exports = function parseUsers(user_list, service_list) {
+var roles = {
+    auditor: 4,
+    user: 1
+};
+
+module.exports.registerUsers = function registerUsers(user_list, ca_host, ca_port, cb) {
     // Separate the user credentials into lists based on the user role
     var user_creds = [];
     var auditor_creds = [];
@@ -11,6 +19,7 @@ module.exports = function parseUsers(user_list, service_list) {
         var current = user_list[i];
 
         if (!current.role || current.role === "user") {
+            current.role = "user"; // Make sure everyone has an explicit role
             user_creds.push(current);
         } else if (current.role === "auditor") {
             auditor_creds.push(current);
@@ -20,110 +29,68 @@ module.exports = function parseUsers(user_list, service_list) {
         }
     }
 
-    console.log("Merging the service and user_creds.json users");
-    // User tags from blockchain service
-    var auditor_tag = "type4";
-    var user_tag = "type0";
-    // (HACK) User tags from the interconnect demo
-    var ict_auditor_tag = "auditor";
-    var ict_user_tag = "company";
+    // Register users against the CA
+    var processed = 0;
+    var all_users = auditor_creds.concat(user_creds);
+    var aliased_users = [];     // User's who have been newly registered against the CA, register with peers
+    for (var user in all_users) {
+        var current = all_users[user];
 
-    var aliased_users = [];
-    var vcap_ind = 0, user_ind = 0, auditor_ind = 0;
-    var user_logged = false, auditor_logged = false;
-    var unrecognized = [];
-    while (vcap_ind < service_list.length && (user_ind < user_creds.length || auditor_ind < auditor_creds.length)) {
-
-        // Combine the users!
-        var new_user = {
-            username: service_list[vcap_ind].username,
-            secret: service_list[vcap_ind].secret,
-            name: "",
-            password: "",
-            role: ""
-        };
-
-        // Check for auditors
-        if (new_user.username.toLowerCase().indexOf(auditor_tag) > -1) {
-
-            // Can't make a user if we don't have enough aliases
-            if (auditor_ind < auditor_creds.length) {
-
-                // Add the use user to the list
-                new_user.name = auditor_creds[auditor_ind].username;
-                new_user.password = auditor_creds[auditor_ind].password;
-                new_user.role = "auditor";
-                aliased_users.push(new_user);
-                auditor_ind++;
-            } else {
-                if (!auditor_logged) {
-                    console.log("Didn't provide enough auditors to cover type4 service credentials");
-                    auditor_logged = true;
+        var role = roles[current.role];
+        registerUser(current.username, current.password, role, current.role, ca_host, ca_port, function (err, user) {
+            if (err) {
+                // Just eat errors until this user login process is more developed
+                console.log("Trouble registering user:", current.username, err.message);
+                if (++processed == all_users.length) {
+                    cb(null, aliased_users);
                 }
             }
-        } else if (new_user.username.toLowerCase().indexOf(user_tag) > -1) {
-
-            // Must be a regular user
-            if (user_ind < user_creds.length) {
-                // Add the use user to the list
-                new_user.name = user_creds[user_ind].username;
-                new_user.password = user_creds[user_ind].password;
-                new_user.role = "user";
-                aliased_users.push(new_user);
-                user_ind++;
-            } else {
-                if (!user_logged) {
-                    console.log("Didn't provide enough users to cover service credentials");
-                    user_logged = true;
-                }
+            
+            aliased_users.push(user);
+            if (++processed == all_users.length) {
+                cb(null, aliased_users);
             }
-        } else {
-            // (HACK) Untagged usernames probably means these are the interconnect users
-            // company[1-45] will be the users
-            // auditor[1-5] should be the auditors
-            if (new_user.username.toLowerCase().indexOf(ict_auditor_tag) > -1) {
-                // Can't make a user if we don't have enough aliases
-                if (auditor_ind < auditor_creds.length) {
-
-                    // Add the use user to the list
-                    new_user.name = auditor_creds[auditor_ind].username;
-                    new_user.password = auditor_creds[auditor_ind].password;
-                    new_user.role = "auditor";
-                    aliased_users.push(new_user);
-                    auditor_ind++;
-                } else {
-                    if (!user_logged) {
-                        console.log("Didn't provide enough auditors to cover auditor service credentials");
-                        user_logged = true;
-                    }
-                }
-            } else if (new_user.username.toLowerCase().indexOf(ict_user_tag) > -1) {
-                // Must be a regular user
-                if (user_ind < user_creds.length) {
-                    // Add the use user to the list
-                    new_user.name = user_creds[user_ind].username;
-                    new_user.password = user_creds[user_ind].password;
-                    new_user.role = "user";
-                    aliased_users.push(new_user);
-                    user_ind++;
-                } else {
-                    if (!user_logged) {
-                        console.log("Didn't provide enough users to cover service credentials");
-                        user_logged = true;
-                    }
-                }
-            } else {
-
-                // No idea where this user came from
-                unrecognized.push(new_user.username);
-            }
-        }
-
-        vcap_ind++;
+        })
     }
-    if (unrecognized.length > 0) {
-        console.log("unrecognized users:", unrecognized);
-    }
-
-    return aliased_users;
 };
+
+function registerUser(username, password, role, role_name, ca_host, ca_port, cb) {
+    // Initialize the connector to the CA
+    dataSource.settings = {
+        host: ca_host,
+        port: ca_port
+    };
+    connector.initialize(dataSource);
+
+    // Register the user on the CA
+    var user = {
+        identity: username,
+        role: role
+    };
+
+    console.log("Registering user against CA:", JSON.stringify(user));
+    dataSource.connector.registerUser(user, function (err, response) {
+        if (err) {
+            console.error("RegisterUser failed:", username, err.message);
+            // Pass up a user, in case the error was that they were already registered
+            var unaliased_user = {
+                username: username,
+                name: username,
+                password: password,
+                role: role_name
+            };
+            cb(err, unaliased_user);
+        } else {
+            console.log("RegisterUser succeeded:", JSON.stringify(response));
+            // Send the response (username and secret) to the callback
+            var aliased_user = {
+                username: username,
+                name: response.username,
+                password: password,
+                secret: response.token,
+                role: role_name
+            };
+            cb(null, aliased_user);
+        }
+    });
+}

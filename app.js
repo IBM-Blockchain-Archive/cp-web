@@ -135,11 +135,20 @@ var ibc = new Ibc1();
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
 // ==================================
-//var manual = require('mycreds.json');
 var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
 
 var peers = manual.credentials.peers;
 console.log('loading hardcoded peers');
+
+var ca = {
+    api_host: null,
+    api_port: null
+};
+if (manual.credentials.ca) {
+    ca = manual.credentials.ca;
+    console.log('loading hardcoded ca');
+}
+
 var users = null;																		//users are only found if security is on
 if (manual.credentials.users) users = manual.credentials.users;
 console.log('loading hardcoded users');
@@ -174,61 +183,81 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
 // Credentials from user_creds.json should work as aliases for service users
 var user_list = JSON.parse(fs.readFileSync('user_creds.json', 'utf8'));
 
+// Options for the blockchain network
+var options = {};
+
 // Merge the user list and the service credentials so that the list users work as aliases for the
 // service users
 var user_parser = require('./utils/users');
-var aliased_users = user_parser(user_list, users);
-if (aliased_users.length < 1) {
-    console.error("There aren't enough users for the app to work!");
-}
+var ws_users = []; // For letting the wss do credential checking
+//var aliased_users = user_parser.parseUsers(user_list, users);
+user_parser.registerUsers(user_list, ca.api_host, ca.api_port, function (err, aliased_users) {
+    if (err) {
+        console.error("Failed to alias users:", err)
+    }
+    console.log("Registered", aliased_users.length, "users");
+    if (aliased_users.length < 1) {
+        console.error("There aren't enough users for the app to work!");
+    }
 
-// Make sure the router has all these credentials.  It actually lets users log in to
-// the app.
-router.setupRouter(aliased_users);
+    // Make sure the router has all these credentials.  It actually lets users log in to
+    // the app.
+    router.setupRouter(aliased_users);
+
+    // Add one of the hardcoded users so we can deploy chaincode
+    ws_users = aliased_users;
+    aliased_users.push(users[0]);
+
+    // Start up the network!!
+    configure_network(aliased_users);
+});
 
 // ==================================
 // configure ibm-blockchain-js sdk
 // ==================================
-var options = {
-    network: {
-        peers: peers,
-        users: aliased_users
-    },
-    chaincode: {
-        zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',
-        unzip_dir: 'cp-chaincode-master',									//subdirectroy name of chaincode after unzipped
-        git_url: 'https://github.com/IBM-Blockchain/cp-chaincode',			//GO git http url
+function configure_network(aliased_users) {
 
-        //hashed cc name from prev deployment
-        //deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
-    }
-};
-if (process.env.VCAP_SERVICES) {
-    console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok budddy\n');
-    options.chaincode.deployed_name = "";
-}
+    options = {
+        network: {
+            peers: peers,
+            users: aliased_users
+        },
+        chaincode: {
+            zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',
+            unzip_dir: 'cp-chaincode-master',									//subdirectroy name of chaincode after unzipped
+            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode',			//GO git http url
 
-// 1. Load peer data
-ibc.network(options.network.peers);
-
-// 2. Register users with a peer
-if (options.network.users && options.network.users.length > 0) {
-    var arr = [];
-    for (var i in options.network.users) {
-        arr.push(i);															//build the list of indexes
-    }
-    async.each(arr, function (i, a_cb) {
-        if (options.network.users[i] && options.network.peers[0]) {											//make sure we still have a user for this network
-            ibc.register(0, options.network.users[i].username, options.network.users[i].secret, a_cb);
+            //hashed cc name from prev deployment
+            //deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
         }
-        else a_cb();
-    }, function (err, data) {
+    };
+    if (process.env.VCAP_SERVICES) {
+        console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok budddy\n');
+        options.chaincode.deployed_name = "";
+    }
+
+    // 1. Load peer data
+    ibc.network(options.network.peers);
+
+    // 2. Register users with a peer
+    if (options.network.users && options.network.users.length > 0) {
+        var arr = [];
+        for (var i in options.network.users) {
+            arr.push(i);															//build the list of indexes
+        }
+        async.each(arr, function (i, a_cb) {
+            if (options.network.users[i] && options.network.users[i].secret && options.network.peers[0]) {											//make sure we still have a user for this network
+                ibc.register(0, options.network.users[i].username, options.network.users[i].secret, a_cb);
+            }
+            else a_cb();
+        }, function (err, data) {
+            load_cc();
+        });
+    }
+    else {
+        console.log('No membership users found after filtering, assuming this is a network w/o membership');
         load_cc();
-    });
-}
-else {
-    console.log('No membership users found after filtering, assuming this is a network w/o membership');
-    load_cc();
+    }
 }
 
 // 3. Deploy the commercial paper chaincode
@@ -244,7 +273,7 @@ function cb_ready(err, cc) {																	//response has chaincode functions
     }
     else {
         chaincode = cc;
-        part2.setup(ibc, cc, users);
+        part2.setup(ibc, cc, ws_users);
         if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
             cc.deploy('createAccounts', ['50'], './cc_summaries', cb_deployed);
         }

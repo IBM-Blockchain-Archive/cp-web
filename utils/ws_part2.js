@@ -6,14 +6,27 @@ var ibc = {};
 var chaincode = {};
 var async = require('async');
 var credentials = {};
+var registrar;
 
-module.exports.setup = function (sdk, cc, creds) {
+module.exports.setup = function (sdk, cc, creds, register) {
     ibc = sdk;
     chaincode = cc;
     credentials = creds;
+    registrar = register;
 };
 
 module.exports.process_msg = function (ws, data) {
+
+    // Special Case: Client passes in CA from dashboard so we can register users
+    if(data.type === "ca_info") {
+        if(data.ca_host && data.ca_port) {
+            console.log("passing along user credentials");
+            if(registrar) registrar(data.ca_host, data.ca_port);
+        } else {
+            sendMsg({type: "error", error: "host and port required to connect to ca"});
+        }
+        return;
+    }
 
     // Must have a user to invoke chaincode
     if (!data.user || data.user === '') {

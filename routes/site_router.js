@@ -68,13 +68,13 @@ router.route("/:page").post(function (req, res) {
         console.log("Checking against user:", JSON.stringify(current));
 
         // Use the friendly name and password to log in to the app
-        if (current.name === req.body.username) {
+        if (current.username === req.body.username) {
             if (current.password && current.password === req.body.password) {
                 var msg = util.format("User %s has logged in as network user %s",
                     current.name, current.username);
                 console.log(msg);
                 req.session.username = current.username;
-                req.session.name = current.name;
+                req.session.name = current.username;
                 req.session.role = current.role;
                 req.session.error_msg = null;
 
@@ -106,7 +106,7 @@ module.exports.setupRouter = function (vcap_users) {
         console.log("Loading credentials into router");
         creds = vcap_users;
     } else {
-        console.log("Credentials not given to router.  Using user_creds.json");
+        console.log("Credentials not given to router. Using user_creds.json");
     }
 };
 
