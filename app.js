@@ -107,6 +107,8 @@ console.log('------------------------------------------ Server Up - ' + host + '
 if (process.env.PRODUCTION) console.log('Running using Production settings');
 else console.log('Running using Developer settings');
 
+// Track the application deployments
+require("cf-deployment-tracker-client").track();
 
 // ============================================================================================================================
 // ============================================================================================================================

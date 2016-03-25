@@ -1,7 +1,7 @@
 ---
 applications:
 - disk_quota: 1024M
-  random-route: true
+  host: cp-demo
   name: cp-demo
   command: "node app.js"
   path: "."
