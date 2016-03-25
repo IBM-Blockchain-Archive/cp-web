@@ -95,6 +95,9 @@ app.use(function (err, req, res, next) {		// = development error handler, print 
     res.render('template/error', {bag: req.bag});
 });
 
+// Track the application deployments
+require("cf-deployment-tracker-client").track();
+
 // ============================================================================================================================
 // 														Launch Webserver
 // ============================================================================================================================
