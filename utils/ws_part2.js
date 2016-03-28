@@ -5,39 +5,17 @@
 var ibc = {};
 var chaincode = {};
 var async = require('async');
-var credentials = {};
-var registrar;
 
-module.exports.setup = function (sdk, cc, creds, register) {
+module.exports.setup = function (sdk, cc) {
     ibc = sdk;
     chaincode = cc;
-    credentials = creds;
-    registrar = register;
 };
 
 module.exports.process_msg = function (ws, data) {
 
-    // Special Case: Client passes in CA from dashboard so we can register users
-    if(data.type === "ca_info") {
-        if(data.ca_host && data.ca_port) {
-            console.log("passing along user credentials");
-            if(registrar) registrar(data.ca_host, data.ca_port);
-        } else {
-            sendMsg({type: "error", error: "host and port required to connect to ca"});
-        }
-        return;
-    }
-
     // Must have a user to invoke chaincode
     if (!data.user || data.user === '') {
         sendMsg({type: "error", error: "user not provided in message"});
-        return;
-    }
-
-    // Verify that we actually have this user
-    var user_creds;
-    if (!(user_creds = getCredentials(credentials, data.user))) {
-        sendMsg({type: "error", error: "username not found"});
         return;
     }
 
@@ -142,23 +120,3 @@ module.exports.process_msg = function (ws, data) {
         }
     }
 };
-
-/**
- * Searches a list of user credentials for the given user.  Used
- * to provide the username and secret for registering a user with a
- * peer.
- * @param list The list of user credentials to search.
- * @param name The name of the user to search for.
- * @returns {{}} The username and secret for the given user if found, undefined otherwise.
- */
-function getCredentials(list, name) {
-    "use strict";
-    var ret;
-    for (var i = 0; i < list.length; i++) {
-        if (list[i].username === name) {
-            ret = list[i];
-            break;
-        }
-    }
-    return ret;
-}

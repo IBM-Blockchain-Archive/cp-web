@@ -19,19 +19,58 @@ block navpanel
 // --------------- Main Stuff  -------------- //
 block content
 	#contentPanel
-		h1 Login
-		hr
-		
-		
-		form(method="POST" action="#" style="text-align: center;")
-			p.hint 
-				!{bag.session.error_msg}
+		#loginContainer
+			h1 Login
+			hr
+
+
+			form(method="POST" action="#" style="text-align: center;")
+				p.hint
+					!{bag.session.error_msg}
+					br
+					br
+				p
+					.hint Username
+					input(type="text" placeholder="username" name="username" required)
+				p
+					.hint Password
+					input(type="password" name="password" required)
+				button(type="submit")#loginButton Login
+		br
+		br
+		br
+		#registerContainer
+			h1 Register
+			hr
+
+			form(method="POST" action="#" style="text-align: center;")
+				p.hint
+					!{bag.session.reg_error_msg}
+					!{bag.session.registration}
+					br
+					br
+				p
+					.hint CA Host
+					input#register_ca_host(type="text" placeholder="host" name="ca_host" required)
+				p
+					.hint CA Port
+					input#register_ca_port(type="number" placeholder="port" name="ca_port" required)
+				p
+					.hint Username
+					input#register_username(type="text" placeholder="username" name="username" required)
+				button(type="submit")#registerButton Register
+
 				br
 				br
-			p
-				.hint Username
-				input(type="text" placeholder="username" name="username")
-			p
-				.hint Password
-				input(type="password" name="password")
-			button(type="submit")#loginButton Login
+				p.
+					The connection information for the CA can be found in the dashboard for the blockchain
+					service that was created for this application. This will not be necessary in the future.
+
+				br
+				br
+				p.
+					User roles are assigned through tags in the user name.  Include the string 'auditor' in your
+					user name to register as that user type.  Everyone else needs to have a username of the form:
+					"companyX", where X is a number from 1 to 50.  Updates to the chaincode will remove this
+					limitation in the future.
+

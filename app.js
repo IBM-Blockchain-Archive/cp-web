@@ -183,47 +183,27 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
     }
 }
 
-// Credentials from user_creds.json should work as aliases for service users
-var user_list = JSON.parse(fs.readFileSync('user_creds.json', 'utf8'));
-
 // Options for the blockchain network
 var options = {};
 
 // Merge the user list and the service credentials so that the list users work as aliases for the
 // service users
 var user_parser = require('./utils/users');
-var ws_users = []; // For letting the wss do credential checking
-//var aliased_users = user_parser.parseUsers(user_list, users);
-user_parser.registerUsers(user_list, ca.api_host, ca.api_port, function (err, aliased_users) {
-    if (err) {
-        console.error("Failed to alias users:", err)
-    }
-    console.log("Registered", aliased_users.length, "users");
-    if (aliased_users.length < 1) {
-        console.error("There aren't enough users for the app to work!");
-    }
+user_parser.setup(ibc);
 
-    // Make sure the router has all these credentials.  It actually lets users log in to
-    // the app.
-    router.setupRouter(aliased_users);
+// Start up the network!!
+configure_network();
 
-    // Add one of the hardcoded users so we can deploy chaincode
-    ws_users = aliased_users;
-    aliased_users.push(users[0]);
-
-    // Start up the network!!
-    configure_network(aliased_users);
-});
 
 // ==================================
 // configure ibm-blockchain-js sdk
 // ==================================
-function configure_network(aliased_users) {
+function configure_network() {
 
     options = {
         network: {
             peers: peers,
-            users: aliased_users
+            users: users
         },
         chaincode: {
             zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',
@@ -238,7 +218,7 @@ function configure_network(aliased_users) {
         console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok budddy\n');
         options.chaincode.deployed_name = "";
     }
-
+    
     // 1. Load peer data
     ibc.network(options.network.peers);
 
@@ -276,7 +256,7 @@ function cb_ready(err, cc) {																	//response has chaincode functions
     }
     else {
         chaincode = cc;
-        part2.setup(ibc, cc, ws_users);
+        part2.setup(ibc, cc, users);
         if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
             cc.deploy('createAccounts', ['50'], './cc_summaries', cb_deployed);
         }

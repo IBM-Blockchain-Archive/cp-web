@@ -49,6 +49,11 @@ $(document).on('ready', function () {
             $("#createLink").show();
             $("#tradeLink").show();
         }
+    } else {
+        
+        // Display the login and user registration links
+        $("#loginLink").show();
+        $("#registerLink").show();
     }
 
     // =================================================================================
@@ -80,11 +85,7 @@ $(document).on('ready', function () {
         }
         return false;
     });
-
-    $("#homeLink").click(function () {
-        console.log('marbles:', bag.marbles);
-    });
-
+    
     $("#createLink").click(function () {
         $("input[name='name']").val('r' + randStr(6));
     });
