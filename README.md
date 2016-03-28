@@ -59,18 +59,13 @@ in the form:
 
 1. Register some users using the registration form on the login page.
 2. Save the credentials that are returned for the users you create.  They appear just above the
-registration form
+registration form.
 3. Use the credentials to log in to the application.  The UI you see will be determined by the role
 that was assigned to each user.
 
 ## Limitations
 
-Currently, usernames for the service must meet one of the following two criteria:
-
-1. They contain the string 'auditor'.
-2. They are of the form "companyX", where X is a number from 1 to 50.
-
-Being of the first type will cause the user to be registered as an auditor, while the being of the second
+Having the string 'auditor' in the username will cause the user to be registered as an auditor, while anything else
 will register the user as a regular user, meaning that they can create and trade paper.  These limitations
 will be fixed in future versions of the demo.
 

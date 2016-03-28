@@ -89,15 +89,9 @@ function register(req, res) {
 
     // Determine the user's role from the username, for now
     console.log(TAG, "Validating username and assigning role:", req.body.username);
-    var role = 0;
-    if (req.body.username.toLowerCase().indexOf('company') > -1) {
-        role = 1;
-    } else if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
+    var role = 1;
+    if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
         role = 4;
-    } else {
-        console.log(TAG, "username failed validation:", req.body.username);
-        req.session.reg_error_msg = "Invalid username:" + req.body.username;
-        res.redirect('/login');
     }
 
     user_reg.registerUser(req.body.username, role, req.body.ca_host, req.body.ca_port, function (err, creds) {

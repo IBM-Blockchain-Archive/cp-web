@@ -17,6 +17,7 @@
 var connector = require('./loopback-connector-obcca');
 var dataSource = {};
 var ibc = {};
+var chaincode = {};
 
 // Use a tag to make logs easier to find
 var TAG = "login_handler";
@@ -77,11 +78,30 @@ function registerUser (username, role, ca_host, ca_port, cb) {
             console.log(TAG, "RegisterUser succeeded:", JSON.stringify(response));
             // Send the response (username and secret) to the callback
             var creds = {
-                id: response.id,
-                secret: response.token,
+                id: response.identity,
+                secret: response.token
             };
 
-            cb(null, creds);
+            // Log the user in so that we can initialize their account in the chaincode
+            login(creds.id, creds.secret, function(err) {
+                
+                if(err) {
+                    console.error(TAG, "Cannot initialize user account due to failed login:", err.message);
+                    cb(err);
+                } else {
+                    // Create an account for the user in the ledger
+                    console.log(TAG, "Initializing user account")
+                    chaincode.createAccount([username], username, function(err) {
+                        if(err) {
+                            console.error(TAG, "Failed to initialize account:", err.message);
+                            cb(err);
+                        } else {
+                            console.log(TAG, "Initialized account:", creds.id);
+                            cb(null, creds);
+                        }
+                    });
+                }
+            });
         }
     });
 }
@@ -92,7 +112,9 @@ module.exports.registerUser = registerUser;
 /**
  * Sets the registrar up to register/login users.
  * @param sdk The sdk object created from ibm-blockchain-js.
+ * @param cc The chaincode for creating new user accounts.
  */
-module.exports.setup = function(sdk) {
+module.exports.setup = function(sdk, cc) {
     ibc = sdk;
+    chaincode = cc;
 };

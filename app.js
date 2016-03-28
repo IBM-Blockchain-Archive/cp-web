@@ -206,9 +206,9 @@ function configure_network() {
             users: users
         },
         chaincode: {
-            zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode/archive/master.zip',
-            unzip_dir: 'cp-chaincode-master',									//subdirectroy name of chaincode after unzipped
-            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode',			//GO git http url
+            zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/archive/master.zip',
+            unzip_dir: 'cp-chaincode-v2-master',									//subdirectroy name of chaincode after unzipped
+            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2',			//GO git http url
 
             //hashed cc name from prev deployment
             //deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
@@ -257,8 +257,9 @@ function cb_ready(err, cc) {																	//response has chaincode functions
     else {
         chaincode = cc;
         part2.setup(ibc, cc, users);
+        user_parser.setup(ibc, cc);
         if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
-            cc.deploy('createAccounts', ['50'], './cc_summaries', cb_deployed);
+            cc.deploy('init', [], './cc_summaries', cb_deployed);
         }
         else {
             console.log('chaincode summary file indicates chaincode has been previously deployed');
