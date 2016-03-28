@@ -49,6 +49,11 @@ $(document).on('ready', function () {
             $("#createLink").show();
             $("#tradeLink").show();
         }
+    } else {
+        
+        // Display the login and user registration links
+        $("#loginLink").show();
+        $("#registerLink").show();
     }
 
     // =================================================================================
@@ -80,11 +85,7 @@ $(document).on('ready', function () {
         }
         return false;
     });
-
-    $("#homeLink").click(function () {
-        console.log('marbles:', bag.marbles);
-    });
-
+    
     $("#createLink").click(function () {
         $("input[name='name']").val('r' + randStr(6));
     });
@@ -146,7 +147,7 @@ function escapeHtml(str) {
     var div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
-};
+}
 
 // =================================================================================
 // Socket Stuff

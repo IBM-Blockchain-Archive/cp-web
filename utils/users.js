@@ -1,129 +1,120 @@
-/**
+/*******************************************************************************
+ * Copyright (c) 2015 IBM Corp.
+ *
+ * All rights reserved.
+ * 
+ * This module assists with the user management for the blockchain network. It has
+ * code for registering a new user on the network and logging in existing users.
+ *
+ * Contributors:
+ *   David Huffman - Initial implementation
+ *   Dale Avery
+ *   
  * Created by davery on 3/16/2016.
- */
+ *******************************************************************************/
 "use strict";
+// This connector let's us register users against a CA
+var connector = require('./loopback-connector-obcca');
+var dataSource = {};
+var ibc = {};
+var chaincode = {};
 
-module.exports = function parseUsers(user_list, service_list) {
-    // Separate the user credentials into lists based on the user role
-    var user_creds = [];
-    var auditor_creds = [];
-    for (var i = 0; i < user_list.length; i++) {
-        var current = user_list[i];
+// Use a tag to make logs easier to find
+var TAG = "login_handler";
 
-        if (!current.role || current.role === "user") {
-            user_creds.push(current);
-        } else if (current.role === "auditor") {
-            auditor_creds.push(current);
+/**
+ * Mimics a login process by attempting to register a given id and secret against
+ * the first peer in the network. "Successfully registered" and "already logged in"
+ * are considered successes.  Everything else is a failure.
+ * @param id The user to log in.
+ * @param secret The secret that was given to this user when registered against the CA.
+ * @param cb A callback of the form: function(err)
+ */
+function login(id, secret, cb) {
+    if (!ibc) {
+        cb(new Error(TAG + ": No sdk supplied to login users"));
+        return;
+    }
+
+    ibc.register(0, id, secret, function(err, data) {
+        if(err) {
+            console.log(TAG, "Error", JSON.stringify(err));
+            cb(err)
         } else {
-            var msg = util.format("Skipped user '%s': role '%s' is not defined.", current.username, current.role);
-            console.log(msg);
+            console.log(TAG, "Data", JSON.stringify(data));
+            cb(null, data);
         }
-    }
+    });
+}
 
-    console.log("Merging the service and user_creds.json users");
-    // User tags from blockchain service
-    var auditor_tag = "type4";
-    var user_tag = "type0";
-    // (HACK) User tags from the interconnect demo
-    var ict_auditor_tag = "auditor";
-    var ict_user_tag = "company";
+/**
+ * Registers a new user against the given CA.
+ * @param username The name of the user.
+ * @param role The role to assign to the user.
+ * @param ca_host The host for the CA.
+ * @param ca_port The port for the CA API.
+ * @param cb A callback of the form: function(err, credentials);
+ */
+function registerUser (username, role, ca_host, ca_port, cb) {
+    // Initialize the connector to the CA
+    dataSource.settings = {
+        host: ca_host,
+        port: ca_port
+    };
+    connector.initialize(dataSource);
+    
+    // Register the user on the CA
+    var user = {
+        identity: username,
+        role: role
+    };
 
-    var aliased_users = [];
-    var vcap_ind = 0, user_ind = 0, auditor_ind = 0;
-    var user_logged = false, auditor_logged = false;
-    var unrecognized = [];
-    while (vcap_ind < service_list.length && (user_ind < user_creds.length || auditor_ind < auditor_creds.length)) {
-
-        // Combine the users!
-        var new_user = {
-            username: service_list[vcap_ind].username,
-            secret: service_list[vcap_ind].secret,
-            name: "",
-            password: "",
-            role: ""
-        };
-
-        // Check for auditors
-        if (new_user.username.toLowerCase().indexOf(auditor_tag) > -1) {
-
-            // Can't make a user if we don't have enough aliases
-            if (auditor_ind < auditor_creds.length) {
-
-                // Add the use user to the list
-                new_user.name = auditor_creds[auditor_ind].username;
-                new_user.password = auditor_creds[auditor_ind].password;
-                new_user.role = "auditor";
-                aliased_users.push(new_user);
-                auditor_ind++;
-            } else {
-                if (!auditor_logged) {
-                    console.log("Didn't provide enough auditors to cover type4 service credentials");
-                    auditor_logged = true;
-                }
-            }
-        } else if (new_user.username.toLowerCase().indexOf(user_tag) > -1) {
-
-            // Must be a regular user
-            if (user_ind < user_creds.length) {
-                // Add the use user to the list
-                new_user.name = user_creds[user_ind].username;
-                new_user.password = user_creds[user_ind].password;
-                new_user.role = "user";
-                aliased_users.push(new_user);
-                user_ind++;
-            } else {
-                if (!user_logged) {
-                    console.log("Didn't provide enough users to cover service credentials");
-                    user_logged = true;
-                }
-            }
+    console.log(TAG, "Registering user against CA:", JSON.stringify(user));
+    dataSource.connector.registerUser(user, function (err, response) {
+        if (err) {
+            console.error(TAG, "RegisterUser failed:", username, err.message);
+            cb(err);
         } else {
-            // (HACK) Untagged usernames probably means these are the interconnect users
-            // company[1-45] will be the users
-            // auditor[1-5] should be the auditors
-            if (new_user.username.toLowerCase().indexOf(ict_auditor_tag) > -1) {
-                // Can't make a user if we don't have enough aliases
-                if (auditor_ind < auditor_creds.length) {
+            console.log(TAG, "RegisterUser succeeded:", JSON.stringify(response));
+            // Send the response (username and secret) to the callback
+            var creds = {
+                id: response.identity,
+                secret: response.token
+            };
 
-                    // Add the use user to the list
-                    new_user.name = auditor_creds[auditor_ind].username;
-                    new_user.password = auditor_creds[auditor_ind].password;
-                    new_user.role = "auditor";
-                    aliased_users.push(new_user);
-                    auditor_ind++;
+            // Log the user in so that we can initialize their account in the chaincode
+            login(creds.id, creds.secret, function(err) {
+                
+                if(err) {
+                    console.error(TAG, "Cannot initialize user account due to failed login:", err.message);
+                    cb(err);
                 } else {
-                    if (!user_logged) {
-                        console.log("Didn't provide enough auditors to cover auditor service credentials");
-                        user_logged = true;
-                    }
+                    // Create an account for the user in the ledger
+                    console.log(TAG, "Initializing user account")
+                    chaincode.createAccount([username], username, function(err) {
+                        if(err) {
+                            console.error(TAG, "Failed to initialize account:", err.message);
+                            cb(err);
+                        } else {
+                            console.log(TAG, "Initialized account:", creds.id);
+                            cb(null, creds);
+                        }
+                    });
                 }
-            } else if (new_user.username.toLowerCase().indexOf(ict_user_tag) > -1) {
-                // Must be a regular user
-                if (user_ind < user_creds.length) {
-                    // Add the use user to the list
-                    new_user.name = user_creds[user_ind].username;
-                    new_user.password = user_creds[user_ind].password;
-                    new_user.role = "user";
-                    aliased_users.push(new_user);
-                    user_ind++;
-                } else {
-                    if (!user_logged) {
-                        console.log("Didn't provide enough users to cover service credentials");
-                        user_logged = true;
-                    }
-                }
-            } else {
-
-                // No idea where this user came from
-                unrecognized.push(new_user.username);
-            }
+            });
         }
+    });
+}
 
-        vcap_ind++;
-    }
-    if (unrecognized.length > 0) {
-        console.log("unrecognized users:", unrecognized);
-    }
+module.exports.login = login;
+module.exports.registerUser = registerUser;
 
-    return aliased_users;
+/**
+ * Sets the registrar up to register/login users.
+ * @param sdk The sdk object created from ibm-blockchain-js.
+ * @param cc The chaincode for creating new user accounts.
+ */
+module.exports.setup = function(sdk, cc) {
+    ibc = sdk;
+    chaincode = cc;
 };

@@ -57,11 +57,17 @@ in the form:
 
 ## Using the Demo
 
-1. Open the file user_creds.json and pick a user.
-2. Use the user's credentials to log in to the application.  The UI you see will be determined by the role
+1. Register some users using the registration form on the login page.
+2. Save the credentials that are returned for the users you create.  They appear just above the
+registration form.
+3. Use the credentials to log in to the application.  The UI you see will be determined by the role
 that was assigned to each user.
-3. Visit the Create and Trade panels in order to interact with the commercial paper network.  Auditors
-can only view existing trades, using the Audit panel.
+
+## Limitations
+
+Having the string 'auditor' in the username will cause the user to be registered as an auditor, while anything else
+will register the user as a regular user, meaning that they can create and trade paper.  These limitations
+will be fixed in future versions of the demo.
 
 ## Privacy Notice
 
