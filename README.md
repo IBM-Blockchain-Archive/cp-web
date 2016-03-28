@@ -19,7 +19,7 @@ on IBM Blockchain.  The components of the demo are:
 
 1. Clone this repository.
 2. Create an instance of the IBM Blockchain service in the Bluemix catalog.
-3. Copy the credentials from the service into the file 'my_creds.json'
+3. Copy the credentials from the service into the file 'my_creds.json'.
 4. Run these commands in the cloned directory:
 
 ```shell
