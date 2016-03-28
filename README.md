@@ -22,36 +22,37 @@ on IBM Blockchain.  The components of the demo are:
 3. Copy the credentials from the service into the file 'my_creds.json'
 4. Run these commands in the cloned directory:
 
-
-    > npm install
-    > gulp
+```shell
+npm install
+gulp
+```
 
 These credentials can be obtained from the "Service Credentials" tab of the Bluemix service. They are
 in the form:
 
 ```json
-    {
-      "credentials": {
-        "peers": [
-          {
-            "discovery_host": "169.53.62.121",
-            "discovery_port": "40275",
-            "api_host": "169.53.62.121",
-            "api_port": "40276",
-            "type": "peer",
-            "network_id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03",
-            "id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03_vp1",
-            "api_url": "http://169.53.62.121:40276"
-          }
-        ],
-        "users": [
-          {
-            "username": "user_type0_b7c7a1e545",
-            "secret": "89ce33e4e6"
-          }
-        ]
+{
+  "credentials": {
+    "peers": [
+      {
+        "discovery_host": "169.53.62.121",
+        "discovery_port": "40275",
+        "api_host": "169.53.62.121",
+        "api_port": "40276",
+        "type": "peer",
+        "network_id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03",
+        "id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03_vp1",
+        "api_url": "http://169.53.62.121:40276"
       }
-    }
+    ],
+    "users": [
+      {
+        "username": "user_type0_b7c7a1e545",
+        "secret": "89ce33e4e6"
+      }
+    ]
+  }
+}
 ```
 
 ## Using the Demo
