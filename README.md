@@ -9,7 +9,7 @@ on IBM Blockchain.  The components of the demo are:
 * An interface for creating new users on the network.
 * An interface for creating new commercial papers to trade.
 * A Trade Center for buying and selling existing trades.
-* A special interface just for auditors of the network to examine all trades
+* A special interface just for auditors of the network to examine trades
 
 ## Getting Started
 
@@ -56,18 +56,25 @@ in the form:
 ```
 
 ## Using the Demo
-
-1. Register some users using the registration form on the login page.
-2. Save the credentials that are returned for the users you create.  They appear just above the
+1. Grab the CA host and API port from the IBM Blockchain service dashboard.
+2. Input the host and port in the registration form when registering new users.
+3. Register some users using the registration form on the login page.
+4. Save the credentials that are returned for the users you create.  They appear just above the
 registration form.
-3. Use the credentials to log in to the application.  The UI you see will be determined by the role
+5. Use the credentials to log in to the application.  The UI you see will be determined by the role
 that was assigned to each user.
 
 ## Limitations
 
-Having the string 'auditor' in the username will cause the user to be registered as an auditor, while anything else
+* Having the string 'auditor' in the username will cause the user to be registered as an auditor, while anything else
 will register the user as a regular user, meaning that they can create and trade paper.  These limitations
 will be fixed in future versions of the demo.
+
+* Nothing happens when papers mature.
+
+* For now, the permissions for auditors and regular users are only enforced within the web application.  The
+chaincode assumes that whoever calls it is the appropriate party.  An updated user architecture will be coming to the
+fabric to fix this very soon!
 
 ## Privacy Notice
 
