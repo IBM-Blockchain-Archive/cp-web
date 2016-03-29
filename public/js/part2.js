@@ -50,7 +50,7 @@ $(document).on('ready', function () {
             $("#tradeLink").show();
         }
     } else {
-        
+
         // Display the login and user registration links
         $("#loginLink").show();
         $("#registerLink").show();
@@ -85,7 +85,7 @@ $(document).on('ready', function () {
         }
         return false;
     });
-    
+
     $("#createLink").click(function () {
         $("input[name='name']").val('r' + randStr(6));
     });
@@ -227,7 +227,7 @@ function connect_to_server() {
             else if (data.msg === 'reset') {
                 // Ask for all available trades and information for the current company
                 ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
-                if(user.role !== "auditor") {
+                if (user.role !== "auditor") {
                     ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
                 }
             }
@@ -270,66 +270,87 @@ function connect_to_server() {
  * @param panelDesc An object describing what panel the trades are being shown in.
  */
 function build_trades(papers, panelDesc) {
-    var html = '';
     bag.papers = papers;						//store the trades for posterity
     //console.log('papers:', bag.papers);
+
+    // Break the papers down into entries
+    var entries = [];
+    for (var paper in papers) {
+        var broken_up = paper_to_entries(papers[paper]);
+        entries.append(broken_up);
+    }
 
     // If no panel is given, assume this is the trade panel
     if (!panelDesc) {
         panelDesc = panels[0];
     }
 
-    papers.sort(function (a, b) {								//alpha sort me
-        var textA = a.cusip.toUpperCase();
-        var textB = b.cusip.toUpperCase();
-        return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
-    });
+    console.log('breaking papers into individual entries');
+    entries.sort(sort_selected);
+    var rows  = [];
 
-    for (var i in papers) {
-        console.log('!', papers[i]);
+    for (var i in entries) {
+        console.log('!', entries[i]);
 
-        for (var x in papers[i].owner) {
-            var style = ' ';
-            var buttonStatus = '';
+        var style = ' ';
 
-            if (papers[i].qty > 0 && papers[i].owner[x].quantity > 0) {													//cannot buy when there are none
+        if (entries[i].quantity > 0) {													//cannot buy when there are none
 
-                if (excluded(papers[i], papers[i].owner[x], filter)) {
-                    if (user.name.toLowerCase() === papers[i].owner[x].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
-                    if (papers[i].issuer.toLowerCase() !== papers[i].owner[x].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
+            if (excluded(papers[i], papers[i].owner[x], filter)) {
+                if (user.name.toLowerCase() === entries[i].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
+                if (entries[i].issuer.toLowerCase() !== entries[i].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
 
-                    // Create a row for each valid trade
-                    html += '<tr class="' + style + '">';
-                    html += '<td>' + formatDate(Number(papers[i].issueDate), '%M/%d %I:%m%P') + '</td>';
-                    html += '<td>' + papers[i].cusip + '</td>';
-                    html += '<td>' + escapeHtml(papers[i].ticker.toUpperCase()) + '</td>';
-                    html += '<td>' + formatMoney(papers[i].par) + '</td>';
-                    html += '<td>' + papers[i].owner[x].quantity + '</td>';
-                    html += '<td>' + papers[i].discount + '%</td>';
-                    html += '<td>' + papers[i].maturity + ' days</td>';
-                    html += '<td>' + papers[i].issuer + '</td>';
-                    html += '<td>' + papers[i].owner[x].company + '</td>';
+                // Create a row for each valid trade
+                var data = [
+                    formatDate(Number(entries[i].issueDate), '%M/%d %I:%m%P'),
+                    entries[i].cusip,
+                    escapeHtml(entries[i].ticker.toUpperCase()),
+                    formatMoney(entries[i].par),
+                    entries[i].quantity,
+                    entries[i].discount,
+                    entries[i].maturity,
+                    entries[i].issuer,
+                    entries[i].company
+                ];
 
-                    // Only the trade panel should allow you to interact with trades
-                    if (panelDesc.name === "trade") {
-                        html += '<td>';
-                        html += '<button type="button" class="buyPaper altButton" ' + buttonStatus + ' trade_pos="' + i + '">';
-                        html += '<span class="fa fa-exchange"> &nbsp;&nbsp;BUY 1</span>';
-                        html += '</button>';
-                        html += '</td>';
-                    }
+                var row = createRow(data);
+                row.classList.add(style);
 
-                    html += '</tr>';
+                // Only the trade panel should allow you to interact with trades
+                if (panelDesc.name === "trade") {
+                    var button = buyButton(false, i);
+                    row.appendChild(button);
                 }
+                rows.append(row);
             }
         }
+
     }
 
     // Placeholder for an empty table
-    if (html == '' && panelDesc.name === "trade") html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
-    if (html == '' && panelDesc.name === "audit") html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
+    var html = '';
+    if (rows.length == 0) {
+        if(panelDesc.name === 'trade')
+            html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+        else if (panelDesc.name === 'audit')
+            html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
+        $(panelDesc.tableID).html(html);
+    } else {
+        // Remove the existing table data
+        console.log("clearing existing table data");
+        var tableBody = $(panelDesc.tableID);
+        while (tableBody.firstChild) {
+            tableBody.removeChild(tableBody.firstChild);
+        }
 
-    $(panelDesc.tableID).html(html);
+        // Add the new rows to the table
+        console.log("populating new table data");
+        var row;
+        while(rows.length > 0 ) {
+            row = rows.shift();
+        }
+        tableBody.appendChild(row);
+    }
 }
 
 // =================================================================================
