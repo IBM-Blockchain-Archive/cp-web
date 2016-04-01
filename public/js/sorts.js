@@ -44,6 +44,7 @@ var sort_papers = {
 };
 
 var sort_selected = sort_papers.date;
+var sort_reversed = true;
 
 function compare(a, b) {
     return (a < b) ? -1 : (a > b) ? 1 : 0;

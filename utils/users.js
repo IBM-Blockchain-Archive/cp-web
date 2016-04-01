@@ -44,7 +44,18 @@ function login(id, secret, cb) {
             cb && cb(err)
         } else {
             console.log(TAG, "Data", JSON.stringify(data));
-            cb && cb(null, data);
+
+            // Make sure an account exists for the user
+            console.log(TAG, "(Re)initializing user's trading account");
+            chaincode.createAccount([id], id, function (err) {
+                if (err) {
+                    console.error(TAG, "Account init error:", JSON.stringify(err));
+                }
+
+                console.log(TAG, "Initialized account:" + id);
+                cb && cb(null);
+
+            });
         }
     });
 }
@@ -83,20 +94,11 @@ function registerUser(username, role, cb) {
             // Log the user in so that we can initialize their account in the chaincode
             login(creds.id, creds.secret, function (err) {
                 if (err) {
-                    console.error(TAG, "Cannot initialize user account due to failed login:", JSON.stringify(err));
+                    console.error(TAG, "Registration failed at login", JSON.stringify(err));
                     cb && cb(err);
                 } else {
-                    // Create an account for the user in the cp chaincode
-                    console.log(TAG, "Initializing user's trading account");
-                    chaincode.createAccount([username], username, function (err) {
-                        if (err) {
-                            console.error(TAG, "Failed to initialize account:", err.message);
-                            cb && cb(err);
-                        } else {
-                            console.log(TAG, "Initialized account:", creds.id);
-                            cb && cb(null, creds);
-                        }
-                    });
+                    console.log(TAG, "user registration and initialization complete");
+                    cb && cb(null, creds);
                 }
             });
         }

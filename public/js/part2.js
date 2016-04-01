@@ -27,7 +27,6 @@ var panels = [
         filterPrefix: "audit_"
     }
 ];
-var reverse_sort = false;
 
 // =================================================================================
 // On Load
@@ -122,13 +121,25 @@ $(document).on('ready', function () {
         "use strict";
         var sort = $(this).attr('sort');
 
+        // Clear any sort direction arrows
+        $('span').remove('.sort-indicator');
+
         // Clicking the column again should reverse the sort
         if(sort_papers[sort] === sort_selected) {
             console.log("Reversing the table");
-            reverse_sort = !reverse_sort;
+            sort_reversed = !sort_reversed;
         }
-        else reverse_sort = false;
+        else sort_reversed = false;
 
+        // Add the appropriate arrow to the current selector
+        var arrow_icon = (sort_reversed ? 'fa-arrow-up' : 'fa-arrow-down');
+        var span = document.createElement('span');
+        span.classList.add('fa');
+        span.classList.add(arrow_icon);
+        span.classList.add('sort-indicator');
+        $(this).append(span);
+
+        // Change to the sort corresponding to that column
         sort_selected = sort_papers[sort];
         console.log("Sorting by:", sort);
         for (var i in panels) {
@@ -141,12 +152,17 @@ $(document).on('ready', function () {
         if (user.username) {
             console.log('trading...');
             var i = $(this).attr('trade_pos');
+            var cusip = $(this).attr('data_cusip');
+            var issuer = $(this).attr('data_issuer');
 
+            // TODO Map the trade_pos to the correct button
             var msg = {
                 type: 'transfer_paper',
                 transfer: {
-                    CUSIP: bag.papers[i].cusip,
-                    fromCompany: bag.papers[i].issuer,
+                    //CUSIP: bag.papers[i].cusip,
+                    //fromCompany: bag.papers[i].issuer,
+                    CUSIP: cusip,
+                    fromCompany: issuer,
                     toCompany: user.name,
                     quantity: 1
                 },
@@ -294,85 +310,104 @@ function build_trades(papers, panelDesc) {
     bag.papers = papers;						//store the trades for posterity
     //console.log('papers:', bag.papers);
 
-    // Break the papers down into entries
-    var entries = [];
-    for (var paper in papers) {
-        var broken_up = paper_to_entries(papers[paper]);
-        entries = entries.concat(broken_up);
-    }
-    console.log("Displaying ", entries.length, " papers");
+    if(papers && papers.length > 0) {
 
-    // If no panel is given, assume this is the trade panel
-    if (!panelDesc) {
-        panelDesc = panels[0];
-    }
+        // Break the papers down into entries
+        console.log('breaking papers into individual entries');
+        var entries = [];
+        for (var paper in papers) {
+            var broken_up = paper_to_entries(papers[paper]);
+            entries = entries.concat(broken_up);
+        }
+        console.log("Displaying", papers.length, "papers as", entries.length, "entries");
 
-    console.log('breaking papers into individual entries');
-    entries.sort(sort_selected);
-    if(reverse_sort) entries.reverse();
-
-    // Display each entry as a row in the table
-    var rows = [];
-    for (var i in entries) {
-        console.log('!', entries[i]);
-
-        var style;
-
-        if (entries[i].quantity > 0) {													//cannot buy when there are none
-
-            if (excluded(entries[i], filter)) {
-                if (user.name.toLowerCase() === entries[i].owner.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
-                if (entries[i].issuer.toLowerCase() !== entries[i].owner.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
-
-                // Create a row for each valid trade
-                var data = [
-                    formatDate(Number(entries[i].issueDate), '%M/%d %I:%m%P'),
-                    entries[i].cusip,
-                    escapeHtml(entries[i].ticker.toUpperCase()),
-                    formatMoney(entries[i].par),
-                    entries[i].quantity,
-                    entries[i].discount,
-                    entries[i].maturity,
-                    entries[i].issuer,
-                    entries[i].owner
-                ];
-
-                var row = createRow(data);
-                style && row.classList.add(style);
-
-                // Only the trade panel should allow you to interact with trades
-                if (panelDesc.name === "trade") {
-                    var button = buyButton(false, i);
-                    row.appendChild(button);
-                }
-                rows.push(row);
-            }
+        // If no panel is given, assume this is the trade panel
+        if (!panelDesc) {
+            panelDesc = panels[0];
         }
 
-    }
+        entries.sort(sort_selected);
+        if (sort_reversed) entries.reverse();
 
-    // Placeholder for an empty table
-    var html = '';
-    if (rows.length == 0) {
+        // Display each entry as a row in the table
+        var rows = [];
+        for (var i in entries) {
+            console.log('!', entries[i]);
+
+            if (entries[i].quantity > 0) {													//cannot buy when there are none
+
+                if (excluded(entries[i], filter)) {
+                    var style;
+                    if (user.name.toLowerCase() === entries[i].owner.toLowerCase()) {
+                        //cannot buy my own stuff
+                        style = 'invalid';
+                    }
+                    else if (entries[i].issuer.toLowerCase() !== entries[i].owner.toLowerCase()) {
+                        //cannot buy stuff already bought
+                        style = 'invalid';
+                    } else {
+                        style = null;
+                    }
+
+                    // Create a row for each valid trade
+                    var data = [
+                        formatDate(Number(entries[i].issueDate), '%M/%d %I:%m%P'),
+                        entries[i].cusip,
+                        escapeHtml(entries[i].ticker.toUpperCase()),
+                        formatMoney(entries[i].par),
+                        entries[i].quantity,
+                        entries[i].discount,
+                        entries[i].maturity,
+                        entries[i].issuer,
+                        entries[i].owner
+                    ];
+
+                    var row = createRow(data);
+                    style && row.classList.add(style);
+
+                    // Only the trade panel should allow you to interact with trades
+                    if (panelDesc.name === "trade") {
+                        var disabled = false
+                        if (user.name.toLowerCase() === entries[i].owner.toLowerCase()) disabled = true;			//cannot buy my own stuff
+                        if (entries[i].issuer.toLowerCase() !== entries[i].owner.toLowerCase()) disabled = true;
+                        var button = buyButton(disabled, entries[i].cusip, entries[i].issuer);
+                        row.appendChild(button);
+                    }
+                    rows.push(row);
+                }
+            }
+
+        }
+
+        // Placeholder for an empty table
+        var html = '';
+        if (rows.length == 0) {
+            if (panelDesc.name === 'trade')
+                html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+            else if (panelDesc.name === 'audit')
+                html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
+            $(panelDesc.tableID).html(html);
+        } else {
+            // Remove the existing table data
+            console.log("clearing existing table data");
+            var tableBody = $(panelDesc.tableID);
+            tableBody.empty();
+
+
+            // Add the new rows to the table
+            console.log("populating new table data");
+            var row;
+            while (rows.length > 0) {
+                row = rows.shift();
+                tableBody.append(row);
+            }
+        }
+    } else {
         if (panelDesc.name === 'trade')
             html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
         else if (panelDesc.name === 'audit')
             html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
         $(panelDesc.tableID).html(html);
-    } else {
-        // Remove the existing table data
-        console.log("clearing existing table data");
-        var tableBody = $(panelDesc.tableID);
-        tableBody.empty();
-
-
-        // Add the new rows to the table
-        console.log("populating new table data");
-        var row;
-        while (rows.length > 0) {
-            row = rows.shift();
-            tableBody.append(row);
-        }
     }
 }
 

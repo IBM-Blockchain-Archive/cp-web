@@ -211,12 +211,12 @@ function configure_network() {
             users: users
         },
         chaincode: {
-            zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/archive/master.zip',
-            unzip_dir: 'cp-chaincode-v2-master',									//subdirectroy name of chaincode after unzipped
-            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2',			//GO git http url
+            zip_url: 'https://github.com/masterDev1985/cp-chaincode/archive/master.zip',
+            unzip_dir: 'cp-chaincode-master',									//subdirectroy name of chaincode after unzipped
+            git_url: 'https://github.com/masterDev1985/cp-chaincode',			//GO git http url
 
             //hashed cc name from prev deployment
-            deployed_name: '1aa1eb5472982fa03debc00bd48b916e1b48ad95e1aa28a871b2380fdcb735f81d32f7e3b3c9c20a5dc172ba30d62007874dea943d33931e66c24e7ddf63f773'
+            //deployed_name: '1aa1eb5472982fa03debc00bd48b916e1b48ad95e1aa28a871b2380fdcb735f81d32f7e3b3c9c20a5dc172ba30d62007874dea943d33931e66c24e7ddf63f773'
         }
     };
     if (process.env.VCAP_SERVICES) {
