@@ -179,6 +179,9 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
             if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
                 console.log('overwritting peers, loading from a vcap service: ', i);
                 peers = servicesObject[i][0].credentials.peers;
+                var ca_name = Object.keys(servicesObject[i][0].credentials.ca)[0];
+                console.log(TAG, "loading ca:", ca_name);
+                ca = servicesObject[i][0].credentials.ca[ca_name];
                 if (servicesObject[i][0].credentials.users) {
                     console.log('overwritting users, loading from a vcap service: ', i);
                     users = servicesObject[i][0].credentials.users;
