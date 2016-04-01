@@ -34,6 +34,9 @@ var util = require('util');
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
 
+// For logging
+var TAG = "app.js:";
+
 ////////  Pathing and Module Setup  ////////
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -142,26 +145,28 @@ var ibc = new Ibc1();
 // ==================================
 var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
 
-var peers = manual.credentials.peers;
-console.log('loading hardcoded peers');
+var peers, users, ca;
 
-var ca = {
-    api_host: null,
-    api_port: null
-};
-if (manual.credentials.ca) {
-    ca = manual.credentials.ca;
-    console.log('loading hardcoded ca');
+if (manual.credentials.peers) {
+    console.log(TAG, 'loading', manual.credentials.peers.length, 'hardcoded peers');
+    peers = manual.credentials.peers;
 }
 
-var users = null;																		//users are only found if security is on
-if (manual.credentials.users) users = manual.credentials.users;
-console.log('loading hardcoded users');
+if (manual.credentials.users) {
+    console.log(TAG, "loading", manual.credentials.users.length, "hardcoded users");
+    users = manual.credentials.users;
+}
+
+if (manual.credentials.ca) {
+    var ca_name = Object.keys(manual.credentials.ca)[0];
+    console.log(TAG, "loading ca:", ca_name);
+    ca = manual.credentials.ca[ca_name];
+}
 
 if (process.env.VCAP_SERVICES) {															//load from vcap, search for service, 1 of the 3 should be found...
     var servicesObject = JSON.parse(process.env.VCAP_SERVICES);
     for (var i in servicesObject) {
-        if (i.indexOf('ibm-blockchain') >= 0) {											//looks close enough
+        if (i.indexOf('ibm-blockchain') >= 0) {											// looks close enough (can be suffixed dev, prod, or staging)
             if (servicesObject[i][0].credentials.error) {
                 console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
                 peers = null;
@@ -190,12 +195,10 @@ var options = {};
 
 // Merge the user list and the service credentials so that the list users work as aliases for the
 // service users
-var user_parser = require('./utils/users');
-user_parser.setup(ibc);
+var user_manager = require('./utils/users');  // Need to call setup() once sdk and chaincode are loaded
 
 // Start up the network!!
 configure_network();
-
 
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -217,7 +220,7 @@ function configure_network() {
         }
     };
     if (process.env.VCAP_SERVICES) {
-        console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok budddy\n');
+        console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok buddy\n');
         options.chaincode.deployed_name = "";
     }
     
@@ -251,22 +254,36 @@ function load_cc() {
 }
 
 var chaincode = null;
-function cb_ready(err, cc) {																	//response has chaincode functions
+function cb_ready(err, cc) {//response has chaincode functions
     if (err != null) {
         console.log('! looks like an error loading the chaincode, app will fail\n', err);
         if (!process.error) process.error = {type: 'load', msg: err.details};				//if it already exist, keep the last error
     }
     else {
         chaincode = cc;
-        part2.setup(ibc, cc, users);
-        user_parser.setup(ibc, cc);
         if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
-            cc.deploy('init', [], './cc_summaries', cb_deployed);
+            cc.deploy('init', [], './cc_summaries', finalSetup);
         }
         else {
             console.log('chaincode summary file indicates chaincode has been previously deployed');
-            cb_deployed();
+            finalSetup();
         }
+    }
+}
+
+/**
+ * Configures other parts of the app that depend on the blockchain network being configured and running in
+ * order to function.
+ * @param err Will capture any errors from deploying the chaincode.
+ */
+function finalSetup(err, data) {
+    if (err != null) {
+        //look at tutorial_part1.md in the trouble shooting section for help
+        console.log('! looks like a deploy error, holding off on the starting the socket\n', err);
+        if (!process.error) process.error = {type: 'deploy', msg: err.details};
+    } else {
+        part2.setup(ibc, chaincode, users);
+        user_manager.setup(ibc, chaincode, ca, cb_deployed)
     }
 }
 
@@ -276,7 +293,7 @@ function cb_ready(err, cc) {																	//response has chaincode functions
 function cb_deployed(e, d) {
     if (e != null) {
         //look at tutorial_part1.md in the trouble shooting section for help
-        console.log('! looks like a deploy error, holding off on the starting the socket\n', e);
+        console.log('! looks like the final configuration failed, holding off on the starting the socket\n', e);
         if (!process.error) process.error = {type: 'deploy', msg: e.details};
     }
     else {

@@ -33,14 +33,14 @@
 		table#tradesTable.tablesorter
 			thead
 				tr 
-					TH DATE
-					th CUSIP
-					th TICKER
-					th PAR
-					th QTY 
-					th DISCOUNT
-					th MATURITY
-					th ISSUER
-					th OWNER
+					TH: a.sort-selector(sort="date") DATE
+					th: a.sort-selector(sort="cusip") CUSIP
+					th: a.sort-selector(sort="ticker") TICKER
+					th: a.sort-selector(sort="par") PAR
+					th: a.sort-selector(sort="quantity") QTY
+					th: a.sort-selector(sort="discount") DISCOUNT
+					th: a.sort-selector(sort="maturity") MATURITY
+					th: a.sort-selector(sort="issuer") ISSUER
+					th: a.sort-selector(sort="owner") OWNER
 					th ACTION
 			tbody#tradesBody

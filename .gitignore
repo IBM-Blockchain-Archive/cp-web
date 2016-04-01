@@ -4,6 +4,8 @@
 **/temp
 **/public/logs/**
 .project
+cc_summaries/**
 
 .idea
 .tmp
+test.js

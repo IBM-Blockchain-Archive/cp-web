@@ -27,6 +27,7 @@ var panels = [
         filterPrefix: "audit_"
     }
 ];
+var reverse_sort = false;
 
 // =================================================================================
 // On Load
@@ -114,6 +115,25 @@ $(document).on('ready', function () {
         "use strict";
         console.log("Change in audit filter detected.");
         processFilterForm(panels[1]);
+    });
+
+    // Click events for the columns of the table
+    $('.sort-selector').click(function () {
+        "use strict";
+        var sort = $(this).attr('sort');
+
+        // Clicking the column again should reverse the sort
+        if(sort_papers[sort] === sort_selected) {
+            console.log("Reversing the table");
+            reverse_sort = !reverse_sort;
+        }
+        else reverse_sort = false;
+
+        sort_selected = sort_papers[sort];
+        console.log("Sorting by:", sort);
+        for (var i in panels) {
+            build_trades(bag.papers, panels[i]);
+        }
     });
 
     //trade events
@@ -277,8 +297,9 @@ function build_trades(papers, panelDesc) {
     var entries = [];
     for (var paper in papers) {
         var broken_up = paper_to_entries(papers[paper]);
-        entries.append(broken_up);
+        entries = entries.concat(broken_up);
     }
+    console.log("Displaying ", entries.length, " papers");
 
     // If no panel is given, assume this is the trade panel
     if (!panelDesc) {
@@ -287,8 +308,10 @@ function build_trades(papers, panelDesc) {
 
     console.log('breaking papers into individual entries');
     entries.sort(sort_selected);
-    var rows  = [];
+    if(reverse_sort) entries.reverse();
 
+    // Display each entry as a row in the table
+    var rows = [];
     for (var i in entries) {
         console.log('!', entries[i]);
 
@@ -296,9 +319,9 @@ function build_trades(papers, panelDesc) {
 
         if (entries[i].quantity > 0) {													//cannot buy when there are none
 
-            if (excluded(papers[i], papers[i].owner[x], filter)) {
-                if (user.name.toLowerCase() === entries[i].company.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
-                if (entries[i].issuer.toLowerCase() !== entries[i].company.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
+            if (excluded(entries[i], filter)) {
+                if (user.name.toLowerCase() === entries[i].owner.toLowerCase()) style = 'invalid';			//cannot buy my own stuff
+                if (entries[i].issuer.toLowerCase() !== entries[i].owner.toLowerCase()) style = 'invalid';		//cannot buy stuff already bought
 
                 // Create a row for each valid trade
                 var data = [
@@ -310,7 +333,7 @@ function build_trades(papers, panelDesc) {
                     entries[i].discount,
                     entries[i].maturity,
                     entries[i].issuer,
-                    entries[i].company
+                    entries[i].owner
                 ];
 
                 var row = createRow(data);
@@ -321,7 +344,7 @@ function build_trades(papers, panelDesc) {
                     var button = buyButton(false, i);
                     row.appendChild(button);
                 }
-                rows.append(row);
+                rows.push(row);
             }
         }
 
@@ -330,7 +353,7 @@ function build_trades(papers, panelDesc) {
     // Placeholder for an empty table
     var html = '';
     if (rows.length == 0) {
-        if(panelDesc.name === 'trade')
+        if (panelDesc.name === 'trade')
             html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
         else if (panelDesc.name === 'audit')
             html = '<tr><td>nothing here...</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'; // No action column
@@ -339,17 +362,16 @@ function build_trades(papers, panelDesc) {
         // Remove the existing table data
         console.log("clearing existing table data");
         var tableBody = $(panelDesc.tableID);
-        while (tableBody.firstChild) {
-            tableBody.removeChild(tableBody.firstChild);
-        }
+        tableBody.empty();
+
 
         // Add the new rows to the table
         console.log("populating new table data");
         var row;
-        while(rows.length > 0 ) {
+        while (rows.length > 0) {
             row = rows.shift();
+            tableBody.append(row);
         }
-        tableBody.appendChild(row);
     }
 }
 
@@ -412,19 +434,18 @@ function processFilterForm(panelDesc) {
 
 /**
  * Validates a trade object against a given set of filters.
- * @param paper The object to be validated.
- * @param owner The specific owner in the trade object that you want to validate.
+ * @param entry The object to be validated.
  * @param filter The filter object to validate the trade against.
  * @returns {boolean} True if the trade is valid according to the filter, false otherwise.
  */
-function excluded(paper, owner, filter) {
+function excluded(entry, filter) {
     "use strict";
 
-    if (filter.owner && filter.owner !== "" && owner.company.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1) return false;
+    if (filter.owner && filter.owner !== "" && entry.owner.company.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1) return false;
 
-    if (filter.issuer && filter.issuer !== "" && paper.issuer.toUpperCase().indexOf(filter.issuer.toUpperCase()) == -1) return false;
+    if (filter.issuer && filter.issuer !== "" && entry.issuer.toUpperCase().indexOf(filter.issuer.toUpperCase()) == -1) return false;
 
-    if (filter.ticker && filter.ticker !== "" && paper.ticker.toUpperCase().indexOf(filter.ticker.toUpperCase()) == -1) return false;
+    if (filter.ticker && filter.ticker !== "" && entry.ticker.toUpperCase().indexOf(filter.ticker.toUpperCase()) == -1) return false;
 
     // Must be a valid trade if we reach this point
     return true;

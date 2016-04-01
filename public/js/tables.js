@@ -21,11 +21,13 @@ function buyButton(disabled, trade_pos) {
     button.setAttribute('type', 'button');
     button.setAttribute('trade_pos', trade_pos.toString());
     if(disabled) button.disabled = true;
-    button.classList.add('buyPaper altButton');
+    button.classList.add('buyPaper');
+    button.classList.add('altButton');
 
     var span = document.createElement('span');
-    span.classList.add('fa fa-exchange');
-    span.innerHTML = ' &nbsp;&nbsp;BUY 1'
+    span.classList.add('fa');
+    span.classList.add('fa-exchange');
+    span.innerHTML = ' &nbsp;&nbsp;BUY 1';
     button.appendChild(span);
 
     return button;

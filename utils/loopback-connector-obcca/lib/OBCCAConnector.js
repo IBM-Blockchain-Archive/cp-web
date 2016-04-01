@@ -101,7 +101,7 @@ function OBCCAConnector(settings) {
 	
 	this.name = 'OBCConnector';
     this.grpcServerAddress = settings.host + ":" + settings.port;
-	this.grpcCredentials = grpc.credentials.createInsecure();
+	this.grpcCredentials = grpc.credentials.createSsl();
     
     //load the protobuf definitions
     this.protos = grpc.load(protoFile).protos;

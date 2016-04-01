@@ -2,25 +2,26 @@
  * Copyright (c) 2015 IBM Corp.
  *
  * All rights reserved.
- * 
+ *
  * This module assists with the user management for the blockchain network. It has
  * code for registering a new user on the network and logging in existing users.
  *
  * Contributors:
  *   David Huffman - Initial implementation
  *   Dale Avery
- *   
+ *
  * Created by davery on 3/16/2016.
  *******************************************************************************/
 "use strict";
 // This connector let's us register users against a CA
 var connector = require('./loopback-connector-obcca');
-var dataSource = {};
 var ibc = {};
 var chaincode = {};
+var ca = {};
+var dataSource = {};
 
 // Use a tag to make logs easier to find
-var TAG = "login_handler";
+var TAG = "user_manager";
 
 /**
  * Mimics a login process by attempting to register a given id and secret against
@@ -32,17 +33,18 @@ var TAG = "login_handler";
  */
 function login(id, secret, cb) {
     if (!ibc) {
-        cb(new Error(TAG + ": No sdk supplied to login users"));
+        cb && cb(new Error(TAG + ": No sdk supplied to login users"));
         return;
     }
 
-    ibc.register(0, id, secret, function(err, data) {
-        if(err) {
+    // Just log in users against the first peer, as it is used for all rest calls anyway.
+    ibc.register(0, id, secret, function (err, data) {
+        if (err) {
             console.log(TAG, "Error", JSON.stringify(err));
-            cb(err)
+            cb && cb(err)
         } else {
             console.log(TAG, "Data", JSON.stringify(data));
-            cb(null, data);
+            cb && cb(null, data);
         }
     });
 }
@@ -51,29 +53,25 @@ function login(id, secret, cb) {
  * Registers a new user against the given CA.
  * @param username The name of the user.
  * @param role The role to assign to the user.
- * @param ca_host The host for the CA.
- * @param ca_port The port for the CA API.
  * @param cb A callback of the form: function(err, credentials);
  */
-function registerUser (username, role, ca_host, ca_port, cb) {
-    // Initialize the connector to the CA
-    dataSource.settings = {
-        host: ca_host,
-        port: ca_port
-    };
-    connector.initialize(dataSource);
-    
+function registerUser(username, role, cb) {
+    if (!dataSource.connector) {
+        cb && cb(new Error("cannot register users before the CA connector is setup!"));
+        return;
+    }
+
     // Register the user on the CA
     var user = {
         identity: username,
         role: role
     };
 
-    console.log(TAG, "Registering user against CA:", JSON.stringify(user));
+    console.log(TAG, "Registering user against CA:", username, "| role:", role);
     dataSource.connector.registerUser(user, function (err, response) {
         if (err) {
-            console.error(TAG, "RegisterUser failed:", username, err.message);
-            cb(err);
+            console.error(TAG, "RegisterUser failed:", username, JSON.stringify(err));
+            cb && cb(err);
         } else {
             console.log(TAG, "RegisterUser succeeded:", JSON.stringify(response));
             // Send the response (username and secret) to the callback
@@ -83,27 +81,27 @@ function registerUser (username, role, ca_host, ca_port, cb) {
             };
 
             // Log the user in so that we can initialize their account in the chaincode
-            login(creds.id, creds.secret, function(err) {
-                
-                if(err) {
+            login(creds.id, creds.secret, function (err) {
+                if (err) {
                     console.error(TAG, "Cannot initialize user account due to failed login:", err.message);
-                    cb(err);
+                    cb && cb(err);
                 } else {
-                    // Create an account for the user in the ledger
-                    console.log(TAG, "Initializing user account")
-                    chaincode.createAccount([username], username, function(err) {
-                        if(err) {
+                    // Create an account for the user in the cp chaincode
+                    console.log(TAG, "Initializing user's trading account");
+                    chaincode.createAccount([username], username, function (err) {
+                        if (err) {
                             console.error(TAG, "Failed to initialize account:", err.message);
-                            cb(err);
+                            cb && cb(err);
                         } else {
                             console.log(TAG, "Initialized account:", creds.id);
-                            cb(null, creds);
+                            cb && cb(null, creds);
                         }
                     });
                 }
             });
         }
     });
+
 }
 
 module.exports.login = login;
@@ -113,8 +111,26 @@ module.exports.registerUser = registerUser;
  * Sets the registrar up to register/login users.
  * @param sdk The sdk object created from ibm-blockchain-js.
  * @param cc The chaincode for creating new user accounts.
+ * @param cert_auth The service credentials for the networks certificate authority.
+ * @param cb A callback of the form
  */
-module.exports.setup = function(sdk, cc) {
-    ibc = sdk;
-    chaincode = cc;
+module.exports.setup = function (sdk, cc, cert_auth, cb) {
+    if (sdk && cc && cert_auth) {
+        console.log(TAG, "user manager properly configured");
+        ibc = sdk;
+        chaincode = cc;
+        ca = cert_auth;
+
+        // Initialize the connector to the CA
+        dataSource.settings = {
+            host: cert_auth.api_host,
+            port: cert_auth.api_port_tls
+        };
+
+        console.log(TAG, "initializing ca connection to:", dataSource.settings.host, ":", dataSource.settings.port);
+        connector.initialize(dataSource, cb);
+
+    } else {
+        console.error(TAG, "user manager requires all of its setup parameters to function")
+    }
 };
