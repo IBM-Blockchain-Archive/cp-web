@@ -91,12 +91,13 @@ function register(req, res) {
     console.log(TAG, "Validating username and assigning role for:", req.body.username);
     var role = 1;
     if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
-        role = 4;
+        role = 3;
     }
 
     user_reg.registerUser(req.body.username, role, function (err, creds) {
         if (err) {
-            req.session.reg_error_msg = "Failed to register user:" + err.message
+            req.session.reg_error_msg = "Failed to register user:" + err.message;
+            req.session.registration = null;
             console.error(TAG, req.session.reg_error_msg);
         } else {
             console.log(TAG, "Registered user:", JSON.stringify(creds));

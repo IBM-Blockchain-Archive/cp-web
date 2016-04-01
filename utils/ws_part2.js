@@ -84,6 +84,8 @@ module.exports.process_msg = function (ws, data) {
                     if (e == null) {
                         stats.height = key;
                         sendMsg({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
+                    } else {
+                        console.log("Web_Socket_Server: Chainstats failure", JSON.stringify(e));
                     }
                     cb(null);
                 });

@@ -216,7 +216,7 @@ function configure_network() {
             git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2',			//GO git http url
 
             //hashed cc name from prev deployment
-            //deployed_name: 'aa9912b29e0778ee09fda59d381e43453a9fcf6260b8b0ec6b625830636f79d770845fe2e3a4f47d4a1f3fdc17e4d45d809faa8b15993173db289678734e2a40'
+            deployed_name: '1aa1eb5472982fa03debc00bd48b916e1b48ad95e1aa28a871b2380fdcb735f81d32f7e3b3c9c20a5dc172ba30d62007874dea943d33931e66c24e7ddf63f773'
         }
     };
     if (process.env.VCAP_SERVICES) {
@@ -335,7 +335,7 @@ function cb_deployed(e, d) {
             }
 
             //got the block's stats, lets send the statistics
-            function cb_blockstats(e, stats) {
+            function cb_blockstats(err, stats) {
                 if (chain_stats.height) stats.height = chain_stats.height - 1;
                 wss.broadcast({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
             }

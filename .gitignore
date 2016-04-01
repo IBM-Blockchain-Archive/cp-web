@@ -4,7 +4,7 @@
 **/temp
 **/public/logs/**
 .project
-cc_summaries/**
+cc_summaries/*.json
 
 .idea
 .tmp

@@ -226,13 +226,14 @@ function connect_to_server() {
             var data = JSON.parse(msg.data);
             console.log('rec', data);
             if (data.msg === 'papers') {
-                //console.log('!', data.papers);
+                console.log('!', data.papers);
                 if ($('#auditPanel').is)
                     for (var i in panels) {
                         build_trades(JSON.parse(data.papers), panels[i]);
                     }
             }
             else if (data.msg === 'chainstats') {
+                console.log(JSON.stringify(data));
                 var e = formatDate(data.blockstats.transactions[0].timestamp.seconds * 1000, '%M/%d/%Y &nbsp;%I:%m%P');
                 $("#blockdate").html('<span style="color:#fff">TIME</span>&nbsp;&nbsp;' + e + ' UTC');
                 var temp = {
@@ -315,7 +316,7 @@ function build_trades(papers, panelDesc) {
     for (var i in entries) {
         console.log('!', entries[i]);
 
-        var style = ' ';
+        var style;
 
         if (entries[i].quantity > 0) {													//cannot buy when there are none
 
@@ -337,7 +338,7 @@ function build_trades(papers, panelDesc) {
                 ];
 
                 var row = createRow(data);
-                row.classList.add(style);
+                style && row.classList.add(style);
 
                 // Only the trade panel should allow you to interact with trades
                 if (panelDesc.name === "trade") {

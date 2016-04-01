@@ -83,7 +83,7 @@ function registerUser(username, role, cb) {
             // Log the user in so that we can initialize their account in the chaincode
             login(creds.id, creds.secret, function (err) {
                 if (err) {
-                    console.error(TAG, "Cannot initialize user account due to failed login:", err.message);
+                    console.error(TAG, "Cannot initialize user account due to failed login:", JSON.stringify(err));
                     cb && cb(err);
                 } else {
                     // Create an account for the user in the cp chaincode

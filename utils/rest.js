@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* global Buffer */
 /*******************************************************************************
  * Copyright (c) 2015 IBM Corp.
@@ -60,8 +60,8 @@
 	include_headers: If true the response argument will be {"response":<response>, "headers":<headers>} 
 */
 
-var https_mod = require("https");
-var http_mod = require("http");
+var https_mod = require('https');
+var http_mod = require('http');
 var default_options = 	{
 							quiet: false,
 							ssl: true,
@@ -118,7 +118,7 @@ function http(options, parameters, body){
 		http = http_mod;																		//if options.ssl == false use http
 		http_txt = '[http ' + options.method + ' - ' + id + ']';
 	}
-	if(!options.quiet) console.log(http_txt + ' ' + options.path);	
+	if(!options.quiet) console.log(http_txt + ' ' + options.path);
 	
 	//// Sanitize Inputs ////
 	var querystring = require('querystring');													//convert all header keys to lower-case for easier parsing
@@ -134,7 +134,8 @@ function http(options, parameters, body){
 		if(options.headers) options.headers['content-type'] = 'application/json';
 		else options.headers = {'content-type': 'application/json'};
 		body = JSON.stringify(body);																//stringify body
-	}	
+	}
+	
 	if(options.headers && options.headers['accept'] && options.headers['accept'].toLowerCase().indexOf('json') >= 0) acceptJson = true;
 	if(options.success && options.failure) jQuery = true;
 	else if(options.cb) nodeJs = true;
@@ -143,12 +144,16 @@ function http(options, parameters, body){
 		if(options.headers) options.headers['content-length'] = Buffer.byteLength(body);
 		else options.headers = {'content-lenght': Buffer.byteLength(body)};
 	}
-	//console.log('?', options);
+	else if(options.headers['content-length']) delete options.headers['content-length'];
 	
+	if(!options.quiet && options.method.toLowerCase() !== 'get') {
+		console.log('  body:', body);
+	}
+		
 	//// Handle Request ////
 	if(typeof parameters == 'object') options.path += '?' + querystring.stringify(parameters);		//should be a json object
 	var request = http.request(options, function(resp) {
-		var str = "", temp, chunks = 0;
+		var str = '', temp, chunks = 0;
 		if(!options.quiet) console.log(http_txt + ' Status code: ' + resp.statusCode);
 		
 		resp.setEncoding('utf8');
@@ -207,7 +212,7 @@ function http(options, parameters, body){
 		request.destroy();
 	});
 	
-	if(body && body != '' && !isEmpty(body)){
+	if(body && body !== '' && !isEmpty(body)){
 		request.write(body);
 	}
 	request.end();																					//send the request
