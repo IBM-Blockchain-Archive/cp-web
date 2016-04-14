@@ -307,6 +307,8 @@ function connect_to_server() {
  * @param panelDesc An object describing what panel the trades are being shown in.
  */
 function build_trades(papers, panelDesc) {
+
+    if(!user.name)
     bag.papers = papers;						//store the trades for posterity
     //console.log('papers:', bag.papers);
 
