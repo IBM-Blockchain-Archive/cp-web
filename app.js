@@ -286,7 +286,7 @@ function finalSetup(err, data) {
         if (!process.error) process.error = {type: 'deploy', msg: err.details};
     } else {
         part2.setup(ibc, chaincode, users);
-        user_manager.setup(ibc, chaincode, ca, cb_deployed)
+        user_manager.setup(ibc, chaincode, ca, cb_deployed);
     }
 }
 
@@ -334,7 +334,7 @@ function cb_deployed(e, d) {
                 console.log('hey new block, lets refresh and broadcast to all');
                 ibc.block_stats(chain_stats.height - 1, cb_blockstats);
                 wss.broadcast({msg: 'reset'});
-                chaincode.query.query('GetAllCPs', cb_got_papers);
+                chaincode.query.query(['GetAllCPs'], cb_got_papers);
             }
 
             //got the block's stats, lets send the statistics
