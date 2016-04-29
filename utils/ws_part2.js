@@ -25,21 +25,21 @@ module.exports.process_msg = function (ws, data) {
     if (data.type == 'create') {
         if (data.paper && data.paper.ticker) {
             console.log('!', data.paper);
-            chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper), data.user], cb_invoked);				//create a new paper
+            chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);	//create a new paper (args, enrollID, callback)
         }
     }
     else if (data.type == 'get_papers') {
-        chaincode.query.query(['GetAllCPs', data.user], cb_got_papers);
+        chaincode.query.query(['GetAllCPs', data.user], cb_got_papers);									//(args, enrollID, callback)
     }
     else if (data.type == 'transfer_paper') {
         console.log('transfering msg', data.transfer);
-        chaincode.invoke.transferPaper([JSON.stringify(data.transfer), data.user]);
+        chaincode.invoke.transferPaper([JSON.stringify(data.transfer)], data.user);						//(args, enrollID, callback)
     }
     else if (data.type == 'chainstats') {
         ibc.chain_stats(cb_chainstats);
     }
     else if (data.type == 'get_company') {
-        chaincode.query.query(['GetCompany', data.company, data.user], cb_got_company);
+        chaincode.query.query(['GetCompany', data.company], data.user, cb_got_company);					//(args, enrollID, callback)
     }
 
     function cb_got_papers(e, papers) {
