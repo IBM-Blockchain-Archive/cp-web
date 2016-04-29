@@ -242,14 +242,21 @@ function connect_to_server() {
             var data = JSON.parse(msg.data);
             console.log('rec', data);
             if (data.msg === 'papers') {
-                console.log('!', data.papers);
-                if ($('#auditPanel').is)
-                    for (var i in panels) {
-                        build_trades(JSON.parse(data.papers), panels[i]);
-                    }
+				try{
+					var papers = JSON.parse(data.papers);
+					console.log('!', papers);
+					if ($('#auditPanel').is){
+						for (var i in panels) {
+							build_trades(papers, panels[i]);
+						}
+					}
+				}
+				catch(e){
+					console.log('cannot parse papers', e);
+				}
             }
             else if (data.msg === 'chainstats') {
-                console.log(JSON.stringify(data));
+                //console.log(JSON.stringify(data));
                 var e = formatDate(data.blockstats.transactions[0].timestamp.seconds * 1000, '%M/%d/%Y &nbsp;%I:%m%P');
                 $("#blockdate").html('<span style="color:#fff">TIME</span>&nbsp;&nbsp;' + e + ' UTC');
                 var temp = {
@@ -259,7 +266,13 @@ function connect_to_server() {
                 new_block(temp);									//send to blockchain.js
             }
             else if (data.msg === 'company') {
-                $("#accountBalance").html(formatMoney(data.company.cashBalance));
+				try{
+					var company = JSON.parse(data.company);
+                	$("#accountBalance").html(formatMoney(company.cashBalance));
+				}
+				catch(e){
+					console.log('cannot parse company', e);
+				}
             }
             else if (data.msg === 'reset') {
                 // Ask for all available trades and information for the current company
