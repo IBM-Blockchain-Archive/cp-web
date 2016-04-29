@@ -237,14 +237,14 @@ function connect_to_server() {
         }, 5000);					//try again one more time, server restarts are quick
     }
 
-    function onMessage(msg) {
-        try {
-            var data = JSON.parse(msg.data);
-            console.log('rec', data);
-            if (data.msg === 'papers') {
+	function onMessage(msg) {
+		try {
+			var data = JSON.parse(msg.data);
+			console.log('rec', data);
+			if (data.msg === 'papers') {
 				try{
 					var papers = JSON.parse(data.papers);
-					console.log('!', papers);
+					//console.log('!', papers);
 					if ($('#auditPanel').is){
 						for (var i in panels) {
 							build_trades(papers, panels[i]);
@@ -254,42 +254,42 @@ function connect_to_server() {
 				catch(e){
 					console.log('cannot parse papers', e);
 				}
-            }
-            else if (data.msg === 'chainstats') {
-                //console.log(JSON.stringify(data));
-                var e = formatDate(data.blockstats.transactions[0].timestamp.seconds * 1000, '%M/%d/%Y &nbsp;%I:%m%P');
-                $("#blockdate").html('<span style="color:#fff">TIME</span>&nbsp;&nbsp;' + e + ' UTC');
-                var temp = {
-                    id: data.blockstats.height,
-                    blockstats: data.blockstats
-                };
-                new_block(temp);									//send to blockchain.js
-            }
-            else if (data.msg === 'company') {
+			}
+			else if (data.msg === 'chainstats') {
+				//console.log(JSON.stringify(data));
+				var e = formatDate(data.blockstats.transactions[0].timestamp.seconds * 1000, '%M/%d/%Y &nbsp;%I:%m%P');
+				$("#blockdate").html('<span style="color:#fff">TIME</span>&nbsp;&nbsp;' + e + ' UTC');
+				var temp = {
+					id: data.blockstats.height,
+					blockstats: data.blockstats
+				};
+				new_block(temp);									//send to blockchain.js
+			}
+			else if (data.msg === 'company') {
 				try{
 					var company = JSON.parse(data.company);
-                	$("#accountBalance").html(formatMoney(company.cashBalance));
+					$("#accountBalance").html(formatMoney(company.cashBalance));
 				}
 				catch(e){
 					console.log('cannot parse company', e);
 				}
-            }
-            else if (data.msg === 'reset') {
-                // Ask for all available trades and information for the current company
-                ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
-                if (user.role !== "auditor") {
-                    ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
-                }
-            }
-            else if (data.type === 'error') {
-                console.log("Error:", data.error);
-            }
-        }
-        catch (e) {
-            console.log('ERROR', e);
-            //ws.close();
-        }
-    }
+			}
+			else if (data.msg === 'reset') {
+				// Ask for all available trades and information for the current company
+				ws.send(JSON.stringify({type: "get_papers", v: 2, user: user.username}));
+				if (user.role !== "auditor") {
+					ws.send(JSON.stringify({type: 'get_company', company: user.name, user: user.username}));
+				}
+			}
+			else if (data.type === 'error') {
+				console.log("Error:", data.error);
+			}
+		}
+		catch (e) {
+			console.log('ERROR', e);
+			//ws.close();
+		}
+	}
 
     function onError(evt) {
         console.log('ERROR ', evt);
