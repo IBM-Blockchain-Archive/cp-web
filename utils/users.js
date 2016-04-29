@@ -38,7 +38,7 @@ function login(id, secret, cb) {
     }
 
     // Just log in users against the first peer, as it is used for all rest calls anyway.
-    ibc.register(0, id, secret, function (err, data) {
+    ibc.register(0, id, secret, 2, function (err, data) {
         if (err) {
             console.log(TAG, "Error", JSON.stringify(err));
             cb && cb(err)
