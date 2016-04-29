@@ -75,7 +75,9 @@ function registerUser(username, role, cb) {
     // Register the user on the CA
     var user = {
         identity: username,
-        role: role
+        role: role,
+        account: "group1",
+        affiliation: "00001"
     };
 
     console.log(TAG, "Registering user against CA:", username, "| role:", role);
