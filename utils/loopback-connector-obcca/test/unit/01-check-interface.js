@@ -15,8 +15,11 @@
 */
 /**
  * Licensed Materials - Property of IBM
- * © Copyright IBM Corp. 2015
+ * © Copyright IBM Corp. 2016
  */
+
+var debug = require('debug')('OBCCAConnector');
+
 var connector = require('../..');
 var assert = require('assert');
 var test = require('tape');

@@ -75,7 +75,9 @@ function registerUser(username, role, cb) {
     // Register the user on the CA
     var user = {
         identity: username,
-        role: role
+        role: role,
+        account: "group1",
+        affiliation: "00001"
     };
 
     console.log(TAG, "Registering user against CA:", username, "| role:", role);
@@ -126,7 +128,8 @@ module.exports.setup = function (sdk, cc, cert_auth, cb) {
         // Initialize the connector to the CA
         dataSource.settings = {
             host: cert_auth.api_host,
-            port: cert_auth.api_port_tls
+            port: cert_auth.api_port_tls,
+            secure: true
         };
 
         console.log(TAG, "initializing ca connection to:", dataSource.settings.host, ":", dataSource.settings.port);

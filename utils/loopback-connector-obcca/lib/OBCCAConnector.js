@@ -15,8 +15,11 @@
 */
 /**
  * Licensed Materials - Property of IBM
- * © Copyright IBM Corp. 2015
+ * © Copyright IBM Corp. 2016
  */
+
+var debug = require('debug')('OBCCAConnector');
+
 var fs = require('fs');
 var kdf = require('./kdf')
 //crypto stuff
@@ -34,16 +37,16 @@ var Timestamp = grpc.load(__dirname + "/protos/google/protobuf/timestamp.proto")
 var connector;
 
 //Implement Loopback.io connector interface
-exports.initialize = function(dataSource,callback) {
+exports.initialize = function (dataSource, callback) {
 
-	//instantiate OBCCAConnector with dataSource.settings
-	connector = new OBCCAConnector(dataSource.settings);
+    //instantiate OBCCAConnector with dataSource.settings
+    connector = new OBCCAConnector(dataSource.settings);
 	
-	//set dataSource.connector to connector
-	dataSource.connector = connector;
+    //set dataSource.connector to connector
+    dataSource.connector = connector;
     connector.dataSource = dataSource;
-    
-    connector.DataAccessObject = function() {};
+
+    connector.DataAccessObject = function () { };
     for (var m in OBCCAConnector.prototype) {
         var method = OBCCAConnector.prototype[m];
         if ('function' === typeof method) {
@@ -85,31 +88,40 @@ exports.initialize = function(dataSource,callback) {
             });
     };
 
-	callback && callback();
+    callback && callback();
 
 };
 
-exports.stop = function() {
+exports.stop = function () {
     connector.stop();
 };
 
-exports.start = function() {
+exports.start = function () {
     connector.start();
 };
 
 function OBCCAConnector(settings) {
-	
-	this.name = 'OBCConnector';
+
+    this.name = 'OBCConnector';
     this.grpcServerAddress = settings.host + ":" + settings.port;
-	this.grpcCredentials = grpc.credentials.createSsl();
+    if (settings.secure)
+    {
+        this.grpcCredentials = grpc.credentials.createSsl();
+    }
+    else
+    {
+        this.grpcCredentials = grpc.credentials.createInsecure();
+    }
+    
     
     //load the protobuf definitions
     this.protos = grpc.load(protoFile).protos;
-    this.ecaaClient = new this.protos.ECAA(this.grpcServerAddress,this.grpcCredentials);
-    this.ecapClient = new this.protos.ECAP(this.grpcServerAddress,this.grpcCredentials);
-    this.tcapClient = new this.protos.TCAP(this.grpcServerAddress,this.grpcCredentials);
+    this.ecaaClient = new this.protos.ECAA(this.grpcServerAddress, this.grpcCredentials);
+    this.ecapClient = new this.protos.ECAP(this.grpcServerAddress, this.grpcCredentials);
+    this.tcapClient = new this.protos.TCAP(this.grpcServerAddress, this.grpcCredentials);
+    this.tlscapClient = new this.protos.TLSCAP(this.grpcServerAddress, this.grpcCredentials);
 
-	this.initialized = false;
+    this.initialized = false;
 
 };
 
@@ -130,28 +142,26 @@ exports.OBCCAConnector = OBCCAConnector;
  * @param {string} UserRequest.identity
  * @param {number} UserRequest.role
  * @return {RegisterUserResponse}
- */ 
-OBCCAConnector.prototype.registerUser = function(userRequest,callback){
-    
-    var registerUserRequest = new this.protos.RegisterUserReq();
-    registerUserRequest.setId({id: userRequest.identity});
-    registerUserRequest.setRole(userRequest.role);
-    this.ecaaClient.registerUser(registerUserRequest,function(err,token){
-        if (err)
-        {
+ */
+OBCCAConnector.prototype.registerUser = function (userRequest, callback) {
 
-            if (callback)
-            {
-                callback(err,null);
+    var registerUserRequest = new this.protos.RegisterUserReq();
+    registerUserRequest.setId({ id: userRequest.identity });
+    registerUserRequest.setRole(userRequest.role);
+    registerUserRequest.setAccount(userRequest.account);
+    registerUserRequest.setAffiliation(userRequest.affiliation);
+    this.ecaaClient.registerUser(registerUserRequest, function (err, token) {
+        if (err) {
+
+            if (callback) {
+                callback(err, null);
             }
         }
-        else
-        {
+        else {
 
-            if (callback)
-            {
-                console.log(userRequest.identity + ' | ' + token.tok.toString());
-                callback(null,{identity: userRequest.identity, token:token.tok.toString()});
+            if (callback) {
+                debug(userRequest.identity + ' | ' + token.tok.toString());
+                callback(null, { identity: userRequest.identity, token: token.tok.toString() });
             }
         }
     })
@@ -165,60 +175,100 @@ OBCCAConnector.prototype.registerUser = function(userRequest,callback){
  * Retrieve the ECA root certificate
  * 
  */
-OBCCAConnector.prototype.getECACertificate = function(callback){
-    
-    this.ecapClient.readCaCertificate(new this.protos.Empty(),function(err,cert){
-        if (err)
-        {
+OBCCAConnector.prototype.getECACertificate = function (callback) {
 
-            if (callback)
-            {
-                callback(err,null);
+    this.ecapClient.readCaCertificate(new this.protos.Empty(), function (err, cert) {
+        if (err) {
+
+            if (callback) {
+                callback(err, null);
             }
         }
-        else
-        {
-            
-            console.log('ECA Root Cert:\n',cert.cert.toString('base64'));
-            callback();
+        else {
+
+            var ecaCert = cert.cert.toString('hex');
+            debug('ECA Root Cert:\n', ecaCert);
+            callback(null,ecaCert);
         }
-        
+
     });
-    
+
 };
+
+/**
+ * Retrieve the TCA root certificate
+ * 
+ */
+OBCCAConnector.prototype.getTCACertificate = function (callback) {
+
+    this.tcapClient.readCaCertificate(new this.protos.Empty(), function (err, cert) {
+        if (err) {
+
+            if (callback) {
+                callback(err, null);
+            }
+        }
+        else {
+
+            var tcaCert = cert.cert.toString('hex');
+            debug('TCA Root Cert:\n', tcaCert);
+            callback(null,tcaCert);
+        }
+
+    });
+
+};
+
+/**
+ * Retrieve the TLS root certificate
+ * 
+ */
+OBCCAConnector.prototype.getTLSCertificate = function (callback) {
+
+    this.tlscapClient.readCaCertificate(new this.protos.Empty(), function (err, cert) {
+        if (err) {
+
+            if (callback) {
+                callback(err, null);
+            }
+        }
+        else {
+
+            var tlsCert = cert.cert.toString('hex');
+            debug('TLS Root Cert:\n', tlsCert);
+            callback(null,tlsCert);
+        }
+
+    });
+
+};
+
 
 /**
  * Retrieve enrollment certificates from the ECA
  * @param {Object} LoginRequest
  * @param {string} LoginRequest.identity
  * @param {string} LoginRequest.token
- */ 
-OBCCAConnector.prototype.getEnrollmentCertificateFromECA = function(loginRequest,callback){
+ */
+OBCCAConnector.prototype.getEnrollmentCertificateFromECA = function (loginRequest, callback) {
     var self = this;
-    
-    var timestamp = new Timestamp({seconds: Date.now()/1000,nanos: 0});
+
+    var timestamp = new Timestamp({ seconds: Date.now() / 1000, nanos: 0 });
 
     //generate ECDSA keys
-    var ecKeypair = KEYUTIL.generateKeypair("EC", "secp384r1");
+    //signing key
+    var ecKeypair = KEYUTIL.generateKeypair("EC", "secp256r1");
     var spki = new asn1.x509.SubjectPublicKeyInfo(ecKeypair.pubKeyObj);
     
-    var ecKeypair2 = KEYUTIL.generateKeypair("EC", "secp384r1");
+    //encryption key
+    var ecKeypair2 = KEYUTIL.generateKeypair("EC", "secp256r1");
     var spki2 = new asn1.x509.SubjectPublicKeyInfo(ecKeypair2.pubKeyObj);
-
-    //var rsaPrivKey = new NodeRSA(fs.readFileSync(__dirname + '/rsa/private_key.pem','utf8'));
-    //rsaPrivKey.setOptions({encryptionScheme:'pkcs1'});
-    //var rsaPrivKey = new NodeRSA({b:2048});
-    //rsaPrivKey.setOptions({encryptionScheme:'pkcs1'});
-    //var rsaKey = new RSAKey();
-    //rsaKey.readPrivateKeyFromPEMString(rsaPrivKey.exportKey('pkcs1-private-pem'));
-    //var spki2 = new asn1.x509.SubjectPublicKeyInfo(rsaKey);
-    //console.log((new asn1.x509.SubjectPublicKeyInfo(rsaKey)).getASN1Object().getEncodedHex())
     
     //create the proto message
     var eCertCreateRequest = new this.protos.ECertCreateReq();
     eCertCreateRequest.setTs(timestamp);
-    eCertCreateRequest.setId({id: loginRequest.identity});
-    eCertCreateRequest.setTok({tok:new Buffer(loginRequest.token)});
+    eCertCreateRequest.setId({ id: loginRequest.identity });
+    eCertCreateRequest.setTok({ tok: new Buffer(loginRequest.token) });
     //public signing key (ecdsa)
     var signPubKey = new this.protos.PublicKey(
         {
@@ -231,77 +281,63 @@ OBCCAConnector.prototype.getEnrollmentCertificateFromECA = function(loginRequest
         {
             type: this.protos.CryptoType.ECDSA,
             key: new Buffer(spki2.getASN1Object().getEncodedHex(), 'hex')
-        });   
+        });
     eCertCreateRequest.setEnc(encPubKey);
-       
-    self.createCertificatePair(eCertCreateRequest,function(err,eCertCreateResp){
-        if (err)
-        {
-            if (callback)
-            {
-                callback(err,null);
+
+    self.createCertificatePair(eCertCreateRequest, function (err, eCertCreateResp) {
+        if (err) {
+            if (callback) {
+                callback(err, null);
             }
         }
-        else
-        {
+        else {
             var cipherText = eCertCreateResp.tok.tok;
             //cipherText = ephemeralPubKeyBytes + encryptedTokBytes + macBytes
             //ephemeralPubKeyBytes = first ((384+7)/8)*2 + 1 bytes = first 97 bytes
+            //ephemeralPubKeyBytes = first ((256+7)/8)*2 + 1 bytes = first 65 bytes
             //hmac is sha3_384 = 48 bytes or sha3_256 = 32 bytes
-            var ephemeralPublicKeyBytes = cipherText.slice(0,97);
-            var encryptedTokBytes = cipherText.slice(97,cipherText.length - 32);
-            console.log("encryptedTokBytes:\n",encryptedTokBytes);
+            var ephemeralPublicKeyBytes = cipherText.slice(0, 65);
+            var encryptedTokBytes = cipherText.slice(65, cipherText.length - 32);
+            debug("encryptedTokBytes:\n", encryptedTokBytes);
             var macBytes = cipherText.slice(cipherText.length - 48);
-            console.log("length = ",ephemeralPublicKeyBytes.length+encryptedTokBytes.length+macBytes.length);
-            //console.log(rsaPrivKey.decrypt(eCertCreateResp.tok.tok));
-            console.log('encrypted Tok: ',eCertCreateResp.tok.tok);
-            console.log('encrypted Tok length: ',eCertCreateResp.tok.tok.length);
-            //console.log('public key obj:\n',ecKeypair2.pubKeyObj);
-            console.log('public key length: ',new Buffer(ecKeypair2.pubKeyObj.pubKeyHex,'hex').length);
-            //console.log('private key obj:\n',ecKeypair2.prvKeyObj);
-            console.log('private key length: ',new Buffer(ecKeypair2.prvKeyObj.prvKeyHex,'hex').length);
-            
-            
-            
-            var EC = elliptic.ec           
-            var curve = elliptic.curves['p384'];
+            debug("length = ", ephemeralPublicKeyBytes.length + encryptedTokBytes.length + macBytes.length);
+            //debug(rsaPrivKey.decrypt(eCertCreateResp.tok.tok));
+            debug('encrypted Tok: ', eCertCreateResp.tok.tok);
+            debug('encrypted Tok length: ', eCertCreateResp.tok.tok.length);
+            //debug('public key obj:\n',ecKeypair2.pubKeyObj);
+            debug('public key length: ', new Buffer(ecKeypair2.pubKeyObj.pubKeyHex, 'hex').length);
+            //debug('private key obj:\n',ecKeypair2.prvKeyObj);
+            debug('private key length: ', new Buffer(ecKeypair2.prvKeyObj.prvKeyHex, 'hex').length);
+
+
+
+            var EC = elliptic.ec
+            var curve = elliptic.curves['p256'];
             var ecdsa = new EC(curve);
             
             //convert bytes to usable key object
-            var ephPubKey = ecdsa.keyFromPublic(ephemeralPublicKeyBytes.toString('hex'),'hex');
+            var ephPubKey = ecdsa.keyFromPublic(ephemeralPublicKeyBytes.toString('hex'), 'hex');
             var encPrivKey = ecdsa.keyFromPrivate(ecKeypair2.prvKeyObj.prvKeyHex, 'hex');
-            
-            var secret = encPrivKey.derive(ephPubKey.getPublic());
-            //console.log('secret: ',secret);
-            //console.log('secret bits: ',secret.bitLength());
-            //console.log('secret number: ',secret.toString(10));
-            //console.log('secret array: ',secret.toArray());
-            var aesKey = kdf.hkdf(secret.toArray(),256,null,null,'sha3-256');
 
-            console.log('aesKey: ',aesKey);
+            var secret = encPrivKey.derive(ephPubKey.getPublic());
+            var aesKey = kdf.hkdf(secret.toArray(), 256, null, null, 'sha3-256');
+
+            //debug('aesKey: ',aesKey);
             
-            var decryptedTokBytes = kdf.aesCFBDecryt(aesKey,encryptedTokBytes);
+            var decryptedTokBytes = kdf.aesCFBDecryt(aesKey, encryptedTokBytes);
             
-            //console.log(decryptedTokBytes);
-            console.log(decryptedTokBytes.toString());
-            
-            eCertCreateRequest.setTok({tok:decryptedTokBytes});
+            //debug(decryptedTokBytes);
+            debug(decryptedTokBytes.toString());
+
+            eCertCreateRequest.setTok({ tok: decryptedTokBytes });
             eCertCreateRequest.setSig(null);
-            
+
             var buf = eCertCreateRequest.toBuffer();
-            //console.log('Proto raw buffer:\n');
-            //console.log(JSON.stringify(buf));
-            //console.log('\n\n');            
-            //console.log('Hash:\n');
-            //console.log(JSON.stringify(new Buffer(sha3_384(buf),'hex')));          
-            
-            //console.log(curve);
-                    
+
             var signKey = ecdsa.keyFromPrivate(ecKeypair.prvKeyObj.prvKeyHex, 'hex');
-            //console.log(new Buffer(sha3_384(buf),'hex'));
-            var sig = ecdsa.sign(new Buffer(sha3_256(buf),'hex'), signKey);
-            //console.log(sig3);
-            
+            //debug(new Buffer(sha3_384(buf),'hex'));
+            var sig = ecdsa.sign(new Buffer(sha3_256(buf), 'hex'), signKey);
+
             eCertCreateRequest.setSig(new self.protos.Signature(
                 {
                     type: self.protos.CryptoType.ECDSA,
@@ -312,48 +348,99 @@ OBCCAConnector.prototype.getEnrollmentCertificateFromECA = function(loginRequest
             self.createCertificatePair(eCertCreateRequest, function (err, eCertCreateResp) {
                 if (err) {
                     if (callback) {
-                        callback(err, null);
+                        callback(err);
                     }
                 }
-                else
-                {
-                    console.log(eCertCreateResp);
-            
-                    callback(ecKeypair.prvKeyObj.prvKeyHex,eCertCreateResp.certs.sign.toString('hex'));
+                else {
+                    debug(eCertCreateResp);
+                    var enrollKey = ecKeypair.prvKeyObj.prvKeyHex;
+                    var enrollCert = eCertCreateResp.certs.sign.toString('hex');
+                    var enrollChainKey = eCertCreateResp.pkchain.toString('hex');
+                    
+                    
+                    //debug('cert:\n\n',enrollCert)
+                    
+                    
+                    callback(null, enrollKey, enrollCert, enrollChainKey);
                 }
             });
         }
-        
+
     });
 
 };
 
-OBCCAConnector.prototype.createCertificatePair = function(eCertCreateRequest, callback){
-    
-    this.ecapClient.createCertificatePair(eCertCreateRequest,function(err,eCertCreateResp){
-        if (err)
-        {
-            console.log('error:\n',err);
+OBCCAConnector.prototype.createCertificatePair = function (eCertCreateRequest, callback) {
 
-            if (callback)
-            {
-                callback(err,null);
+    this.ecapClient.createCertificatePair(eCertCreateRequest, function (err, eCertCreateResp) {
+        if (err) {
+            debug('error:\n', err);
+
+            if (callback) {
+                callback(err, null);
             }
         }
-        else
-        {
-            callback(null,eCertCreateResp);
+        else {
+            callback(null, eCertCreateResp);
         }
-        
+
     });
-    
+
 };
 
-OBCCAConnector.prototype.tcaCreateCertificateSet = function(num, callback){
+/**
+ * Retrieve transaction certificates from the TCA
+ * @param {Object} TCertSetRequest
+ * @param {string} TCertSetRequest.identity
+ * @param {string} TCertSetRequest.enrollmentKey
+ * @param {number} TCertSetRequest.num
+ */
+OBCCAConnector.prototype.tcaCreateCertificateSet = function (tCertSetRequest, callback) {
     var self = this;
+
+    var timestamp = new Timestamp({ seconds: Date.now() / 1000, nanos: 0 });
     
-    var timestamp = new Timestamp({seconds: Date.now()/1000,nanos: 0});
+    //create the proto
+    var tCertCreateSetReq = new this.protos.TCertCreateSetReq();
+    tCertCreateSetReq.setTs(timestamp);
+    tCertCreateSetReq.setId({ id: tCertSetRequest.identity });
+    tCertCreateSetReq.setNum(tCertSetRequest.num);
     
+    //serialize proto
+    var buf = tCertCreateSetReq.toBuffer();
+    
+    //sign the transaction using enrollmentKey
+    var EC = elliptic.ec
+    var curve = elliptic.curves['p256'];
+    var ecdsa = new EC(curve);
+    var signKey = ecdsa.keyFromPrivate(tCertSetRequest.enrollmentKey, 'hex');
+    //debug(new Buffer(sha3_384(buf),'hex'));
+    var sig = ecdsa.sign(new Buffer(sha3_256(buf), 'hex'), signKey);
+
+    tCertCreateSetReq.setSig(new self.protos.Signature(
+        {
+            type: self.protos.CryptoType.ECDSA,
+            r: new Buffer(sig.r.toString()),
+            s: new Buffer(sig.s.toString())
+        }
+        ));
+
+    //send the request
+    this.tcapClient.createCertificateSet(tCertCreateSetReq, function (err, tCertCreateSetResp) {
+        if (err) {
+            debug('error:\n', err);
+
+            if (callback) {
+                callback(err, null);
+            }
+        }
+        else {
+            debug('tCertCreateSetResp:\n', tCertCreateSetResp);
+            callback(null, tCertCreateSetResp.certs.key, tCertCreateSetResp.certs.certs);
+        }
+
+    })
+
 };
 
 //remote registerUser
