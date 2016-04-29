@@ -1,6 +1,6 @@
 # Commercial Paper Demo
 
-[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)
+[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/mastersingh24/cp-web.git)
 
 ## Description
 This application is a demonstration of how a commercial paper trading network might be implemented
