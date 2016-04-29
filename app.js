@@ -215,11 +215,11 @@ function configure_network() {
         },
         chaincode: {
             zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/archive/master.zip',
-            unzip_dir: 'cp-chaincode-v2-master',									//subdirectroy name of chaincode after unzipped
-            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2',			//GO git http url
+            unzip_dir: 'cp-chaincode-v2-master/hyperledger',							    //subdirectroy name of chaincode after unzipped
+            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/hyperledger',		//GO get http url
 
             //hashed cc name from prev deployment
-            //deployed_name: '1aa1eb5472982fa03debc00bd48b916e1b48ad95e1aa28a871b2380fdcb735f81d32f7e3b3c9c20a5dc172ba30d62007874dea943d33931e66c24e7ddf63f773'
+            deployed_name: '2450c95bc77e124c766ff650c2f4642e5c0bc2d576ee67db130900750cddc5982e295f320fd5dff7aca2f61fa7cc673fcdcc8a7464f94c68eeccdb14b2384a75'
         }
     };
     if (process.env.VCAP_SERVICES) {
@@ -238,7 +238,7 @@ function configure_network() {
         }
         async.each(arr, function (i, a_cb) {
             if (options.network.users[i] && options.network.users[i].secret && options.network.peers[0]) {											//make sure we still have a user for this network
-                ibc.register(0, options.network.users[i].username, options.network.users[i].secret, a_cb);
+                ibc.register(0, options.network.users[i].username, options.network.users[i].secret, 2, a_cb);
             }
             else a_cb();
         }, function (err, data) {
@@ -265,7 +265,7 @@ function cb_ready(err, cc) {//response has chaincode functions
     else {
         chaincode = cc;
         if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
-            cc.deploy('init', [], './cc_summaries', finalSetup);
+            cc.deploy('init', [], {save_path: './cc_summaries'}, finalSetup);
         }
         else {
             console.log('chaincode summary file indicates chaincode has been previously deployed');
@@ -334,7 +334,7 @@ function cb_deployed(e, d) {
                 console.log('hey new block, lets refresh and broadcast to all');
                 ibc.block_stats(chain_stats.height - 1, cb_blockstats);
                 wss.broadcast({msg: 'reset'});
-                chaincode.read('GetAllCPs', cb_got_papers);
+                chaincode.query.query('GetAllCPs', cb_got_papers);
             }
 
             //got the block's stats, lets send the statistics

@@ -47,7 +47,7 @@ function login(id, secret, cb) {
 
             // Make sure an account exists for the user
             console.log(TAG, "(Re)initializing user's trading account");
-            chaincode.createAccount([id], id, function (err) {
+            chaincode.invoke.createAccount([id], id, function (err) {
                 if (err) {
                     console.error(TAG, "Account init error:", JSON.stringify(err));
                 }
