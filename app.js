@@ -219,7 +219,7 @@ function configure_network() {
             git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/hyperledger',		//GO get http url
 
             //hashed cc name from prev deployment
-            deployed_name: '2450c95bc77e124c766ff650c2f4642e5c0bc2d576ee67db130900750cddc5982e295f320fd5dff7aca2f61fa7cc673fcdcc8a7464f94c68eeccdb14b2384a75'
+            //deployed_name: '2450c95bc77e124c766ff650c2f4642e5c0bc2d576ee67db130900750cddc5982e295f320fd5dff7aca2f61fa7cc673fcdcc8a7464f94c68eeccdb14b2384a75'
         }
     };
     if (process.env.VCAP_SERVICES) {
@@ -227,33 +227,7 @@ function configure_network() {
         options.chaincode.deployed_name = "";
     }
     
-    // 1. Load peer data
-    ibc.network(options.network.peers);
-
-    // 2. Register users with a peer
-    if (options.network.users && options.network.users.length > 0) {
-        var arr = [];
-        for (var i in options.network.users) {
-            arr.push(i);															//build the list of indexes
-        }
-        async.each(arr, function (i, a_cb) {
-            if (options.network.users[i] && options.network.users[i].secret && options.network.peers[0]) {											//make sure we still have a user for this network
-                ibc.register(0, options.network.users[i].username, options.network.users[i].secret, 2, a_cb);
-            }
-            else a_cb();
-        }, function (err, data) {
-            load_cc();
-        });
-    }
-    else {
-        console.log('No membership users found after filtering, assuming this is a network w/o membership');
-        load_cc();
-    }
-}
-
-// 3. Deploy the commercial paper chaincode
-function load_cc() {
-    ibc.load_chaincode(options.chaincode, cb_ready);						//download/parse and load chaincode
+    ibc.load(options, cb_ready);
 }
 
 var chaincode = null;
