@@ -84,6 +84,7 @@ function check_login(res, req) {
  * @param res The response.
  */
 function register(req, res) {
+	console.log('site_router.js register() - fired');
     req.session.reg_error_msg = "Registration failed";
     req.session.error_msg = null;
 
@@ -95,6 +96,7 @@ function register(req, res) {
     }
 
     user_reg.registerUser(req.body.username, role, function (err, creds) {
+		//console.log('! do i make it here?');
         if (err) {
             req.session.reg_error_msg = "Failed to register user:" + err.message;
             req.session.registration = null;
@@ -114,6 +116,7 @@ function register(req, res) {
  * @param res The response.
  */
 function login(req, res) {
+	console.log('site_router.js login() - fired');
     req.session.error_msg = 'Invalid username or password';
     req.session.reg_error_msg = null;
 

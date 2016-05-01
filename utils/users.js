@@ -38,7 +38,7 @@ function login(id, secret, cb) {
     }
 
     // Just log in users against the first peer, as it is used for all rest calls anyway.
-    ibc.register(0, id, secret, function (err, data) {
+    ibc.register(0, id, secret, 2, function (err, data) {
         if (err) {
             console.log(TAG, "Error", JSON.stringify(err));
             cb && cb(err)
@@ -47,7 +47,7 @@ function login(id, secret, cb) {
 
             // Make sure an account exists for the user
             console.log(TAG, "(Re)initializing user's trading account");
-            chaincode.createAccount([id], id, function (err) {
+            chaincode.invoke.createAccount([id], id, function (err) {
                 if (err) {
                     console.error(TAG, "Account init error:", JSON.stringify(err));
                 }
@@ -75,7 +75,9 @@ function registerUser(username, role, cb) {
     // Register the user on the CA
     var user = {
         identity: username,
-        role: role
+        role: role,
+        account: "group1",
+        affiliation: "00001"
     };
 
     console.log(TAG, "Registering user against CA:", username, "| role:", role);
@@ -126,7 +128,8 @@ module.exports.setup = function (sdk, cc, cert_auth, cb) {
         // Initialize the connector to the CA
         dataSource.settings = {
             host: cert_auth.api_host,
-            port: cert_auth.api_port_tls
+            port: cert_auth.api_port_tls,
+            secure: true
         };
 
         console.log(TAG, "initializing ca connection to:", dataSource.settings.host, ":", dataSource.settings.port);

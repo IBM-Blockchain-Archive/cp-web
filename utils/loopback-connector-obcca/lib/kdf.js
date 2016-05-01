@@ -1,3 +1,25 @@
+/**
+ * Copyright 2015 IBM
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/**
+ * Licensed Materials - Property of IBM
+ * © Copyright IBM Corp. 2016
+ */
+
+var debug = require('debug')('kdf');
+
 var sjcl = require('sjcl');
 var sha3_384 = require('js-sha3').sha3_384;
 var sha3_256 = require('js-sha3').sha3_256;
@@ -80,7 +102,7 @@ hash_sha3_384.prototype = {
     finalize: function () {
         var hash = this._hash.hex();
         var hashBits = sjcl.codec.hex.toBits(hash);
-        //console.log('finalize hashBits:\n',hashBits)
+        //debug('finalize hashBits:\n',hashBits)
         this.reset();
         return hashBits;
 
@@ -111,7 +133,7 @@ function hkdf(ikm, keyBitLength, salt, info, Hash) {
   //key = hmac.mac(ikm);
   hmac.update(ikm);
   key = hmac.digest();
-  console.log("prk: ",bitsToBytes(key));
+  debug("prk: ",bitsToBytes(key));
   hashLen = sjcl.bitArray.bitLength(key);
 
   loops = Math.ceil(keyBitLength / hashLen);
@@ -178,18 +200,18 @@ exports.aesCFBDecryt = function(key,encryptedBytes){
     var iv = crypto.randomBytes(16);
     var aes = new aesjs.ModeOfOperation.cfb(key, iv, 16);
     
-    console.log("encryptedBytes: ",encryptedBytes);
+    debug("encryptedBytes: ",encryptedBytes);
     
     //need to pad encryptedBytes to multiples of 16
     var numMissingBytes = 16 - (encryptedBytes.length%16);
-    console.log("missingBytes: ",numMissingBytes);
+    debug("missingBytes: ",numMissingBytes);
     
     if (numMissingBytes > 0)
     {
         encryptedBytes = Buffer.concat([encryptedBytes,new Buffer(numMissingBytes)]);
     }
     
-    console.log("encryptedBytes: ",encryptedBytes);
+    debug("encryptedBytes: ",encryptedBytes);
     
     var decryptedBytes = aes.decrypt(encryptedBytes);
     

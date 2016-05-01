@@ -31,8 +31,9 @@ test('Test #initialize Method', function (t) {
     t.plan(1);
 
     var settings = {
-        host: "localhost",
-        port: 50051
+        host: "504f6bfe-ead0-4bd2-b77c-b8bfe88cfcea_ca-api.blockchain.ibm.com",
+        port: 30303,
+        secure: true
     };
     dataSource.settings = settings;
     connector.initialize(dataSource);
@@ -46,13 +47,13 @@ test('Test #initialize Method', function (t) {
 var testUser = {
     identity: "testUser" + Date.now(),
     role: 1,
-    account: "bank_a",
+    account: "group1",
     affiliation: "00001"
 };
 
 var registeredUser;
 
-test('Register User', function (t) {
+test('Register User - Bluemix', function (t) {
     t.plan(1);
 
     dataSource.connector.registerUser(testUser, function (err, response) {
@@ -192,42 +193,4 @@ test('Get Transaction Certificates Set From TCA', function (t) {
 
 });
 
-
-
-test('Loopback integration', function (t) {
-
-    t.plan(2);
-
-
-    var dsOptions = {
-        connector: require("../.."),
-        host: "localhost",
-        port: 50051
-    };
-
-    var DataSource = require('loopback-datasource-juggler').DataSource;
-
-    var ds = new DataSource(dsOptions);
-    
-    //get models
-    var model1 = ds.getModel('RegisterUserRequest');
-
-    if (model1) {
-        t.pass('successfully registered RegisterUserRequest model');
-    }
-    else {
-        t.fail('failed to register RegisterUserRequest model');
-    };
-
-    var model2 = ds.getModel('RegisterUserResponse');
-
-    if (model2) {
-        t.pass('successfully registered RegisterUserResponse model');
-    }
-    else {
-        t.fail('failed to register RegisterUserResponse model');
-    };
-
-
-})
 
