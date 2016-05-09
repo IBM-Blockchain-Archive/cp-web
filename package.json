@@ -20,7 +20,7 @@
     "express": "4.0.0",
     "express-session": "1.2.1",
     "grpc": "^0.13.1",
-    "ibm-blockchain-js": "1.1.2",
+    "ibm-blockchain-js": "1.2.*",
     "jade": "1.3.1",
     "js-sha3": "^0.5.1",
     "jsrsasign": "^5.0.5",
