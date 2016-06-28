@@ -238,7 +238,7 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            pw = "DJY27pEnl16d";
+            var pw = "DJY27pEnl16d";
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
