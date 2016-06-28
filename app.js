@@ -201,14 +201,15 @@ var options = {};
 var user_manager = require('./utils/users');  // Need to call setup() once sdk and chaincode are loaded
 */
 // Start up the network!!
+
+var hlc = require('hlc');
+var chain = hlc.newChain("cp-web");
+
 configure_network();
 
 // ==================================
 // configure ibm-blockchain-js sdk
 // ==================================
-var hlc = require('hlc');
-var chain = hlc.newChain("cp-web");
-
 
 function configure_network() {
     var registrar = {
