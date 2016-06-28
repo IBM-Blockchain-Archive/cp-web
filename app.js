@@ -225,7 +225,7 @@ function configure_network() {
     chain.addPeer("grpc://test-peer1.rtp.raleigh.ibm.com:30303");
     chain.addPeer("grpc://test-peer2.rtp.raleigh.ibm.com:30303");
     chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
-    chain.setDevMode(true);
+    //chain.setDevMode(true);
     var testChaincodePath = "github.com/cp-chaincode-v2/";
     var testChaincodeID = "cp-chaincode";
 
@@ -258,15 +258,17 @@ function configure_network() {
                     });
                 }
                 chain.setRegistrar(WebAppAdmin);
-                deploy(WebAppAdmin);
+                deploy(WebAppAdmin,testChaincodePath);
             });
         }
     });
 }
 
-function deploy(WebAppAdmin) {
+function deploy(WebAppAdmin,testChaincodePath) {
     var deployRequest = {
         // Name (hash) required for invoke
+        chaincodePath: testChaincodePath,
+        
         chaincodeID: testChaincodeID,
         // Function to trigger
         fcn: "init",
