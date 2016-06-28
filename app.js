@@ -143,7 +143,7 @@ var ibc = new Ibc1();
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
 // ==================================
-var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
+/*var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
 
 var peers, users, ca;
 
@@ -199,7 +199,7 @@ var options = {};
 // Merge the user list and the service credentials so that the list users work as aliases for the
 // service users
 var user_manager = require('./utils/users');  // Need to call setup() once sdk and chaincode are loaded
-
+*/
 // Start up the network!!
 configure_network();
 
