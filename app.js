@@ -203,7 +203,10 @@ var user_manager = require('./utils/users');  // Need to call setup() once sdk a
 // Start up the network!!
 
 var hlc = require('hlc');
-var chain = hlc.newChain("cp-web");
+var chain = hlc.newChain("cp");
+var testChaincodePath = "github.com/cp-chaincode-v2";
+//var testChaincodePath = "github.com/hyperledger_chaincode/chaincode_example02_new";
+var testChaincodeID = "cp";
 
 configure_network();
 
@@ -226,13 +229,10 @@ function configure_network() {
     chain.addPeer("grpc://test-peer2.rtp.raleigh.ibm.com:30303");
     chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
     //chain.setDevMode(true);
-    var testChaincodePath = "github.com/cp-chaincode-v2/";
-    var testChaincodeID = "cp-chaincode";
-
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
         if (err) {
             console.log("Failed to get WebAppAdmin member " + " ---> " + err);
-            t.end(err);
+            //t.end(err);
         } else {
             console.log("Successfully got WebAppAdmin member" + " ---> " /*+ JSON.stringify(crypto)*/);
 
@@ -242,7 +242,7 @@ function configure_network() {
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
-                    t.end(err);
+                    //t.end(err);
                 } else {
                     console.log("Successfully enrolled WebAppAdmin member" + " ---> " /*+ JSON.stringify(crypto)*/);
 
@@ -258,24 +258,25 @@ function configure_network() {
                     });
                 }
                 chain.setRegistrar(WebAppAdmin);
-                deploy(WebAppAdmin,testChaincodePath);
+                deploy(WebAppAdmin);
             });
         }
     });
 }
-
-function deploy(WebAppAdmin,testChaincodePath) {
+//var sleep = require('sleep')
+function deploy(WebAppAdmin) {
     var deployRequest = {
         // Name (hash) required for invoke
-        chaincodePath: testChaincodePath,
-        
-        chaincodeID: testChaincodeID,
+
+        //chaincodeID: testChaincodeID,
         // Function to trigger
         fcn: "init",
         // Parameters for the invoke function
-        args: []
+        args: [],
+	chaincodePath: "github.com/cp-chaincode-v2/"
     };
-
+	console.log(deployRequest);
+	//sleep.sleep(10);
     // Trigger the invoke transaction
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
