@@ -1,6 +1,0 @@
-node_modules
-.*
-!.gitignore
-!.travis.yml
-sandbox
-coverage.html
