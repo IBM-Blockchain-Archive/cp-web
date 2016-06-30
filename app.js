@@ -137,8 +137,8 @@ require("cf-deployment-tracker-client").track();
 var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
-var Ibc1 = require('ibm-blockchain-js');
-var ibc = new Ibc1();
+//var Ibc1 = require('ibm-blockchain-js');
+//var ibc = new Ibc1();
 
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
@@ -207,7 +207,7 @@ var chain = hlc.newChain("cp");
 var testChaincodePath = "github.com/cp-chaincode-v2";
 //var testChaincodePath = "github.com/hyperledger_chaincode/chaincode_example02_new";
 var testChaincodeID = "cp";
-
+//var WebAppAdmin;
 configure_network();
 
 // ==================================
@@ -292,6 +292,7 @@ function deploy(WebAppAdmin) {
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
 	sleep.sleep(60);
 	query(WebAppAdmin,results.chaincodeID);
+	//final_setup();
     });
 
     deployTx.on('error', function (err) {

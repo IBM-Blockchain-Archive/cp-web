@@ -1,5 +1,5 @@
 **/launchConfigurations
-**/node_modules
+/node_modules
 **/.vscode
 **/temp
 **/public/logs/**
