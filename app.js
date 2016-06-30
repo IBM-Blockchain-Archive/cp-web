@@ -1,3 +1,4 @@
+
 "use strict";
 /* global process */
 /* global __dirname */
