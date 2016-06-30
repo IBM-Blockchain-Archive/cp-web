@@ -29,7 +29,7 @@ var setup = require('./setup');
 var cors = require("cors");
 var fs = require("fs");
 var util = require('util');
-
+var sleep = require('sleep');
 //// Set Server Parameters ////
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
@@ -272,7 +272,7 @@ function deploy(WebAppAdmin) {
         // Function to trigger
         fcn: "init",
         // Parameters for the invoke function
-        args: [],
+        args: ['a', '100'],
 	chaincodePath: "github.com/cp-chaincode-v2/"
     };
 	console.log(deployRequest);
@@ -283,13 +283,15 @@ function deploy(WebAppAdmin) {
     // Print the invoke results
     deployTx.on('submitted', function (results) {
         // Invoke transaction submitted successfully
-        console.log("Successfully submitted chaincode deploy transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + results);
+        console.log("Successfully submitted chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
     });
 
     // Listen for the completed event
     deployTx.on('complete', function (results) {
         // Invoke transaction submitted successfully
-        console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + results);
+        console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
+	sleep.sleep(60);
+	query(WebAppAdmin,results.chaincodeID);
     });
 
     deployTx.on('error', function (err) {
@@ -297,6 +299,33 @@ function deploy(WebAppAdmin) {
         console.log("Failed to submit chaincode invoke transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + err);
     });
 }
+
+function query(WebAppAdmin,ccID)
+{
+	var queryRequest = {
+        // Name (hash) required for query
+        chaincodeID: ccID,
+        // Function to trigger
+        fcn: "query",
+        // Existing state variable to retrieve
+        args: ["a"]
+    };
+
+    // Trigger the query transaction
+    WebAppAdmin.setTCertBatchSize(1);
+    var queryTx = WebAppAdmin.query(queryRequest);
+
+    // Print the query results
+    queryTx.on('complete', function (results) {
+        // Query completed successfully
+        console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
+    });
+    queryTx.on('error', function (err) {
+        // Query failed
+        console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
+    });
+}
+
 /*
 function configure_network() {
 
