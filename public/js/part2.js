@@ -244,7 +244,7 @@ function connect_to_server() {
 			if (data.msg === 'papers') {
 				try{
 					var papers = JSON.parse(data.papers);
-					console.log('!', papers);
+					//console.log('!', papers);
 					if ($('#auditPanel').is){
 						for (var i in panels) {
                             bag.papers = papers;
