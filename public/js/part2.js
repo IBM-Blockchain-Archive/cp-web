@@ -244,9 +244,10 @@ function connect_to_server() {
 			if (data.msg === 'papers') {
 				try{
 					var papers = JSON.parse(data.papers);
-					//console.log('!', papers);
+					console.log('!', papers);
 					if ($('#auditPanel').is){
 						for (var i in panels) {
+                            bag.papers = papers;
 							build_trades(papers, panels[i]);
 						}
 					}
@@ -320,10 +321,6 @@ function connect_to_server() {
  * @param panelDesc An object describing what panel the trades are being shown in.
  */
 function build_trades(papers, panelDesc) {
-
-    if(!user.name)
-    bag.papers = papers;						//store the trades for posterity
-    //console.log('papers:', bag.papers);
 
     if(papers && papers.length > 0) {
 
@@ -492,7 +489,7 @@ function processFilterForm(panelDesc) {
 function excluded(entry, filter) {
     "use strict";
 
-    if (filter.owner && filter.owner !== "" && entry.owner.company.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1) return false;
+    if (filter.owner && filter.owner !== "" && entry.owner.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1) return false;
 
     if (filter.issuer && filter.issuer !== "" && entry.issuer.toUpperCase().indexOf(filter.issuer.toUpperCase()) == -1) return false;
 
