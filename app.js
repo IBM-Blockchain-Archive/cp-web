@@ -1,4 +1,5 @@
 
+
 "use strict";
 /* global process */
 /* global __dirname */
@@ -294,7 +295,7 @@ function deploy(WebAppAdmin) {
 	//sleep.sleep(60);
 	//query(WebAppAdmin,results.chaincodeID);
 	//final_setup();
-    part2.setup(chaincode, WebAppAdmin);
+    part2.setup(results.chaincodeID, WebAppAdmin);
     //user_manager.setup(chaincode,cb_deployed);
     cb_deployed();
     });
