@@ -292,12 +292,12 @@ function deploy(WebAppAdmin) {
     deployTx.on('complete', function (results) {
         // Invoke transaction submitted successfully
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
-	//sleep.sleep(60);
-	//query(WebAppAdmin,results.chaincodeID);
+	sleep.sleep(60);
+	query(WebAppAdmin,results.chaincodeID);
 	//final_setup();
-    part2.setup(results.chaincodeID, WebAppAdmin);
+    //part2.setup(results.chaincodeID, WebAppAdmin);
     //user_manager.setup(chaincode,cb_deployed);
-    cb_deployed();
+    //cb_deployed();
     });
 
     deployTx.on('error', function (err) {
@@ -316,7 +316,7 @@ function query(WebAppAdmin,ccID)
         // Existing state variable to retrieve
         args: ["a"]
     };
-
+	console.log("Querying");
     // Trigger the query transaction
     WebAppAdmin.setTCertBatchSize(1);
     var queryTx = WebAppAdmin.query(queryRequest);
@@ -325,7 +325,8 @@ function query(WebAppAdmin,ccID)
     queryTx.on('complete', function (results) {
         // Query completed successfully
         console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
-    });
+    	cb_deployed();
+	});
     queryTx.on('error', function (err) {
         // Query failed
         console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
