@@ -2,12 +2,13 @@
 // Part 2 - incoming messages, look for type
 // ==================================
 "use strict";
-var ibc = {};
-var chaincode = {};
+var WebAppAdmin;
+var chaincode;
 var async = require('async');
 
-module.exports.setup = function (sdk, cc) {
-    ibc = sdk;
+module.exports.setup = function (cc, WAA) {
+    //ibc = sdk;
+    WebAppAdmin = WAA;
     chaincode = cc;
 };
 
@@ -22,10 +23,16 @@ module.exports.process_msg = function (ws, data) {
     // Process the message
     console.log('message type:', data.type);
     console.log('message user:', data.user);
+    var Request = {
+        chaincodeID: chaincode,
+    };
     if (data.type == 'create') {
         if (data.paper && data.paper.ticker) {
             console.log('!', data.paper);
-            chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);	//create a new paper (args, enrollID, callback)
+            Request.fcn = 'issueCommercialPaper';
+            Request.args = [JSON.stringify(data.paper)];
+            
+            //chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);	//create a new paper (args, enrollID, callback)
         }
     }
     else if (data.type == 'get_papers') {

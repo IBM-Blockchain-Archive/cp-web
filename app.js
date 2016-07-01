@@ -291,9 +291,12 @@ function deploy(WebAppAdmin) {
     deployTx.on('complete', function (results) {
         // Invoke transaction submitted successfully
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
-	sleep.sleep(60);
-	query(WebAppAdmin,results.chaincodeID);
+	//sleep.sleep(60);
+	//query(WebAppAdmin,results.chaincodeID);
 	//final_setup();
+    part2.setup(chaincode, WebAppAdmin);
+    //user_manager.setup(chaincode,cb_deployed);
+    cb_deployed();
     });
 
     deployTx.on('error', function (err) {
@@ -388,6 +391,7 @@ function finalSetup(err, data) {
     }
 }
 */
+
 // ============================================================================================================================
 // 												WebSocket Communication Madness
 // ============================================================================================================================
