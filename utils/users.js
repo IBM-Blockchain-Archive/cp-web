@@ -270,9 +270,6 @@ module.exports.setup = function (ccID, ch, cb) {
         console.log(TAG, "user manager properly configured");
         chaincodeID = ccID;
         chain = ch;
-        console.log("I am here with");
-        console.log(chaincodeID);
-        console.log(chain);
         cb();
     } else {
         console.error(TAG, "user manager requires all of its setup parameters to function")
