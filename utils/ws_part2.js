@@ -106,7 +106,7 @@ module.exports.process_msg = function (ws, data) {
         };
 
         var goodJSON = false;
-        request = http.request(options, function (resp) {
+        var request = http.request(options, function (resp) {
             var str = '', temp, chunks = 0;
 
             resp.setEncoding('utf8');
@@ -216,7 +216,7 @@ module.exports.process_msg = function (ws, data) {
                 };
 
                 var goodJSON = false;
-                request = http.request(options, function (resp) {
+                var request = http.request(options, function (resp) {
                     var str = '', temp, chunks = 0;
 
                     resp.setEncoding('utf8');
