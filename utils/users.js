@@ -210,7 +210,7 @@ function registerUser(username, role, cb) {
                 }
             });
         }
-        user.login(test_user1.name, enrollsecret, cb);
+        login(test_user1.name, enrollsecret, cb);
     });
 }
 module.exports.login = login;
