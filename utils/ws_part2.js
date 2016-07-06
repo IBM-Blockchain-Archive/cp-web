@@ -50,7 +50,7 @@ module.exports.process_msg = function (ws, data) {
         }
     }
     else if (data.type == 'get_papers') {
-        Request.fcn = 'GetAllCPs';
+        Request.fcn = 'query';
         Request.args = ['GetAllCPs', data.user];
 
         WebAppAdmin.setTCertBatchSize(1);
