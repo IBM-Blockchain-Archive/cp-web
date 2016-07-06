@@ -6,6 +6,8 @@ var WebAppAdmin;
 var chaincode;
 var async = require('async');
 var http = require('http');
+var util = require('util');
+
 module.exports.setup = function (cc, WAA) {
     //ibc = sdk;
     WebAppAdmin = WAA;
