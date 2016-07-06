@@ -203,7 +203,7 @@ var options = {};
 var user_manager = require('./utils/users');  // Need to call setup() once sdk and chaincode are loaded
 */
 // Start up the network!!
-
+var user_manager = require('./utils/users');
 var hlc = require('hlc');
 var chain = hlc.newChain("cp");
 var testChaincodePath = "github.com/cp-chaincode-v2";
