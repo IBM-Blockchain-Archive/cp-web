@@ -194,7 +194,7 @@ function registerUser(username, role, cb) {
         if (err) {
             console.log(t, "Failed to get " + test_user1.name + " ---> ", err);
         } else {
-            test_user_Member1 = user;
+            var test_user_Member1 = user;
 
             console.log("Successfully registered and enrolled " + test_user_Member1.getName());
 
