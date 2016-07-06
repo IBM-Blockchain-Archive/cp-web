@@ -190,27 +190,29 @@ function registerUser(username, role, cb) {
         name: username,
         role: role, // Client
     };
-    getUser2(test_user1.name, function (err, user, enrollsecret) {
+    getUser(test_user1.name, function (err, user) {
         if (err) {
-            console.log(t, "Failed to get " + test_user1.name + " ---> ", err);
+            fail(t, "Failed to get " + test_user1.name + " ---> ", err);
         } else {
-            var test_user_Member1 = user;
+            test_user_Member1 = user;
 
             console.log("Successfully registered and enrolled " + test_user_Member1.getName());
 
             // Confirm that the user token has been created in the key value store
-            var path = chain.getKeyValStore().dir + "/member." + test_user1.name;
+            path = chain.getKeyValStore().dir + "/member." + test_user1.name;
             fs.exists(path, function (exists) {
                 if (exists) {
                     console.log("Successfully stored client token" /*+ " ---> " + test_user1.name*/);
-                    //t.end()
                 } else {
                     console.log("Failed to store client token for " + test_user1.name + " ---> " + err);
-                    //t.end(err)
+                    var creds = {
+                        id = user.id,
+                        secret = user.secret
+                    };
+                    cb(err, creds);
                 }
             });
         }
-        login(test_user1.name, enrollsecret, cb);
     });
 }
 module.exports.login = login;
