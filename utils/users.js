@@ -64,7 +64,7 @@ function getUser2(name, cb) {
             account: "bank_a",
             affiliation: "00001"
         };
-        user.register(registrationRequest, function (err,enrollsecret) {
+        user.register(registrationRequest, function (err, enrollsecret) {
             if (err) cb(err, null)
             cb(null, user, enrollsecret);
         });
@@ -130,7 +130,21 @@ function login(id, secret, cb) {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
                     });
-                    cb && cb(null);
+                    var invokeRequest = {
+                        chaincodeID: chaincodeID,
+                        fcn = 'createAccount',
+                        args =[id]
+                    }
+                    var invokeTx = usr.invoke(invokeRequest);
+                    invokeTx.on('submitted', function (results) {
+                        // Invoke transaction submitted successfully
+                        console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
+                        cb && cb(null);
+                    });
+                    invokeTx.on('error', function (err) {
+                        // Invoke transaction submission failed
+                        console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
+                    });
                 }
             });
         }
@@ -141,11 +155,11 @@ function login2(id, secret, cb) {
     chain.getMember(id, function (err, usr) {
         if (err) {
             console.log("Failed to get" + id + "member " + " ---> " + err);
-            cb && cb(null,null);
+            cb && cb(null, null);
             ////t.end(err);
         } else {
             console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
-            
+
             // Enroll the user member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
             var pw = secret;
@@ -156,7 +170,7 @@ function login2(id, secret, cb) {
             usr.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll" + id + "member " + " ---> " + err);
-                    cb && cb(null,cred);
+                    cb && cb(null, cred);
                     ////t.end(err);
                 } else {
                     console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
@@ -171,7 +185,21 @@ function login2(id, secret, cb) {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
                     });
-                    cb && cb(null, cred);
+                    var invokeRequest = {
+                        chaincodeID: chaincodeID,
+                        fcn = 'createAccount',
+                        args =[id]
+                    }
+                    var invokeTx = usr.invoke(invokeRequest);
+                    invokeTx.on('submitted', function (results) {
+                        // Invoke transaction submitted successfully
+                        console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
+                        cb && cb(null,cred);
+                    });
+                    invokeTx.on('error', function (err) {
+                        // Invoke transaction submission failed
+                        console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
+                    });
                 }
             });
         }
@@ -251,7 +279,7 @@ function registerUser(username, role, cb) {
                 }
             });
         }
-        login2(test_user1.name, enrollsecret,cb);
+        login2(test_user1.name, enrollsecret, cb);
     });
 }
 
