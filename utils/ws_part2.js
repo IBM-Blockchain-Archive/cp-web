@@ -37,12 +37,12 @@ module.exports.process_msg = function (ws, data) {
             // Print the invoke results
             invokeTx.on('submitted', function (results) {
                 // Invoke transaction submitted successfully
-                console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", invokeRequest, results));
+                console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
                 cb_invoked();
             });
             invokeTx.on('error', function (err) {
                 // Invoke transaction submission failed
-                console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", invokeRequest, err));
+                console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
             });
             //chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);	//create a new paper (args, enrollID, callback)
         }
@@ -57,12 +57,12 @@ module.exports.process_msg = function (ws, data) {
         // Print the query results
         queryTx.on('complete', function (results) {
             // Query completed successfully
-            console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
+            console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
             cb_got_papers();
         });
         queryTx.on('error', function (err) {
             // Query failed
-            console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
+            console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
         });
         //chaincode.query.query(['GetAllCPs', data.user], cb_got_papers);									//(args, enrollID, callback)
     }
@@ -76,12 +76,12 @@ module.exports.process_msg = function (ws, data) {
         // Print the invoke results
         invokeTx.on('submitted', function (results) {
             // Invoke transaction submitted successfully
-            console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", invokeRequest, results));
+            console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
             //cb_invoked();
         });
         invokeTx.on('error', function (err) {
             // Invoke transaction submission failed
-            console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", invokeRequest, err));
+            console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
         });
         //chaincode.invoke.transferPaper([JSON.stringify(data.transfer)], data.user);						//(args, enrollID, callback)
     }
@@ -145,12 +145,12 @@ module.exports.process_msg = function (ws, data) {
         // Print the query results
         queryTx.on('complete', function (results) {
             // Query completed successfully
-            console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
+            console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
             cb_got_company();
         });
         queryTx.on('error', function (err) {
             // Query failed
-            console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
+            console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
         });
         //chaincode.query.query(['GetCompany', data.company], data.user, cb_got_company);					//(args, enrollID, callback)
     }
