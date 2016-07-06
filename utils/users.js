@@ -132,8 +132,8 @@ function login(id, secret, cb) {
                     });
                     var invokeRequest = {
                         chaincodeID: chaincodeID,
-                        fcn = 'createAccount',
-                        args =[id]
+                        fcn: 'createAccount',
+                        args: [id]
                     }
                     var invokeTx = usr.invoke(invokeRequest);
                     invokeTx.on('submitted', function (results) {
@@ -187,8 +187,8 @@ function login2(id, secret, cb) {
                     });
                     var invokeRequest = {
                         chaincodeID: chaincodeID,
-                        fcn = 'createAccount',
-                        args =[id]
+                        fcn: 'createAccount',
+                        args: [id]
                     }
                     var invokeTx = usr.invoke(invokeRequest);
                     invokeTx.on('submitted', function (results) {
