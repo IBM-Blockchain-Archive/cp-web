@@ -15,8 +15,9 @@
 "use strict";
 // This connector let's us register users against a CA
 var connector = require('./loopback-connector-obcca');
-var ibc = {};
-var chaincode = {};
+//var ibc = {};
+var chain = {};
+var chaincodeID = {};
 var ca = {};
 var dataSource = {};
 
@@ -31,6 +32,24 @@ var TAG = "user_manager";
  * @param secret The secret that was given to this user when registered against the CA.
  * @param cb A callback of the form: function(err)
  */
+function getUser(name, cb) {
+    chain.getUser(name, function (err, user) {
+        if (err) return cb(err);
+        if (user.isEnrolled()) return cb(null, user);
+        // User is not enrolled yet, so perform both registration and enrollment
+        // The chain registrar is already set inside 'Set chain registrar' test
+        var registrationRequest = {
+            enrollmentID: name,
+            account: "bank_a",
+            affiliation: "00001"
+        };
+        user.registerAndEnroll(registrationRequest, function (err) {
+            if (err) cb(err, null)
+            cb(null, user)
+        });
+    });
+}
+/*
 function login(id, secret, cb) {
     if (!ibc) {
         cb && cb(new Error(TAG + ": No sdk supplied to login users"));
@@ -59,13 +78,47 @@ function login(id, secret, cb) {
         }
     });
 }
+*/
+function login(id, secret, cb) {
+    chain.getMember(id, function (err, usr) {
+        if (err) {
+            console.log("Failed to get" + id + "member " + " ---> " + err);
+            ////t.end(err);
+        } else {
+            console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
 
+            // Enroll the user member with the certificate authority using
+            // the one time password hard coded inside the membersrvc.yaml.
+            pw = secret;
+            usr.enroll(pw, function (err, crypto) {
+                if (err) {
+                    console.log("Failed to enroll" + id + "member " + " ---> " + err);
+                    ////t.end(err);
+                } else {
+                    console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
+
+                    // Confirm that the user token has been created in the key value store
+                    path = chain.getKeyValStore().dir + "/member." + usr.getName();
+
+                    fs.exists(path, function (exists) {
+                        if (exists) {
+                            console.log("Successfully stored client token" /*+ " ---> " + user.getName()*/);
+                        } else {
+                            console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
+                        }
+                    });
+                }
+            });
+        }
+    });
+}
 /**
  * Registers a new user against the given CA.
  * @param username The name of the user.
  * @param role The role to assign to the user.
  * @param cb A callback of the form: function(err, credentials);
  */
+/*
 function registerUser(username, role, cb) {
     if (!dataSource.connector) {
         cb && cb(new Error("cannot register users before the CA connector is setup!"));
@@ -107,7 +160,34 @@ function registerUser(username, role, cb) {
     });
 
 }
+*/
+function registerUser(username, role, cb) {
+    var test_user1 = {
+        name: username,
+        role: role, // Client
+    };
+    getUser(test_user1.name, function (err, user) {
+        if (err) {
+            console.log(t, "Failed to get " + test_user1.name + " ---> ", err);
+        } else {
+            test_user_Member1 = user;
 
+            console.log("Successfully registered and enrolled " + test_user_Member1.getName());
+
+            // Confirm that the user token has been created in the key value store
+            path = chain.getKeyValStore().dir + "/member." + test_user1.name;
+            fs.exists(path, function (exists) {
+                if (exists) {
+                    console.log("Successfully stored client token" /*+ " ---> " + test_user1.name*/);
+                    //t.end()
+                } else {
+                    console.log("Failed to store client token for " + test_user1.name + " ---> " + err);
+                    //t.end(err)
+                }
+            });
+        }
+    });
+}
 module.exports.login = login;
 module.exports.registerUser = registerUser;
 
@@ -118,11 +198,11 @@ module.exports.registerUser = registerUser;
  * @param cert_auth The service credentials for the networks certificate authority.
  * @param cb A callback of the form
  */
-module.exports.setup = function (sdk, cc, cert_auth, cb) {
-    if (sdk && cc && cert_auth) {
+module.exports.setup = function (ccID, cert_auth, ch, cb) {
+    if (chain && ccID && cert_auth) {
         console.log(TAG, "user manager properly configured");
-        ibc = sdk;
-        chaincode = cc;
+        chaincodeID = ccID;
+        chain = ch;
         ca = cert_auth;
 
         // Initialize the connector to the CA
