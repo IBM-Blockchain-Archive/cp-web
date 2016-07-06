@@ -119,7 +119,7 @@ function login(id, secret, cb) {
                     console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
 
                     // Confirm that the user token has been created in the key value store
-                    path = chain.getKeyValStore().dir + "/member." + usr.getName();
+                    var path = chain.getKeyValStore().dir + "/member." + usr.getName();
 
                     fs.exists(path, function (exists) {
                         if (exists) {
