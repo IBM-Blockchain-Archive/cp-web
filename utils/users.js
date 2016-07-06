@@ -21,6 +21,9 @@ var chaincodeID = {};
 var ca = {};
 var dataSource = {};
 
+var util = require('util');
+var fs = require('fs');
+
 // Use a tag to make logs easier to find
 var TAG = "user_manager";
 
@@ -222,6 +225,9 @@ module.exports.setup = function (ccID, ch, cb) {
         console.log(TAG, "user manager properly configured");
         chaincodeID = ccID;
         chain = ch;
+        console.log("I am here with");
+        console.log(chaincodeID);
+        console.log(chain);
         cb();
     } else {
         console.error(TAG, "user manager requires all of its setup parameters to function")
