@@ -51,10 +51,10 @@ else if(process.env.VCAP_APP_HOST){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 else{
 	exports.SERVER = 	{
-							HOST:'localhost',
+							HOST:'9.37.137.29',
 							PORT: 3000,
 							DESCRIPTION: 'Localhost',
-							EXTURI: process.env.EXTURI || 'localhost:3000',
+							EXTURI: process.env.EXTURI || '9.37.137.29:3000',
 						 };
 }
 
