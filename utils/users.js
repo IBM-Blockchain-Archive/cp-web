@@ -110,7 +110,7 @@ function login(id, secret, cb) {
 
             // Enroll the user member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            pw = secret;
+            var pw = secret;
             usr.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll" + id + "member " + " ---> " + err);
