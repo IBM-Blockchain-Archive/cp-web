@@ -35,8 +35,8 @@ var TAG = "user_manager";
  * @param secret The secret that was given to this user when registered against the CA.
  * @param cb A callback of the form: function(err)
  */
-function getUser1(name, cb) {
-    chain.getUser1(name, function (err, user) {
+function getUser(name, cb) {
+    chain.getUser(name, function (err, user) {
         if (err) return cb(err);
         if (user.isEnrolled()) return cb(null, user);
         // User is not enrolled yet, so perform both registration and enrollment
@@ -54,7 +54,7 @@ function getUser1(name, cb) {
 }
 
 function getUser2(name, cb) {
-    chain.getUser2(name, function (err, user) {
+    chain.getUser(name, function (err, user) {
         if (err) return cb(err);
         if (user.isEnrolled()) return cb(null, user);
         // User is not enrolled yet, so perform both registration and enrollment
@@ -128,6 +128,7 @@ function login(id, secret, cb) {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
                     });
+                    cb();
                 }
             });
         }
