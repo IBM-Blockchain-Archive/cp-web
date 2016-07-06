@@ -104,6 +104,7 @@ function login(id, secret, cb) {
     chain.getMember(id, function (err, usr) {
         if (err) {
             console.log("Failed to get" + id + "member " + " ---> " + err);
+            cb && cb(null);
             ////t.end(err);
         } else {
             console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
@@ -114,6 +115,7 @@ function login(id, secret, cb) {
             usr.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll" + id + "member " + " ---> " + err);
+                    cb && cb(null);
                     ////t.end(err);
                 } else {
                     console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
@@ -128,7 +130,7 @@ function login(id, secret, cb) {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
                     });
-                    cb();
+                    cb && cb(null);
                 }
             });
         }
