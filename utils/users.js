@@ -32,7 +32,7 @@ var TAG = "user_manager";
  * @param secret The secret that was given to this user when registered against the CA.
  * @param cb A callback of the form: function(err)
  */
-function getUser(name, cb) {
+function getUser1(name, cb) {
     chain.getUser(name, function (err, user) {
         if (err) return cb(err);
         if (user.isEnrolled()) return cb(null, user);
@@ -46,6 +46,24 @@ function getUser(name, cb) {
         user.registerAndEnroll(registrationRequest, function (err) {
             if (err) cb(err, null)
             cb(null, user)
+        });
+    });
+}
+
+function getUser2(name, cb) {
+    chain.getUser(name, function (err, user) {
+        if (err) return cb(err);
+        if (user.isEnrolled()) return cb(null, user);
+        // User is not enrolled yet, so perform both registration and enrollment
+        // The chain registrar is already set inside 'Set chain registrar' test
+        var registrationRequest = {
+            enrollmentID: name,
+            account: "bank_a",
+            affiliation: "00001"
+        };
+        user.register(registrationRequest, function (err,enrollsecret) {
+            if (err) cb(err, null)
+            cb(null, user, enrollsecret);
         });
     });
 }
@@ -166,7 +184,7 @@ function registerUser(username, role, cb) {
         name: username,
         role: role, // Client
     };
-    getUser(test_user1.name, function (err, user) {
+    getUser2(test_user1.name, function (err, user, enrollsecret) {
         if (err) {
             console.log(t, "Failed to get " + test_user1.name + " ---> ", err);
         } else {
@@ -186,6 +204,7 @@ function registerUser(username, role, cb) {
                 }
             });
         }
+        user.login(test_user1.name, enrollsecret, cb);
     });
 }
 module.exports.login = login;
