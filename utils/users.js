@@ -136,6 +136,47 @@ function login(id, secret, cb) {
         }
     });
 }
+
+function login2(id, secret, cb) {
+    chain.getMember(id, function (err, usr) {
+        if (err) {
+            console.log("Failed to get" + id + "member " + " ---> " + err);
+            cb && cb(null,null);
+            ////t.end(err);
+        } else {
+            console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
+            
+            // Enroll the user member with the certificate authority using
+            // the one time password hard coded inside the membersrvc.yaml.
+            var pw = secret;
+            var cred = {
+                id: id,
+                secret: pw
+            };
+            usr.enroll(pw, function (err, crypto) {
+                if (err) {
+                    console.log("Failed to enroll" + id + "member " + " ---> " + err);
+                    cb && cb(null,cred);
+                    ////t.end(err);
+                } else {
+                    console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
+
+                    // Confirm that the user token has been created in the key value store
+                    var path = chain.getKeyValStore().dir + "/member." + usr.getName();
+
+                    fs.exists(path, function (exists) {
+                        if (exists) {
+                            console.log("Successfully stored client token" /*+ " ---> " + user.getName()*/);
+                        } else {
+                            console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
+                        }
+                    });
+                    cb && cb(null, cred);
+                }
+            });
+        }
+    });
+}
 /**
  * Registers a new user against the given CA.
  * @param username The name of the user.
@@ -190,31 +231,30 @@ function registerUser(username, role, cb) {
         name: username,
         role: role, // Client
     };
-    getUser(test_user1.name, function (err, user) {
+    getUser2(test_user1.name, function (err, user, enrollsecret) {
         if (err) {
-            fail(t, "Failed to get " + test_user1.name + " ---> ", err);
+            console.log(t, "Failed to get " + test_user1.name + " ---> ", err);
         } else {
-            test_user_Member1 = user;
+            var test_user_Member1 = user;
 
             console.log("Successfully registered and enrolled " + test_user_Member1.getName());
 
             // Confirm that the user token has been created in the key value store
-            path = chain.getKeyValStore().dir + "/member." + test_user1.name;
+            var path = chain.getKeyValStore().dir + "/member." + test_user1.name;
             fs.exists(path, function (exists) {
                 if (exists) {
                     console.log("Successfully stored client token" /*+ " ---> " + test_user1.name*/);
+                    //t.end()
                 } else {
                     console.log("Failed to store client token for " + test_user1.name + " ---> " + err);
-                    var creds = {
-                        id = user.id,
-                        secret = user.secret
-                    };
-                    cb(err, creds);
+                    //t.end(err)
                 }
             });
         }
+        login2(test_user1.name, enrollsecret,cb);
     });
 }
+
 module.exports.login = login;
 module.exports.registerUser = registerUser;
 
