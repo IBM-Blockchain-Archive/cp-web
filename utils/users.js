@@ -130,12 +130,12 @@ function login(id, secret, cb) {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
                     });
-                    var invokeRequest = {
+                    var Request = {
                         chaincodeID: chaincodeID,
                         fcn: 'createAccount',
                         args: [id]
                     }
-                    var invokeTx = usr.invoke(invokeRequest);
+                    var invokeTx = usr.invoke(Request);
                     invokeTx.on('submitted', function (results) {
                         // Invoke transaction submitted successfully
                         console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
@@ -185,20 +185,20 @@ function login2(id, secret, cb) {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
                     });
-                    var invokeRequest = {
+                    var Request = {
                         chaincodeID: chaincodeID,
                         fcn: 'createAccount',
                         args: [id]
                     }
-                    var invokeTx = usr.invoke(invokeRequest);
+                    var invokeTx = usr.invoke(Request);
                     invokeTx.on('submitted', function (results) {
                         // Invoke transaction submitted successfully
-                        console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", invokeRequest, results));
+                        console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
                         cb && cb(null,cred);
                     });
                     invokeTx.on('error', function (err) {
                         // Invoke transaction submission failed
-                        console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", invokeRequest, err));
+                        console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
                     });
                 }
             });
