@@ -86,10 +86,73 @@ module.exports.process_msg = function (ws, data) {
         //chaincode.invoke.transferPaper([JSON.stringify(data.transfer)], data.user);						//(args, enrollID, callback)
     }
     else if (data.type == 'chainstats') {
-        ibc.chain_stats(cb_chainstats);
+        var options = {
+            host: 'test-peer1.rtp.raleigh.ibm.com',
+            port: '5000',
+            path: '/chain',
+            method: 'GET'
+        };
+
+        function success(statusCode, headers, resp) {
+            console.log('chainstats success!');
+            //console.log(resp);
+            cb_chainstats(null, JSON.parse(resp));
+        };
+        function failure(statusCode, headers, msg) {
+            console.log('chainstats failure :(');
+            console.log('status code: ' + statusCode);
+            console.log('headers: ' + headers);
+            console.log('message: ' + msg);
+        };
+
+        var goodJSON = false;
+        request = http.request(options, function (resp) {
+            var str = '', temp, chunks = 0;
+
+            resp.setEncoding('utf8');
+            resp.on('data', function (chunk) {															//merge chunks of request
+                str += chunk;
+                chunks++;
+            });
+            resp.on('end', function () {																	//wait for end before decision
+                if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
+                    success(resp.statusCode, resp.headers, str);
+                }
+                else {
+                    failure(resp.statusCode, resp.headers, str);
+                }
+            });
+        });
+
+        request.on('error', function (e) {																//handle error event
+            failure(500, null, e);
+        });
+
+        request.setTimeout(20000);
+        request.on('timeout', function () {																//handle time out event
+            failure(408, null, 'Request timed out');
+        });
+
+        request.end();
     }
     else if (data.type == 'get_company') {
-        chaincode.query.query(['GetCompany', data.company], data.user, cb_got_company);					//(args, enrollID, callback)
+        Request.fcn = 'query';
+        Request.args = ['GetCompany', data.company];
+
+        WebAppAdmin.setTCertBatchSize(1);
+        var queryTx = WebAppAdmin.query(queryRequest);
+
+        // Print the query results
+        queryTx.on('complete', function (results) {
+            // Query completed successfully
+            console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
+            cb_got_company();
+        });
+        queryTx.on('error', function (err) {
+            // Query failed
+            console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
+        });
+        //chaincode.query.query(['GetCompany', data.company], data.user, cb_got_company);					//(args, enrollID, callback)
     }
 
     function cb_got_papers(e, papers) {
@@ -123,22 +186,64 @@ module.exports.process_msg = function (ws, data) {
         chain_stats = stats;
         if (stats && stats.height) {
             var list = [];
-            for (var i = stats.height - 1; i >= 1; i--) {										//create a list of heights we need
+            for (var i = stats.height - 1; i >= 1; i--) {								//create a list of heights we need
                 list.push(i);
                 if (list.length >= 8) break;
             }
-            list.reverse();																//flip it so order is correct in UI
-            console.log(list);
-            async.eachLimit(list, 1, function (key, cb) {								//iter through each one, and send it
-                ibc.block_stats(key, function (e, stats) {
-                    if (e == null) {
-                        stats.height = key;
-                        sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
-                    } else {
-                        console.log("Web_Socket_Server: Chainstats failure", JSON.stringify(e));
-                    }
+
+            list.reverse();
+            async.eachLimit(list, 1, function (key, cb) {							//iter through each one, and send it
+                //get chainstats through REST API
+                var options = {
+                    host: 'test-peer1.rtp.raleigh.ibm.com',
+                    port: '5000',
+                    path: '/chain/blocks/' + key,
+                    method: 'GET'
+                };
+
+                function success(statusCode, headers, stats) {
+                    stats = JSON.parse(stats);
+                    stats.height = key;
+                    sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
                     cb(null);
+                };
+
+                function failure(statusCode, headers, msg) {
+                    console.log('chainstats block ' + key + ' failure :(');
+                    console.log('status code: ' + statusCode);
+                    console.log('headers: ' + headers);
+                    console.log('message: ' + msg);
+                };
+
+                var goodJSON = false;
+                request = http.request(options, function (resp) {
+                    var str = '', temp, chunks = 0;
+
+                    resp.setEncoding('utf8');
+                    resp.on('data', function (chunk) {															//merge chunks of request
+                        str += chunk;
+                        chunks++;
+                    });
+                    resp.on('end', function () {																	//wait for end before decision
+                        if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
+                            success(resp.statusCode, resp.headers, str);
+                        }
+                        else {
+                            failure(resp.statusCode, resp.headers, str);
+                        }
+                    });
                 });
+
+                request.on('error', function (e) {																//handle error event
+                    failure(500, null, e);
+                });
+
+                request.setTimeout(20000);
+                request.on('timeout', function () {																//handle time out event
+                    failure(408, null, 'Request timed out');
+                });
+
+                request.end();
             }, function () {
             });
         }
