@@ -52,7 +52,7 @@ module.exports.process_msg = function (ws, data) {
         Request.args = ['GetAllCPs', data.user];
 
         WebAppAdmin.setTCertBatchSize(1);
-        var queryTx = WebAppAdmin.query(queryRequest);
+        var queryTx = WebAppAdmin.query(Request);
 
         // Print the query results
         queryTx.on('complete', function (results) {
@@ -140,7 +140,7 @@ module.exports.process_msg = function (ws, data) {
         Request.args = ['GetCompany', data.company];
 
         WebAppAdmin.setTCertBatchSize(1);
-        var queryTx = WebAppAdmin.query(queryRequest);
+        var queryTx = WebAppAdmin.query(Request);
 
         // Print the query results
         queryTx.on('complete', function (results) {
