@@ -199,7 +199,7 @@ function registerUser(username, role, cb) {
             console.log("Successfully registered and enrolled " + test_user_Member1.getName());
 
             // Confirm that the user token has been created in the key value store
-            path = chain.getKeyValStore().dir + "/member." + test_user1.name;
+            var path = chain.getKeyValStore().dir + "/member." + test_user1.name;
             fs.exists(path, function (exists) {
                 if (exists) {
                     console.log("Successfully stored client token" /*+ " ---> " + test_user1.name*/);
