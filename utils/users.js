@@ -54,7 +54,7 @@ function getUser(name, cb) {
 }
 
 function getUser2(name, cb) {
-    chain.getUser(name, function (err, user) {
+    chain.getUser2(name, function (err, user) {
         if (err) return cb(err);
         if (user.isEnrolled()) return cb(null, user);
         // User is not enrolled yet, so perform both registration and enrollment
@@ -261,7 +261,7 @@ function registerUser(username, role, cb) {
     };
     getUser2(test_user1.name, function (err, user, enrollsecret) {
         if (err) {
-            console.log(t, "Failed to get " + test_user1.name + " ---> ", err);
+            console.log("Failed to get " + test_user1.name + " ---> ", err);
         } else {
             var test_user_Member1 = user;
 
