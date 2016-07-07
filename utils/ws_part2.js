@@ -40,11 +40,6 @@ module.exports.process_msg = function (ws, data) {
             invokeTx.on('submitted', function (results) {
                 // Invoke transaction submitted successfully
                 console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j value=%s", Request, results, results.result.toString()));
-                //cb_invoked(null, results);
-            });
-            invokeTx.on('completed', function (results) {
-                // Invoke transaction submitted successfully
-                console.log(util.format("Successfully completed chaincode invoke transaction: request=%j, response=%j", Request, results));
                 cb_invoked(null, results);
             });
             invokeTx.on('error', function (err) {
