@@ -60,10 +60,11 @@ module.exports.process_msg = function (ws, data) {
         queryTx.on('complete', function (results) {
             // Query completed successfully
             console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
-            cb_got_papers();
+            cb_got_papers(null, results);
         });
         queryTx.on('error', function (err) {
             // Query failed
+            cb_got_papers(err, null);
             console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
         });
         //chaincode.query.query(['GetAllCPs', data.user], cb_got_papers);									//(args, enrollID, callback)
@@ -148,10 +149,11 @@ module.exports.process_msg = function (ws, data) {
         queryTx.on('complete', function (results) {
             // Query completed successfully
             console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
-            cb_got_company();
+            cb_got_company(null, results);
         });
         queryTx.on('error', function (err) {
             // Query failed
+            cb_got_company(err, null);
             console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
         });
         //chaincode.query.query(['GetCompany', data.company], data.user, cb_got_company);					//(args, enrollID, callback)
