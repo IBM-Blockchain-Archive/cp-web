@@ -60,7 +60,7 @@ module.exports.process_msg = function (ws, data) {
         queryTx.on('complete', function (results) {
             // Query completed successfully
             console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
-            cb_got_papers(null, results);
+            cb_got_papers(null, results.result.toString());
         });
         queryTx.on('error', function (err) {
             // Query failed
@@ -149,7 +149,7 @@ module.exports.process_msg = function (ws, data) {
         queryTx.on('complete', function (results) {
             // Query completed successfully
             console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
-            cb_got_company(null, results);
+            cb_got_company(null, results.result.toString());
         });
         queryTx.on('error', function (err) {
             // Query failed
