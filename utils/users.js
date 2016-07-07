@@ -54,7 +54,7 @@ function getUser(name, cb) {
 }
 
 function getUser2(name, cb) {
-    chain.getUser2(name, function (err, user) {
+    chain.getUser(name, function (err, user) {
         if (err) return cb(err);
         if (user.isEnrolled()) return cb(null, user);
         // User is not enrolled yet, so perform both registration and enrollment
