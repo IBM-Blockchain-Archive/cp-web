@@ -37,14 +37,15 @@ module.exports.process_msg = function (ws, data) {
             var invokeTx = WebAppAdmin.invoke(Request);
 
             // Print the invoke results
-            invokeTx.on('submitted', function (results) {
+            invokeTx.on('completed', function (results) {
                 // Invoke transaction submitted successfully
-                console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
-                cb_invoked();
+                console.log(util.format("Successfully completed chaincode invoke transaction: request=%j, response=%j", Request, results));
+                cb_invoked(null, results.result.toString());
             });
             invokeTx.on('error', function (err) {
                 // Invoke transaction submission failed
                 console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
+                cb_invoked(err, null);
             });
             //chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);	//create a new paper (args, enrollID, callback)
         }
