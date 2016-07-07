@@ -26,7 +26,7 @@ module.exports.process_msg = function (ws, data) {
     console.log('message type:', data.type);
     console.log('message user:', data.user);
     var Request = {
-        chaincodeID: chaincode,
+        chaincodeID: chaincode
     };
     if (data.type == 'create') {
         if (data.paper && data.paper.ticker) {
