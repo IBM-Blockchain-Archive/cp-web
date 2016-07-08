@@ -407,13 +407,15 @@ function cb_deployed(e, d) {
     }
     else {
         console.log('------------------------------------------ Websocket Up ------------------------------------------');
-        //ibc.save('./cc_summaries');															//save it here for chaincode investigator
+        //ibc.save('./cc_summaries');	
+        var gws = {};														//save it here for chaincode investigator
         wss = new ws.Server({ server: server });												//start the websocket now
         wss.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
                 console.log('received ws msg:', message);
                 var data = JSON.parse(message);
                 part2.process_msg(ws, data);
+                gws = ws;
             });
 
             ws.on('close', function () {
@@ -435,7 +437,7 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight(e, ws, d);
+        monitor_blockheight(e, gws, d);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
