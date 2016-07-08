@@ -26,6 +26,7 @@ module.exports.process_msg = function (ws, data) {
     }
 
     chain.getMember(data.user, function (err, usr) {
+        id = data.user;
         if (err) {
             console.log("Failed to get" + id + "member " + " ---> " + err);
         } else {
