@@ -2,7 +2,7 @@
 // Part 2 - incoming messages, look for type
 // ==================================
 "use strict";
-var WebAppAdmin;
+var data.user;
 var chaincode;
 var async = require('async');
 var http = require('http');
@@ -34,7 +34,7 @@ module.exports.process_msg = function (ws, data) {
             Request.fcn = 'issueCommercialPaper';
             Request.args = [JSON.stringify(data.paper)];
 
-            var invokeTx = WebAppAdmin.invoke(Request);
+            var invokeTx = data.user.invoke(Request);
 
             // Print the invoke results
             invokeTx.on('completed', function (results) {
@@ -59,8 +59,8 @@ module.exports.process_msg = function (ws, data) {
         Request.fcn = 'query';
         Request.args = ['GetAllCPs', data.user];
 
-        WebAppAdmin.setTCertBatchSize(1);
-        var queryTx = WebAppAdmin.query(Request);
+        data.user.setTCertBatchSize(1);
+        var queryTx = data.user.query(Request);
 
         // Print the query results
         queryTx.on('complete', function (results) {
@@ -80,7 +80,7 @@ module.exports.process_msg = function (ws, data) {
         Request.fcn = 'transferPaper';
         Request.args = [JSON.stringify(data.transfer)];
 
-        var invokeTx = WebAppAdmin.invoke(Request);
+        var invokeTx = data.user.invoke(Request);
 
         // Print the invoke results
         invokeTx.on('submitted', function (results) {
@@ -153,8 +153,8 @@ module.exports.process_msg = function (ws, data) {
         Request.fcn = 'query';
         Request.args = ['GetCompany', data.company];
 
-        WebAppAdmin.setTCertBatchSize(1);
-        var queryTx = WebAppAdmin.query(Request);
+        data.user.setTCertBatchSize(1);
+        var queryTx = data.user.query(Request);
 
         // Print the query results
         queryTx.on('complete', function (results) {
