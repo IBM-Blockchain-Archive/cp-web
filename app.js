@@ -484,7 +484,7 @@ function monitor_blockheight(WAA) {
     function success(statusCode, headers, resp) {
         console.log('chainstats success!');
         console.log(resp);
-        cb_chainstats(null, JSON.parse(resp),WAA);
+        cb_chainstats(null, JSON.parse(resp), WAA);
     };
     function failure(statusCode, headers, msg) {
         console.log('chainstats failure :(');
@@ -574,6 +574,16 @@ function cb_chainstats(err, chain_stats, WebAppAdmin) {
             if (trades && trades.open_trades) {
                 wss.broadcast({ msg: 'open_trades', open_trades: trades.open_trades });
             }
+        }
+    }
+}
+function sendMsg(json) {
+    if (ws) {
+        try {
+            ws.send(JSON.stringify(json));
+        }
+        catch (e) {
+            console.log('error ws', e);
         }
     }
 }
