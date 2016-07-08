@@ -293,8 +293,6 @@ module.exports.process_msg = function (ws, data) {
     function sendMsg(json) {
         if (ws) {
             try {
-                console.log("\n\n\nws part2 ws:")
-                console.log(ws);
                 ws.send(JSON.stringify(json));
             }
             catch (e) {
