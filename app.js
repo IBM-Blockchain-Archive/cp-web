@@ -425,6 +425,7 @@ function cb_deployed(e, d) {
             wss.clients.forEach(function each(client) {
                 try {
                     data.v = '2';
+                    console.log("\n\nSending data using client.send\n\n")
                     client.send(JSON.stringify(data));
                 }
                 catch (e) {
