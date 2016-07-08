@@ -415,7 +415,7 @@ function cb_deployed(e, d) {
                 console.log('received ws msg:', message);
                 var data = JSON.parse(message);
                 part2.process_msg(ws, data);
-                gws = ws;
+                //gws = ws;
             });
 
             ws.on('close', function () {
@@ -437,7 +437,7 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight(e, gws, d);
+        monitor_blockheight(e, ws, d);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
