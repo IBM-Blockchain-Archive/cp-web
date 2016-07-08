@@ -2,7 +2,7 @@
 // Part 2 - incoming messages, look for type
 // ==================================
 "use strict";
-var data.user;
+var WebAppAdmin;
 var chaincode;
 var async = require('async');
 var http = require('http');
