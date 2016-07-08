@@ -327,7 +327,7 @@ function query(WebAppAdmin, ccID) {
         // Query completed successfully
         console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
         part2.setup(ccID, WebAppAdmin);
-        user_manager.setup(ccID, chain, WebAppAdmin, cb_deployed);
+        user_manager.setup(ccID, chain, cb_deployed);
     });
     queryTx.on('error', function (err) {
         // Query failed
@@ -415,9 +415,8 @@ function cb_deployed(e, d) {
                 console.log('received ws msg:', message);
                 var data = JSON.parse(message);
                 part2.process_msg(ws, data);
-                //gws = ws;
-            });
 
+            });
             ws.on('close', function () {
             });
         });
@@ -433,13 +432,14 @@ function cb_deployed(e, d) {
                 }
             });
         };
-
+        //clients will need to know if blockheight changes 
+        setInterval(function () {
+            monitor_blockheight();
+        }, 5000);
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        console.log("\n\n\nmonitor blcokheight ws:")
-        console.log(ws);
-        monitor_blockheight(e, ws, d);
+        monitor_blockheight();
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -477,7 +477,8 @@ function cb_deployed(e, d) {
     }
 }
 
-function monitor_blockheight(e, ws, WAA) {
+
+function monitor_blockheight() {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
@@ -488,130 +489,12 @@ function monitor_blockheight(e, ws, WAA) {
     function success(statusCode, headers, resp) {
         console.log('chainstats success!');
         console.log(resp);
-        cb_chainstats(null, JSON.parse(resp), ws, WAA);
+        if (resp && resp.height) {
+             wss.broadcast({ msg: 'reset' });
+        }
     };
     function failure(statusCode, headers, msg) {
         console.log('chainstats failure :(');
-        console.log('status code: ' + statusCode);
-        console.log('headers: ' + headers);
-        console.log('message: ' + msg);
-    };
-
-    var goodJSON = false;
-    var request = http.request(options, function (resp) {
-        var str = '', temp, chunks = 0;
-
-        resp.setEncoding('utf8');
-        resp.on('data', function (chunk) {                                                            //merge chunks of request
-            str += chunk;
-            chunks++;
-        });
-        resp.on('end', function () {                                                                    //wait for end before decision
-            if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
-                success(resp.statusCode, resp.headers, str);
-            }
-            else {
-                failure(resp.statusCode, resp.headers, str);
-            }
-        });
-    });
-
-    request.on('error', function (e) {                                                                //handle error event
-        failure(500, null, e);
-    });
-
-    request.setTimeout(20000);
-    request.on('timeout', function () {                                                                //handle time out event
-        failure(408, null, 'Request timed out');
-    });
-
-    request.end();
-}
-function cb_chainstats(err, chain_stats, ws, WebAppAdmin) {
-    //console.log(res);
-    if (chain_stats && chain_stats.height) {
-        console.log('hey new block, lets refresh and broadcast to all');
-        block_stats(err, chain_stats.height - 1, chain_stats, ws, cb_blockstats);
-        wss.broadcast({ msg: 'reset' });
-        //chaincode.query.query(['GetAllCPs'], cb_got_papers);
-        var Request = {
-            chaincodeID: gccID,
-            fcn: 'query',
-            args: ['GetAllCPs']
-        }
-        WebAppAdmin.setTCertBatchSize(1);
-        var queryTx = WebAppAdmin.query(Request);
-
-        // Print the query results
-        queryTx.on('complete', function (results) {
-            // Query completed successfully
-            console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
-            cb_got_papers(null, results.result.toString());
-        });
-        queryTx.on('error', function (err) {
-            // Query failed
-            cb_got_papers(err, null);
-            console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
-        });
-    }
-
-    //got the block's stats, lets send the statistics
-    function cb_blockstats(err, stats) {
-        if (chain_stats.height) stats.height = chain_stats.height - 1;
-        wss.broadcast({ msg: 'chainstats', e: err, chainstats: chain_stats, blockstats: stats });
-    }
-
-    function cb_got_papers(e, papers) {
-        if (e != null) {
-            console.log('papers error', e);
-        }
-        else {
-            //console.log('papers', papers);
-            wss.broadcast({ msg: 'papers', papers: papers });
-        }
-    }
-
-    //call back for getting open trades, lets send the trades
-    function cb_got_trades(e, trades) {
-        if (e != null) console.log('error:', e);
-        else {
-            if (trades && trades.open_trades) {
-                wss.broadcast({ msg: 'open_trades', open_trades: trades.open_trades });
-            }
-        }
-    }
-}
-function sendMsg(ws, json) {
-    if (ws) {
-        try {
-            console.log("\n\n\nsend message ws:")
-            console.log(ws);
-            ws.send(JSON.stringify(json));
-        }
-        catch (e) {
-            console.log('error ws', e);
-        }
-    }
-}
-function block_stats(e, height, chain_stats, ws, cb) {
-    var options = {
-        host: 'test-peer1.rtp.raleigh.ibm.com',
-        port: '5000',
-        path: '/chain/blocks/' + height,
-        method: 'GET'
-    };
-
-    function success(statusCode, headers, stats) {
-        stats = JSON.parse(stats);
-        stats.height = height;
-        console.log('stats:');
-        console.log(stats);
-        sendMsg(ws, { msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
-        cb(null, stats);
-    };
-
-    function failure(statusCode, headers, msg) {
-        console.log('chainstats block ' + height + ' failure :(');
         console.log('status code: ' + statusCode);
         console.log('headers: ' + headers);
         console.log('message: ' + msg);
