@@ -446,6 +446,7 @@ function cb_deployed(e, d) {
                 console.log('chainstats success!');
                 console.log(resp);
                 if (resp && resp.height) {
+                    console.log("\n\ninside if\n\n")
                     wss.broadcast({ msg: 'reset' });
                 }
             };
