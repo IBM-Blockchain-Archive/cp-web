@@ -445,10 +445,8 @@ function cb_deployed(e, d) {
             function success(statusCode, headers, resp) {
                 console.log('chainstats success!');
                 console.log(resp);
-                console.log(resp.height);
                 resp = JSON.parse(resp);
                 if (resp && resp.height) {
-                    console.log("\n\ninside if\n\n")
                     wss.broadcast({ msg: 'reset' });
                 }
             };
