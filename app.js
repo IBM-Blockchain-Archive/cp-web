@@ -275,10 +275,10 @@ function deploy(WebAppAdmin) {
         fcn: "init",
         // Parameters for the invoke function
         args: ['a', '100'],
-	chaincodePath: "github.com/cp-chaincode-v2/"
+        chaincodePath: "github.com/cp-chaincode-v2/"
     };
-	console.log(deployRequest);
-	//sleep.sleep(10);
+    console.log(deployRequest);
+    //sleep.sleep(10);
     // Trigger the invoke transaction
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
@@ -292,12 +292,12 @@ function deploy(WebAppAdmin) {
     deployTx.on('complete', function (results) {
         // Invoke transaction submitted successfully
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
-	sleep.sleep(60);
-	query(WebAppAdmin,results.chaincodeID);
-	//final_setup();
-    //part2.setup(results.chaincodeID, WebAppAdmin);
-    //user_manager.setup(chaincode,cb_deployed);
-    //cb_deployed();
+        sleep.sleep(60);
+        query(WebAppAdmin, results.chaincodeID);
+        //final_setup();
+        //part2.setup(results.chaincodeID, WebAppAdmin);
+        //user_manager.setup(chaincode,cb_deployed);
+        //cb_deployed();
     });
 
     deployTx.on('error', function (err) {
@@ -306,9 +306,8 @@ function deploy(WebAppAdmin) {
     });
 }
 
-function query(WebAppAdmin,ccID)
-{
-	var queryRequest = {
+function query(WebAppAdmin, ccID) {
+    var queryRequest = {
         // Name (hash) required for query
         chaincodeID: ccID,
         // Function to trigger
@@ -316,7 +315,7 @@ function query(WebAppAdmin,ccID)
         // Existing state variable to retrieve
         args: ["a"]
     };
-	console.log("Querying");
+    console.log("Querying");
     // Trigger the query transaction
     WebAppAdmin.setTCertBatchSize(1);
     var queryTx = WebAppAdmin.query(queryRequest);
@@ -325,10 +324,10 @@ function query(WebAppAdmin,ccID)
     queryTx.on('complete', function (results) {
         // Query completed successfully
         console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
-    	part2.setup(ccID, WebAppAdmin);
+        part2.setup(ccID, WebAppAdmin);
         user_manager.setup(ccID, chain, cb_deployed);
         //cb_deployed();
-	});
+    });
     queryTx.on('error', function (err) {
         // Query failed
         console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
@@ -435,6 +434,7 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
+        monitor_blockheight();
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -470,4 +470,59 @@ function cb_deployed(e, d) {
             }
         });*/
     }
+}
+
+function monitor_blockheight() {
+    var options = {
+        host: 'test-peer1.rtp.raleigh.ibm.com',
+        port: '5000',
+        path: '/chain',
+        method: 'GET'
+    };
+
+    function success(statusCode, headers, resp) {
+        console.log('chainstats success!');
+        console.log(resp);
+        cb_chainstats(null, JSON.parse(resp));
+    };
+    function failure(statusCode, headers, msg) {
+        console.log('chainstats failure :(');
+        console.log('status code: ' + statusCode);
+        console.log('headers: ' + headers);
+        console.log('message: ' + msg);
+    };
+
+    var goodJSON = false;
+    request = http.request(options, function (resp) {
+        var str = '', temp, chunks = 0;
+
+        resp.setEncoding('utf8');
+        resp.on('data', function (chunk) {                                                            //merge chunks of request
+            str += chunk;
+            chunks++;
+        });
+        resp.on('end', function () {                                                                    //wait for end before decision
+            if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
+                success(resp.statusCode, resp.headers, str);
+            }
+            else {
+                failure(resp.statusCode, resp.headers, str);
+            }
+        });
+    });
+
+    request.on('error', function (e) {                                                                //handle error event
+        failure(500, null, e);
+    });
+
+    request.setTimeout(20000);
+    request.on('timeout', function () {                                                                //handle time out event
+        failure(408, null, 'Request timed out');
+    });
+
+    request.end();
+}
+function cb_chainstats(err, res)
+{
+    console.log(res);
 }
