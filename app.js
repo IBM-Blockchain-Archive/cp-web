@@ -434,12 +434,12 @@ function cb_deployed(e, d) {
         };
         //clients will need to know if blockheight changes 
         setInterval(function () {
-            monitor_blockheight();
+            monitor_blockheight(wss);
         }, 5000);
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight();
+        monitor_blockheight(wss);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -478,7 +478,7 @@ function cb_deployed(e, d) {
 }
 
 
-function monitor_blockheight() {
+function monitor_blockheight(wss) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
