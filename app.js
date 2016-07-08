@@ -527,7 +527,7 @@ function cb_chainstats(err, chain_stats, WebAppAdmin) {
     //console.log(res);
     if (chain_stats && chain_stats.height) {
         console.log('hey new block, lets refresh and broadcast to all');
-        block_stats(err, chain_stats.height - 1, cb_blockstats);
+        block_stats(err, chain_stats.height - 1, chain_stats, cb_blockstats);
         wss.broadcast({ msg: 'reset' });
         //chaincode.query.query(['GetAllCPs'], cb_got_papers);
         var Request = {
@@ -587,7 +587,7 @@ function sendMsg(json) {
         }
     }
 }
-function block_stats(e, height, cb) {
+function block_stats(e, height, chain_stats cb) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
