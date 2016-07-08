@@ -435,7 +435,7 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight(e, d);
+        monitor_blockheight(e, ws, d);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -473,7 +473,7 @@ function cb_deployed(e, d) {
     }
 }
 
-function monitor_blockheight(e, WAA) {
+function monitor_blockheight(e, ws, WAA) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
@@ -484,7 +484,7 @@ function monitor_blockheight(e, WAA) {
     function success(statusCode, headers, resp) {
         console.log('chainstats success!');
         console.log(resp);
-        cb_chainstats(null, JSON.parse(resp), WAA);
+        cb_chainstats(null, JSON.parse(resp), ws, WAA);
     };
     function failure(statusCode, headers, msg) {
         console.log('chainstats failure :(');
@@ -523,11 +523,11 @@ function monitor_blockheight(e, WAA) {
 
     request.end();
 }
-function cb_chainstats(err, chain_stats, WebAppAdmin) {
+function cb_chainstats(err, chain_stats, ws, WebAppAdmin) {
     //console.log(res);
     if (chain_stats && chain_stats.height) {
         console.log('hey new block, lets refresh and broadcast to all');
-        block_stats(err, chain_stats.height - 1, chain_stats, cb_blockstats);
+        block_stats(err, chain_stats.height - 1, chain_stats, ws, cb_blockstats);
         wss.broadcast({ msg: 'reset' });
         //chaincode.query.query(['GetAllCPs'], cb_got_papers);
         var Request = {
@@ -577,7 +577,7 @@ function cb_chainstats(err, chain_stats, WebAppAdmin) {
         }
     }
 }
-function sendMsg(json) {
+function sendMsg(ws, json) {
     if (ws) {
         try {
             ws.send(JSON.stringify(json));
@@ -587,7 +587,7 @@ function sendMsg(json) {
         }
     }
 }
-function block_stats(e, height, chain_stats, cb) {
+function block_stats(e, height, chain_stats, ws, cb) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
@@ -600,7 +600,7 @@ function block_stats(e, height, chain_stats, cb) {
         stats.height = height;
         console.log('stats:');
         console.log(stats);
-        sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
+        sendMsg(ws, { msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
         cb(null, stats);
     };
 
