@@ -435,13 +435,60 @@ function cb_deployed(e, d) {
         };
         //clients will need to know if blockheight changes 
         setInterval(function () {
-            wss.broadcast({ msg: 'reset' });
-            monitor_blockheight(wss);
+            var options = {
+                host: 'test-peer1.rtp.raleigh.ibm.com',
+                port: '5000',
+                path: '/chain',
+                method: 'GET'
+            };
+
+            function success(statusCode, headers, resp) {
+                console.log('chainstats success!');
+                console.log(resp);
+                if (resp && resp.height) {
+                    wss.broadcast({ msg: 'reset' });
+                }
+            };
+            function failure(statusCode, headers, msg) {
+                console.log('chainstats failure :(');
+                console.log('status code: ' + statusCode);
+                console.log('headers: ' + headers);
+                console.log('message: ' + msg);
+            };
+
+            var goodJSON = false;
+            var request = http.request(options, function (resp) {
+                var str = '', temp, chunks = 0;
+
+                resp.setEncoding('utf8');
+                resp.on('data', function (chunk) {                                                            //merge chunks of request
+                    str += chunk;
+                    chunks++;
+                });
+                resp.on('end', function () {                                                                    //wait for end before decision
+                    if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
+                        success(resp.statusCode, resp.headers, str);
+                    }
+                    else {
+                        failure(resp.statusCode, resp.headers, str);
+                    }
+                });
+            });
+
+            request.on('error', function (e) {                                                                //handle error event
+                failure(500, null, e);
+            });
+
+            request.setTimeout(20000);
+            request.on('timeout', function () {                                                                //handle time out event
+                failure(408, null, 'Request timed out');
+            });
+
+            request.end();
         }, 5000);
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight(wss);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -492,7 +539,7 @@ function monitor_blockheight(wss) {
         console.log('chainstats success!');
         console.log(resp);
         if (resp && resp.height) {
-             wss.broadcast({ msg: 'reset' });
+            wss.broadcast({ msg: 'reset' });
         }
     };
     function failure(statusCode, headers, msg) {
