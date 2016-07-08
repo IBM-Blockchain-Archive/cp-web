@@ -326,7 +326,7 @@ function query(WebAppAdmin, ccID) {
     queryTx.on('complete', function (results) {
         // Query completed successfully
         console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
-        part2.setup(ccID, WebAppAdmin);
+        part2.setup(ccID, chain, WebAppAdmin);
         user_manager.setup(ccID, chain, cb_deployed);
     });
     queryTx.on('error', function (err) {
