@@ -587,7 +587,7 @@ function sendMsg(json) {
         }
     }
 }
-function block_stats(e, height, chain_stats cb) {
+function block_stats(e, height, chain_stats, cb) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
