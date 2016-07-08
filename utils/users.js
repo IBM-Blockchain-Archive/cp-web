@@ -20,7 +20,6 @@ var chain = {};
 var chaincodeID = {};
 var ca = {};
 var dataSource = {};
-
 var util = require('util');
 var fs = require('fs');
 
@@ -294,12 +293,12 @@ module.exports.registerUser = registerUser;
  * @param cert_auth The service credentials for the networks certificate authority.
  * @param cb A callback of the form
  */
-module.exports.setup = function (ccID, ch, cb) {
+module.exports.setup = function (ccID, ch, WAA, cb) {
     if (chain && ccID) {
         console.log(TAG, "user manager properly configured");
         chaincodeID = ccID;
         chain = ch;
-        cb();
+        cb(null, WAA);
     } else {
         console.error(TAG, "user manager requires all of its setup parameters to function")
     }

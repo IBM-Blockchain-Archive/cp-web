@@ -328,7 +328,6 @@ function query(WebAppAdmin, ccID) {
         console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
         part2.setup(ccID, WebAppAdmin);
         user_manager.setup(ccID, chain, cb_deployed);
-        //cb_deployed();
     });
     queryTx.on('error', function (err) {
         // Query failed
@@ -436,7 +435,7 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight();
+        monitor_blockheight(d);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -474,7 +473,7 @@ function cb_deployed(e, d) {
     }
 }
 
-function monitor_blockheight() {
+function monitor_blockheight(WAA) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
@@ -485,7 +484,7 @@ function monitor_blockheight() {
     function success(statusCode, headers, resp) {
         console.log('chainstats success!');
         console.log(resp);
-        cb_chainstats(null, JSON.parse(resp));
+        cb_chainstats(null, JSON.parse(resp),WAA);
     };
     function failure(statusCode, headers, msg) {
         console.log('chainstats failure :(');
@@ -524,7 +523,7 @@ function monitor_blockheight() {
 
     request.end();
 }
-function cb_chainstats(err, chain_stats) {
+function cb_chainstats(err, chain_stats, WebAppAdmin) {
     //console.log(res);
     if (chain_stats && chain_stats.height) {
         console.log('hey new block, lets refresh and broadcast to all');
