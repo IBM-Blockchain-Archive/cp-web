@@ -67,7 +67,7 @@ module.exports.process_msg = function (ws, data) {
                 Request.fcn = 'query';
                 Request.args = ['GetAllCPs', data.user];
 
-                usr.setTCertBatchSize(1);
+                usr.setTCertBatchSize(100);
                 var queryTx = usr.query(Request);
 
                 // Print the query results
@@ -161,7 +161,7 @@ module.exports.process_msg = function (ws, data) {
                 Request.fcn = 'query';
                 Request.args = ['GetCompany', data.company];
 
-                usr.setTCertBatchSize(1);
+                usr.setTCertBatchSize(100);
                 var queryTx = usr.query(Request);
 
                 // Print the query results
