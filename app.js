@@ -435,6 +435,7 @@ function cb_deployed(e, d) {
         };
         //clients will need to know if blockheight changes 
         setInterval(function () {
+            wss.broadcast({ msg: 'reset' });
             monitor_blockheight(wss);
         }, 5000);
         // ========================================================
