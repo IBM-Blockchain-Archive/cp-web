@@ -582,13 +582,13 @@ function block_stats(height, cb) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
-        path: '/chain/blocks/' + key,
+        path: '/chain/blocks/' + height,
         method: 'GET'
     };
 
     function success(statusCode, headers, stats) {
         stats = JSON.parse(stats);
-        stats.height = key;
+        stats.height = height;
         console.log('stats:');
         console.log(stats);
         sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
@@ -596,7 +596,7 @@ function block_stats(height, cb) {
     };
 
     function failure(statusCode, headers, msg) {
-        console.log('chainstats block ' + key + ' failure :(');
+        console.log('chainstats block ' + height + ' failure :(');
         console.log('status code: ' + statusCode);
         console.log('headers: ' + headers);
         console.log('message: ' + msg);
