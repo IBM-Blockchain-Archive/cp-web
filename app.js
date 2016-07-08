@@ -435,7 +435,7 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
-        monitor_blockheight(d);
+        monitor_blockheight(e, d);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
                 console.log('hey new block, lets refresh and broadcast to all');
@@ -473,7 +473,7 @@ function cb_deployed(e, d) {
     }
 }
 
-function monitor_blockheight(WAA) {
+function monitor_blockheight(e, WAA) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
@@ -527,7 +527,7 @@ function cb_chainstats(err, chain_stats, WebAppAdmin) {
     //console.log(res);
     if (chain_stats && chain_stats.height) {
         console.log('hey new block, lets refresh and broadcast to all');
-        block_stats(chain_stats.height - 1, cb_blockstats);
+        block_stats(err, chain_stats.height - 1, cb_blockstats);
         wss.broadcast({ msg: 'reset' });
         //chaincode.query.query(['GetAllCPs'], cb_got_papers);
         var Request = {
@@ -587,7 +587,7 @@ function sendMsg(json) {
         }
     }
 }
-function block_stats(height, cb) {
+function block_stats(e, height, cb) {
     var options = {
         host: 'test-peer1.rtp.raleigh.ibm.com',
         port: '5000',
@@ -601,7 +601,7 @@ function block_stats(height, cb) {
         console.log('stats:');
         console.log(stats);
         sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
-        cb(null);
+        cb(null, stats);
     };
 
     function failure(statusCode, headers, msg) {
