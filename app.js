@@ -554,7 +554,7 @@ function cb_chainstats(err, chain_stats, WebAppAdmin) {
     //got the block's stats, lets send the statistics
     function cb_blockstats(err, stats) {
         if (chain_stats.height) stats.height = chain_stats.height - 1;
-        wss.broadcast({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
+        wss.broadcast({ msg: 'chainstats', e: err, chainstats: chain_stats, blockstats: stats });
     }
 
     function cb_got_papers(e, papers) {
