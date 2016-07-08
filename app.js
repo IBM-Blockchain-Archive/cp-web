@@ -209,7 +209,7 @@ var chain = hlc.newChain("cp");
 var testChaincodePath = "github.com/cp-chaincode-v2";
 //var testChaincodePath = "github.com/hyperledger_chaincode/chaincode_example02_new";
 var testChaincodeID = "cp";
-//var WebAppAdmin;
+var WebAppAdmin;
 configure_network();
 
 // ==================================
