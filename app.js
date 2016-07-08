@@ -437,6 +437,8 @@ function cb_deployed(e, d) {
         // ========================================================
         // Part 2 Code - Monitor the height of the blockchain
         // =======================================================
+        console.log("monitor blcokheight ws:")
+        console.log(ws);
         monitor_blockheight(e, ws, d);
         /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
             if (chain_stats && chain_stats.height) {
@@ -582,6 +584,8 @@ function cb_chainstats(err, chain_stats, ws, WebAppAdmin) {
 function sendMsg(ws, json) {
     if (ws) {
         try {
+            console.log("send message ws:")
+            console.log(ws);
             ws.send(JSON.stringify(json));
         }
         catch (e) {
