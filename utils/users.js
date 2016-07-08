@@ -104,7 +104,7 @@ function login(id, secret, cb) {
     chain.getMember(id, function (err, usr) {
         if (err) {
             console.log("Failed to get" + id + "member " + " ---> " + err);
-            cb && cb(null);
+            cb && cb(err);
             ////t.end(err);
         } else {
             console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
@@ -115,7 +115,7 @@ function login(id, secret, cb) {
             usr.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll" + id + "member " + " ---> " + err);
-                    cb && cb(null);
+                    cb && cb(err);
                     ////t.end(err);
                 } else {
                     console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
@@ -144,6 +144,7 @@ function login(id, secret, cb) {
                     invokeTx.on('error', function (err) {
                         // Invoke transaction submission failed
                         console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
+                        cb && cb(err);
                     });
                 }
             });
