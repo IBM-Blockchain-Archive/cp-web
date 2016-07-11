@@ -179,29 +179,31 @@ function login2(id, secret, cb) {
 }
 */
 function registerUser(username, role, cb) {
-    console.log("registering user..........");
-    var registrationRequest = {
-        enrollmentID: username,
-        account: "bank_a",
-        affiliation: "00001"
-    };
-    usr.register(registrationRequest, function (err, enrollsecret) {
-        if (err) {
-            cb(err, null);
-        } else {
-            var cred = {
-                id: username,
-                secret: enrollsecret
-            }
-            login(cred.id, cred.secret, function (err) {
-                if (err != null) {
-                    cb(err, null);
-                } else {
-                    cb(null, cred);
+    chain.getMember(username, function (err, usr) {
+        console.log("registering user..........");
+        var registrationRequest = {
+            enrollmentID: username,
+            account: "bank_a",
+            affiliation: "00001"
+        };
+        usr.register(registrationRequest, function (err, enrollsecret) {
+            if (err) {
+                cb(err, null);
+            } else {
+                var cred = {
+                    id: username,
+                    secret: enrollsecret
                 }
-            });
+                login(cred.id, cred.secret, function (err) {
+                    if (err != null) {
+                        cb(err, null);
+                    } else {
+                        cb(null, cred);
+                    }
+                });
 
-        }
+            }
+        });
     });
 }
 /*
