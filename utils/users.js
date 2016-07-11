@@ -180,8 +180,7 @@ function login2(id, secret, cb) {
 */
 function registerUser(username, role, cb) {
     chain.getMember(username, function (err, usr) {
-        console.log(err);
-        if (err) {
+        if (!usr.isRegistered()) {
             console.log("registering user..........");
             var registrationRequest = {
                 enrollmentID: username,
