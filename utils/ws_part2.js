@@ -1,7 +1,6 @@
 // ==================================
 // Part 2 - incoming messages, look for type
 // ==================================
-"use strict";
 var chaincode = {};
 var chain = {};
 var async = require('async');
