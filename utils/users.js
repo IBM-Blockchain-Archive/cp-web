@@ -180,14 +180,14 @@ function login2(id, secret, cb) {
 */
 function registerUser(username, role, cb) {
     chain.getMember(username, function (err, usr) {
-        if (err) {
+        if (err || err == null) {
             console.log("registering user..........");
             var registrationRequest = {
                 enrollmentID: username,
                 account: "bank_a",
                 affiliation: "00001"
             };
-            user.register(registrationRequest, function (err, enrollsecret) {
+            usr.register(registrationRequest, function (err, enrollsecret) {
                 if (err) {
                     cb(err, null);
                 } else {
@@ -207,7 +207,7 @@ function registerUser(username, role, cb) {
             });
         } else {
             console.log("User alreay exists. Please login.");
-            cb("User already exist", null);
+            //cb("User already exist", null);
         }
     });
 }
