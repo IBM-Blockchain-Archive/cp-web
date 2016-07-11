@@ -207,7 +207,7 @@ function registerUser(username, role, cb) {
             });
         } else {
             console.log("User alreay exists. Please login.");
-            cb(null, null);
+            cb("not ok", null);
         }
     });
 }
