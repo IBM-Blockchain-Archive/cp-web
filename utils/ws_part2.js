@@ -27,9 +27,9 @@ module.exports.process_msg = function (ws, data) {
         if (err) {
             console.log("Failed to get" + id + "member " + " ---> " + err);
         } else {
-            console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
-            console.log('message type:', data.type);
-            console.log('message user:', data.user);
+            //console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
+            //console.log('message type:', data.type);
+            //console.log('message user:', data.user);
             var Request = {
                 chaincodeID: chaincode
             };

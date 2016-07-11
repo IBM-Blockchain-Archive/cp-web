@@ -65,7 +65,7 @@ app.use(cors());
 app.use(function (req, res, next) {
     var keys;
     console.log('------------------------------------------ incoming request ------------------------------------------');
-    console.log('New ' + req.method + ' request for', req.url);
+    //console.log('New ' + req.method + ' request for', req.url);
     req.bag = {};											//create my object for my stuff
     req.session.count = eval(req.session.count) + 1;
     req.bag.session = req.session;
@@ -73,9 +73,9 @@ app.use(function (req, res, next) {
     var url_parts = url.parse(req.url, true);
     req.parameters = url_parts.query;
     keys = Object.keys(req.parameters);
-    if (req.parameters && keys.length > 0) console.log({ parameters: req.parameters });		//print request parameters
+    //if (req.parameters && keys.length > 0) console.log({ parameters: req.parameters });		//print request parameters
     keys = Object.keys(req.body);
-    if (req.body && keys.length > 0) console.log({ body: req.body });						//print request body
+    //if (req.body && keys.length > 0) console.log({ body: req.body });						//print request body
     next();
 });
 
@@ -254,7 +254,7 @@ function cb_deployed(e, d) {
             wss.clients.forEach(function each(client) {
                 try {
                     data.v = '2';
-                    console.log("\n\nSending data using client.send\n\n")
+                    //console.log("\n\nSending data using client.send\n\n")
                     client.send(JSON.stringify(data));
                 }
                 catch (e) {
@@ -272,8 +272,8 @@ function cb_deployed(e, d) {
             };
 
             function success(statusCode, headers, resp) {
-                console.log('chainstats success!');
-                console.log(resp);
+                //console.log('chainstats success!');
+                //console.log(resp);
                 resp = JSON.parse(resp);
                 if (resp && resp.height) {
                     wss.broadcast({ msg: 'reset' });
