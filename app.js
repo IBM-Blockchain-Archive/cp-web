@@ -157,13 +157,13 @@ function configure_network() {
 
     chain.setKeyValStore(hlc.newFileKeyValStore('/tmp/keyValStore'));
     if (fs.existsSync("tlsca.cert")) {
-        chain.setMemberServicesUrl("grpcs://test-ca.rtp.raleigh.ibm.com:50051", fs.readFileSync('tlsca.cert'));
+        chain.setMemberServicesUrl("grpcs://1d06ff84-0d57-4df5-8807-6c9e23e210de_ca-api.blockchain.ibm.com:30303", fs.readFileSync('tlsca.cert'));
     } else {
-        chain.setMemberServicesUrl("grpc://test-ca.rtp.raleigh.ibm.com:50051");
+        chain.setMemberServicesUrl("grpc://1d06ff84-0d57-4df5-8807-6c9e23e210de_ca-api.blockchain.ibm.com:30303");
     }
-    chain.addPeer("grpc://test-peer1.rtp.raleigh.ibm.com:30303");
-    chain.addPeer("grpc://test-peer2.rtp.raleigh.ibm.com:30303");
-    chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
+    chain.addPeer("grpc://1d06ff84-0d57-4df5-8807-6c9e23e210de_vp1-discovery.blockchain.ibm.com:30303");
+    chain.addPeer("grpc://1d06ff84-0d57-4df5-8807-6c9e23e210de_vp2-discovery.blockchain.ibm.com:30303");
+    //chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
     //chain.setDevMode(true);
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
         if (err) {
