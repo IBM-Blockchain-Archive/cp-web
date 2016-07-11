@@ -31,7 +31,7 @@ var setup = require('./setup');
 var cors = require("cors");
 var fs = require("fs");
 var util = require('util');
-var sleep = require('sleep');
+//var sleep = require('sleep');
 //// Set Server Parameters ////
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
@@ -215,7 +215,7 @@ function deploy(WebAppAdmin) {
 
     deployTx.on('complete', function (results) {
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
-        sleep.sleep(60);
+        //sleep.sleep(60);
         part2.setup(results.chaincodeID, chain);
         user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
