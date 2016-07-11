@@ -9,10 +9,12 @@ var http = require('http');
 var util = require('util');
 
 
-module.exports.setup = function (ccID, c) {
+function setup(ccID, c) {
     chaincode = ccID;
     chain = c;
 };
+
+module.exports.setup = setup;
 
 module.exports.process_msg = function (ws, data) {
 
