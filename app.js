@@ -139,69 +139,6 @@ require("cf-deployment-tracker-client").track();
 var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
-//var Ibc1 = require('ibm-blockchain-js');
-//var ibc = new Ibc1();
-
-// ==================================
-// load peers manually or from VCAP, VCAP will overwrite hardcoded list!
-// ==================================
-/*var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
-
-var peers, users, ca;
-
-if (manual.credentials.peers) {
-    console.log(TAG, 'loading', manual.credentials.peers.length, 'hardcoded peers');
-    peers = manual.credentials.peers;
-}
-
-if (manual.credentials.users) {
-    console.log(TAG, "loading", manual.credentials.users.length, "hardcoded users");
-    users = manual.credentials.users;
-}
-
-if (manual.credentials.ca) {
-    var ca_name = Object.keys(manual.credentials.ca)[0];
-    console.log(TAG, "loading ca:", ca_name);
-    ca = manual.credentials.ca[ca_name];
-}
-
-if (process.env.VCAP_SERVICES) {															//load from vcap, search for service, 1 of the 3 should be found...
-    var servicesObject = JSON.parse(process.env.VCAP_SERVICES);
-    for (var i in servicesObject) {
-        if (i.indexOf('ibm-blockchain') >= 0) {											// looks close enough (can be suffixed dev, prod, or staging)
-            if (servicesObject[i][0].credentials.error) {
-                console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
-                peers = null;
-                users = null;
-                process.error = {
-                    type: 'network',
-                    msg: "Due to overwhelming demand the IBM Blockchain Network service is at maximum capacity.  Please try recreating this service at a later date."
-                };
-            }
-            if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
-                console.log('overwritting peers, loading from a vcap service: ', i);
-                peers = servicesObject[i][0].credentials.peers;
-                var ca_name = Object.keys(servicesObject[i][0].credentials.ca)[0];
-                console.log(TAG, "loading ca:", ca_name);
-                ca = servicesObject[i][0].credentials.ca[ca_name];
-                if (servicesObject[i][0].credentials.users) {
-                    console.log('overwritting users, loading from a vcap service: ', i);
-                    users = servicesObject[i][0].credentials.users;
-                }
-                else users = null;														//no security
-                break;
-            }
-        }
-    }
-}
-
-// Options for the blockchain network
-var options = {};
-
-// Merge the user list and the service credentials so that the list users work as aliases for the
-// service users
-var user_manager = require('./utils/users');  // Need to call setup() once sdk and chaincode are loaded
-*/
 // Start up the network!!
 var user_manager = require('./utils/users');
 var hlc = require('hlc');
@@ -217,10 +154,7 @@ configure_network();
 // ==================================
 
 function configure_network() {
-    var registrar = {
-        name: 'WebAppAdmin',
-        secret: 'DJY27pEnl16d'
-    };
+
     chain.setKeyValStore(hlc.newFileKeyValStore('/tmp/keyValStore'));
     if (fs.existsSync("tlsca.cert")) {
         chain.setMemberServicesUrl("grpcs://test-ca.rtp.raleigh.ibm.com:50051", fs.readFileSync('tlsca.cert'));
@@ -269,37 +203,21 @@ function configure_network() {
 var gccID = {};
 function deploy(WebAppAdmin) {
     var deployRequest = {
-        // Name (hash) required for invoke
-
-        //chaincodeID: testChaincodeID,
-        // Function to trigger
         fcn: "init",
-        // Parameters for the invoke function
         args: ['a', '100'],
         chaincodePath: "github.com/cp-chaincode-v2/"
     };
-    console.log(deployRequest);
-    //sleep.sleep(10);
-    // Trigger the invoke transaction
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
-    // Print the invoke results
     deployTx.on('submitted', function (results) {
-        // Invoke transaction submitted successfully
         console.log("Successfully submitted chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
     });
 
-    // Listen for the completed event
     deployTx.on('complete', function (results) {
-        // Invoke transaction submitted successfully
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
         sleep.sleep(60);
-        gccID = results.chaincodeID;
-        query(WebAppAdmin, results.chaincodeID);
-        //final_setup();
-        //part2.setup(results.chaincodeID, WebAppAdmin);
-        //user_manager.setup(chaincode,cb_deployed);
-        //cb_deployed();
+        part2.setup(results.chaincodeID, chain, WebAppAdmin);
+        user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
 
     deployTx.on('error', function (err) {
@@ -307,95 +225,6 @@ function deploy(WebAppAdmin) {
         console.log("Failed to submit chaincode invoke transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + err);
     });
 }
-
-function query(WebAppAdmin, ccID) {
-    var queryRequest = {
-        // Name (hash) required for query
-        chaincodeID: ccID,
-        // Function to trigger
-        fcn: "query",
-        // Existing state variable to retrieve
-        args: ["a"]
-    };
-    console.log("Querying");
-    // Trigger the query transaction
-    WebAppAdmin.setTCertBatchSize(1);
-    var queryTx = WebAppAdmin.query(queryRequest);
-
-    // Print the query results
-    queryTx.on('complete', function (results) {
-        // Query completed successfully
-        console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", queryRequest, results, results.result.toString()));
-        part2.setup(ccID, chain, WebAppAdmin);
-        user_manager.setup(ccID, chain, cb_deployed);
-    });
-    queryTx.on('error', function (err) {
-        // Query failed
-        console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", queryRequest, err));
-    });
-}
-
-/*
-function configure_network() {
-
-    options = {
-        network: {
-            peers: peers,
-            users: users
-        },
-        chaincode: {
-            zip_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/archive/master.zip',
-            unzip_dir: 'cp-chaincode-v2-master/hyperledger',							    //subdirectroy name of chaincode after unzipped
-            git_url: 'https://github.com/IBM-Blockchain/cp-chaincode-v2/hyperledger',		//GO get http url
-
-            //hashed cc name from prev deployment
-            //deployed_name: '2450c95bc77e124c766ff650c2f4642e5c0bc2d576ee67db130900750cddc5982e295f320fd5dff7aca2f61fa7cc673fcdcc8a7464f94c68eeccdb14b2384a75'
-        }
-    };
-    if (process.env.VCAP_SERVICES) {
-        console.log('\n[!] looks like you are in bluemix, I am going to clear out the deploy_name so that it deploys new cc.\n[!] hope that is ok buddy\n');
-        options.chaincode.deployed_name = "";
-    }
-    
-    ibc.load(options, cb_ready);
-}
-
-var chaincode = null;
-function cb_ready(err, cc) {//response has chaincode functions
-    if (err != null) {
-        console.log('! looks like an error loading the chaincode, app will fail\n', err);
-        if (!process.error) process.error = {type: 'load', msg: err.details};				//if it already exist, keep the last error
-    }
-    else {
-        chaincode = cc;
-        if (!cc.details.deployed_name || cc.details.deployed_name === "") {												//decide if i need to deploy
-            cc.deploy('init', [], {save_path: './cc_summaries'}, finalSetup);
-        }
-        else {
-            console.log('chaincode summary file indicates chaincode has been previously deployed');
-            finalSetup();
-        }
-    }
-}
-*/
-/**
- * Configures other parts of the app that depend on the blockchain network being configured and running in
- * order to function.
- * @param err Will capture any errors from deploying the chaincode.
- */
-/*
-function finalSetup(err, data) {
-    if (err != null) {
-        //look at tutorial_part1.md in the trouble shooting section for help
-        console.log('! looks like a deploy error, holding off on the starting the socket\n', err);
-        if (!process.error) process.error = {type: 'deploy', msg: err.details};
-    } else {
-        part2.setup(ibc, chaincode, users);
-        user_manager.setup(ibc, chaincode, ca, cb_deployed);
-    }
-}
-*/
-
 // ============================================================================================================================
 // 												WebSocket Communication Madness
 // ============================================================================================================================
@@ -487,96 +316,5 @@ function cb_deployed(e, d) {
 
             request.end();
         }, 5000);
-        // ========================================================
-        // Part 2 Code - Monitor the height of the blockchain
-        // =======================================================
-        /*ibc.monitor_blockheight(function (chain_stats) {										//there is a new block, lets refresh everything that has a state
-            if (chain_stats && chain_stats.height) {
-                console.log('hey new block, lets refresh and broadcast to all');
-                ibc.block_stats(chain_stats.height - 1, cb_blockstats);
-                wss.broadcast({ msg: 'reset' });
-                chaincode.query.query(['GetAllCPs'], cb_got_papers);
-            }
-
-            //got the block's stats, lets send the statistics
-            function cb_blockstats(err, stats) {
-                if (chain_stats.height) stats.height = chain_stats.height - 1;
-                wss.broadcast({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
-            }
-
-            function cb_got_papers(e, papers) {
-                if (e != null) {
-                    console.log('papers error', e);
-                }
-                else {
-                    //console.log('papers', papers);
-                    wss.broadcast({ msg: 'papers', papers: papers });
-                }
-            }
-
-            //call back for getting open trades, lets send the trades
-            function cb_got_trades(e, trades) {
-                if (e != null) console.log('error:', e);
-                else {
-                    if (trades && trades.open_trades) {
-                        wss.broadcast({ msg: 'open_trades', open_trades: trades.open_trades });
-                    }
-                }
-            }
-        });*/
     }
-}
-
-
-function monitor_blockheight(wss) {
-    var options = {
-        host: 'test-peer1.rtp.raleigh.ibm.com',
-        port: '5000',
-        path: '/chain',
-        method: 'GET'
-    };
-
-    function success(statusCode, headers, resp) {
-        console.log('chainstats success!');
-        console.log(resp);
-        if (resp && resp.height) {
-            wss.broadcast({ msg: 'reset' });
-        }
-    };
-    function failure(statusCode, headers, msg) {
-        console.log('chainstats failure :(');
-        console.log('status code: ' + statusCode);
-        console.log('headers: ' + headers);
-        console.log('message: ' + msg);
-    };
-
-    var goodJSON = false;
-    var request = http.request(options, function (resp) {
-        var str = '', temp, chunks = 0;
-
-        resp.setEncoding('utf8');
-        resp.on('data', function (chunk) {                                                            //merge chunks of request
-            str += chunk;
-            chunks++;
-        });
-        resp.on('end', function () {                                                                    //wait for end before decision
-            if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
-                success(resp.statusCode, resp.headers, str);
-            }
-            else {
-                failure(resp.statusCode, resp.headers, str);
-            }
-        });
-    });
-
-    request.on('error', function (e) {                                                                //handle error event
-        failure(500, null, e);
-    });
-
-    request.setTimeout(20000);
-    request.on('timeout', function () {                                                                //handle time out event
-        failure(408, null, 'Request timed out');
-    });
-
-    request.end();
 }
