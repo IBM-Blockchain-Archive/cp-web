@@ -2,7 +2,6 @@
 // Part 2 - incoming messages, look for type
 // ==================================
 "use strict";
-var WebAppAdmin = {};
 var chaincode = {};
 var chain = {};
 var async = require('async');
@@ -10,9 +9,7 @@ var http = require('http');
 var util = require('util');
 
 
-module.exports.setup = function (ccID, c, WAA) {
-    //ibc = sdk;
-    WebAppAdmin = WAA;
+module.exports.setup = function (ccID, c) {
     chaincode = ccID;
     chain = c;
 };

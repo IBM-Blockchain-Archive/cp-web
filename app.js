@@ -216,7 +216,7 @@ function deploy(WebAppAdmin) {
     deployTx.on('complete', function (results) {
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
         sleep.sleep(60);
-        part2.setup(results.chaincodeID, chain, WebAppAdmin);
+        part2.setup(results.chaincodeID, chain);
         user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
 

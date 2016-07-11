@@ -34,6 +34,7 @@ var TAG = "user_manager";
  * @param secret The secret that was given to this user when registered against the CA.
  * @param cb A callback of the form: function(err)
  */
+/*
 function getUser(name, cb) {
     chain.getUser(name, function (err, user) {
         if (err) return cb(err);
@@ -67,35 +68,6 @@ function getUser2(name, cb) {
             if (err) cb(err, null)
             cb(null, user, enrollsecret);
         });
-    });
-}
-/*
-function login(id, secret, cb) {
-    if (!ibc) {
-        cb && cb(new Error(TAG + ": No sdk supplied to login users"));
-        return;
-    }
-
-    // Just log in users against the first peer, as it is used for all rest calls anyway.
-    ibc.register(0, id, secret, 2, function (err, data) {
-        if (err) {
-            console.log(TAG, "Error", JSON.stringify(err));
-            cb && cb(err)
-        } else {
-            console.log(TAG, "Data", JSON.stringify(data));
-
-            // Make sure an account exists for the user
-            console.log(TAG, "(Re)initializing user's trading account");
-            chaincode.invoke.createAccount([id], id, function (err) {
-                if (err) {
-                    console.error(TAG, "Account init error:", JSON.stringify(err));
-                }
-
-                console.log(TAG, "Initialized account:" + id);
-                cb && cb(null);
-
-            });
-        }
     });
 }
 */
@@ -150,7 +122,7 @@ function login(id, secret, cb) {
         }
     });
 }
-
+/*
 function login2(id, secret, cb) {
     chain.getMember(id, function (err, usr) {
         if (err) {
@@ -158,7 +130,7 @@ function login2(id, secret, cb) {
             cb && cb(null, null);
             ////t.end(err);
         } else {
-            console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
+            console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto));
 
             // Enroll the user member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
@@ -173,14 +145,14 @@ function login2(id, secret, cb) {
                     cb && cb(null, cred);
                     ////t.end(err);
                 } else {
-                    console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto)*/);
+                    console.log("Successfully enrolled" + id + "member" /*+ " ---> " + JSON.stringify(crypto));
 
                     // Confirm that the user token has been created in the key value store
                     var path = chain.getKeyValStore().dir + "/member." + usr.getName();
 
                     fs.exists(path, function (exists) {
                         if (exists) {
-                            console.log("Successfully stored client token" /*+ " ---> " + user.getName()*/);
+                            console.log("Successfully stored client token" /*+ " ---> " + user.getName());
                         } else {
                             console.log("Failed to store client token for " + usr.getName() + " ---> " + err);
                         }
@@ -194,7 +166,7 @@ function login2(id, secret, cb) {
                     invokeTx.on('submitted', function (results) {
                         // Invoke transaction submitted successfully
                         console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
-                        cb && cb(null,cred);
+                        cb && cb(null, cred);
                     });
                     invokeTx.on('error', function (err) {
                         // Invoke transaction submission failed
@@ -205,55 +177,41 @@ function login2(id, secret, cb) {
         }
     });
 }
-/**
- * Registers a new user against the given CA.
- * @param username The name of the user.
- * @param role The role to assign to the user.
- * @param cb A callback of the form: function(err, credentials);
- */
-/*
+*/
 function registerUser(username, role, cb) {
-    if (!dataSource.connector) {
-        cb && cb(new Error("cannot register users before the CA connector is setup!"));
-        return;
-    }
-
-    // Register the user on the CA
-    var user = {
-        identity: username,
-        role: role,
-        account: "group1",
-        affiliation: "00001"
-    };
-
-    console.log(TAG, "Registering user against CA:", username, "| role:", role);
-    dataSource.connector.registerUser(user, function (err, response) {
+    chain.getMember(username, function (err, usr) {
         if (err) {
-            console.error(TAG, "RegisterUser failed:", username, JSON.stringify(err));
-            cb && cb(err);
-        } else {
-            console.log(TAG, "RegisterUser succeeded:", JSON.stringify(response));
-            // Send the response (username and secret) to the callback
-            var creds = {
-                id: response.identity,
-                secret: response.token
+            console.log("registering user..........");
+            var registrationRequest = {
+                enrollmentID: username,
+                account: "bank_a",
+                affiliation: "00001"
             };
-
-            // Log the user in so that we can initialize their account in the chaincode
-            login(creds.id, creds.secret, function (err) {
+            user.register(registrationRequest, function (err, enrollsecret) {
                 if (err) {
-                    console.error(TAG, "Registration failed at login", JSON.stringify(err));
-                    cb && cb(err);
+                    cb(err, null);
                 } else {
-                    console.log(TAG, "user registration and initialization complete");
-                    cb && cb(null, creds);
+                    var cred = {
+                        id: username,
+                        secret: enrollsecret
+                    }
+                    login(cred.id, cred.secret, function (err){
+                        if(err != null) {
+                            cb(err, null);
+                        } else {
+                            cb(null, cred);
+                        }
+                    });     
+
                 }
             });
+        } else {
+            console.log("User alreay exists. Please login.");
+            cb("User already exist", null);
         }
     });
-
 }
-*/
+/*
 function registerUser(username, role, cb) {
     var test_user1 = {
         name: username,
@@ -271,7 +229,7 @@ function registerUser(username, role, cb) {
             var path = chain.getKeyValStore().dir + "/member." + test_user1.name;
             fs.exists(path, function (exists) {
                 if (exists) {
-                    console.log("Successfully stored client token" /*+ " ---> " + test_user1.name*/);
+                    console.log("Successfully stored client token");
                     //t.end()
                 } else {
                     console.log("Failed to store client token for " + test_user1.name + " ---> " + err);
@@ -282,17 +240,10 @@ function registerUser(username, role, cb) {
         login2(test_user1.name, enrollsecret, cb);
     });
 }
-
+*/
 module.exports.login = login;
 module.exports.registerUser = registerUser;
 
-/**
- * Sets the registrar up to register/login users.
- * @param sdk The sdk object created from ibm-blockchain-js.
- * @param cc The chaincode for creating new user accounts.
- * @param cert_auth The service credentials for the networks certificate authority.
- * @param cb A callback of the form
- */
 module.exports.setup = function (ccID, ch, cb) {
     if (chain && ccID) {
         console.log(TAG, "user manager properly configured");
@@ -301,6 +252,6 @@ module.exports.setup = function (ccID, ch, cb) {
         cb(null, null);
     } else {
         console.error(TAG, "user manager requires all of its setup parameters to function")
-        cb("not null", null);
+        cb("user manager requires all of its setup parameters to function", null);
     }
 };
