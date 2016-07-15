@@ -222,7 +222,7 @@ function deploy(WebAppAdmin) {
 
     deployTx.on('error', function (err) {
         // Invoke transaction submission failed
-        console.log("Failed to submit chaincode invoke transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + err);
+        console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + err);
     });
 }
 // ============================================================================================================================
