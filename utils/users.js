@@ -245,7 +245,7 @@ module.exports.login = login;
 module.exports.registerUser = registerUser;
 
 module.exports.setup = function (ccID, ch, cb) {
-    if (chain && ccID) {
+    if (ch && ccID) {
         console.log(TAG, "user manager properly configured");
         chaincodeID = ccID;
         chain = ch;
