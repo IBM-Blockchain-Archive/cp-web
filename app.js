@@ -157,11 +157,11 @@ function configure_network() {
 
     chain.setKeyValStore(hlc.newFileKeyValStore('/tmp/keyValStore'));
     if (fs.existsSync("tlsca.cert")) {
-        chain.setMemberServicesUrl("grpcs://ad4e77e6-d2f6-43ce-8388-b196f638bb5e_ca.blockchain.ibm.com:30304", fs.readFileSync('tlsca.cert'));
+        chain.setMemberServicesUrl("grpcs://fa4be0db-9a04-40be-86ae-5d7e0ec363ee_ca.blockchain.ibm.com:30304", fs.readFileSync('tlsca.cert'));
     } else {
-        chain.setMemberServicesUrl("grpc://ad4e77e6-d2f6-43ce-8388-b196f638bb5e_ca.blockchain.ibm.com:30304");
+        chain.setMemberServicesUrl("grpc://fa4be0db-9a04-40be-86ae-5d7e0ec363ee_ca.blockchain.ibm.com:30304");
     }
-    chain.addPeer("grpc://ad4e77e6-d2f6-43ce-8388-b196f638bb5e_vp0.blockchain.ibm.com:30304");
+    chain.addPeer("grpc://fa4be0db-9a04-40be-86ae-5d7e0ec363ee_vp0.blockchain.ibm.com:30304");
     //chain.addPeer("grpc://1d06ff84-0d57-4df5-8807-6c9e23e210de_vp2-discovery.blockchain.ibm.com:30303");
     //chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
     //chain.setDevMode(true);
