@@ -28,9 +28,6 @@ module.exports.process_msg = function (ws, data) {
         if (err) {
             console.log("Failed to get" + id + "member " + " ---> " + err);
         } else {
-            //console.log("Successfully got " + id + " member" /*+ " ---> " + JSON.stringify(crypto)*/);
-            //console.log('message type:', data.type);
-            //console.log('message user:', data.user);
             var Request = {
                 chaincodeID: chaincode
             };
@@ -58,14 +55,12 @@ module.exports.process_msg = function (ws, data) {
                         console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
                         cb_invoked(err, null);
                     });
-                    //chaincode.invoke.issueCommercialPaper([JSON.stringify(data.paper)], data.user, cb_invoked);	//create a new paper (args, enrollID, callback)
                 }
             }
             else if (data.type == 'get_papers') {
                 Request.fcn = 'query';
                 Request.args = ['GetAllCPs', data.user];
 
-                //usr.setTCertBatchSize(1);
                 var queryTx = usr.query(Request);
 
                 // Print the query results
@@ -103,11 +98,10 @@ module.exports.process_msg = function (ws, data) {
                     // Invoke transaction submission failed
                     console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
                 });
-                //chaincode.invoke.transferPaper([JSON.stringify(data.transfer)], data.user);						//(args, enrollID, callback)
             }
             else if (data.type == 'chainstats') {
                 var options = {
-                    host: 'test-peer1.rtp.raleigh.ibm.com',
+                    host: 'dhyey-shah-vm1.rtp.raleigh.ibm.com',
                     port: '5000',
                     path: '/chain',
                     method: 'GET'
@@ -173,7 +167,6 @@ module.exports.process_msg = function (ws, data) {
                     cb_got_company(err, null);
                     console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
                 });
-                //chaincode.query.query(['GetCompany', data.company], data.user, cb_got_company);					//(args, enrollID, callback)
             }
 
             function cb_got_papers(e, papers) {
@@ -216,7 +209,7 @@ module.exports.process_msg = function (ws, data) {
                     async.eachLimit(list, 1, function (key, cb) {							//iter through each one, and send it
                         //get chainstats through REST API
                         var options = {
-                            host: 'test-peer1.rtp.raleigh.ibm.com',
+                            host: 'dhyey-shah-vm1.rtp.raleigh.ibm.com',
                             port: '5000',
                             path: '/chain/blocks/' + key,
                             method: 'GET'

@@ -1,5 +1,3 @@
-
-
 "use strict";
 /* global process */
 /* global __dirname */
@@ -31,7 +29,6 @@ var setup = require('./setup');
 var cors = require("cors");
 var fs = require("fs");
 var util = require('util');
-//var sleep = require('sleep');
 //// Set Server Parameters ////
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
@@ -50,7 +47,6 @@ app.use(bodyParser.urlencoded());
 app.use(cookieParser());
 app.use('/cc/summary', serve_static(path.join(__dirname, 'cc_summaries')));												//for chaincode investigator
 app.use(serve_static(path.join(__dirname, 'public'), { maxAge: '1d', setHeaders: setCustomCC }));							//1 day cache
-//app.use( serve_static(path.join(__dirname, 'public')) );
 app.use(session({ secret: 'Somethignsomething1234!test', resave: true, saveUninitialized: true }));
 function setCustomCC(res, path) {
     if (serve_static.mime.lookup(path) === 'image/jpeg') res.setHeader('Cache-Control', 'public, max-age=2592000');		//30 days cache
@@ -65,7 +61,6 @@ app.use(cors());
 app.use(function (req, res, next) {
     var keys;
     console.log('------------------------------------------ incoming request ------------------------------------------');
-    //console.log('New ' + req.method + ' request for', req.url);
     req.bag = {};											//create my object for my stuff
     req.session.count = eval(req.session.count) + 1;
     req.bag.session = req.session;
@@ -73,9 +68,7 @@ app.use(function (req, res, next) {
     var url_parts = url.parse(req.url, true);
     req.parameters = url_parts.query;
     keys = Object.keys(req.parameters);
-    //if (req.parameters && keys.length > 0) console.log({ parameters: req.parameters });		//print request parameters
     keys = Object.keys(req.body);
-    //if (req.body && keys.length > 0) console.log({ body: req.body });						//print request body
     next();
 });
 
@@ -106,8 +99,7 @@ require("cf-deployment-tracker-client").track();
 // ============================================================================================================================
 // 														Launch Webserver
 // ============================================================================================================================
-var server = http.createServer(app).listen(port, function () {
-});
+var server = http.createServer(app).listen(port, function () {});
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 process.env.NODE_ENV = 'production';
 server.timeout = 240000;																							// Ta-da.
@@ -116,6 +108,7 @@ if (process.env.PRODUCTION) console.log('Running using Production settings');
 else console.log('Running using Developer settings');
 
 // Track the application deployments
+console.log('- Tracking Deployment');
 require("cf-deployment-tracker-client").track();
 
 // ============================================================================================================================
@@ -143,8 +136,7 @@ var wss = {};
 var user_manager = require('./utils/users');
 var hlc = require('hlc');
 var chain = hlc.newChain("cp");
-var testChaincodePath = "github.com/cp-chaincode-v2";
-//var testChaincodePath = "github.com/hyperledger_chaincode/chaincode_example02_new";
+var testChaincodePath = "cp-cc/";
 var testChaincodeID = "cp";
 var WebAppAdmin;
 configure_network();
@@ -157,15 +149,15 @@ function configure_network() {
 
     chain.setKeyValStore(hlc.newFileKeyValStore('/tmp/keyValStore'));
     if (fs.existsSync("tlsca.cert")) {
-        chain.setMemberServicesUrl("grpcs://fa4be0db-9a04-40be-86ae-5d7e0ec363ee_ca.blockchain.ibm.com:30304", fs.readFileSync('tlsca.cert'));
+        chain.setMemberServicesUrl("grpcs://dhyey-shah-vm5.rtp.raleigh.ibm.com:50051", fs.readFileSync('tlsca.cert'));
     } else {
-        chain.setMemberServicesUrl("grpc://fa4be0db-9a04-40be-86ae-5d7e0ec363ee_ca.blockchain.ibm.com:30304");
+        chain.setMemberServicesUrl("grpc://dhyey-shah-vm5.rtp.raleigh.ibm.com:50051");
     }
-    chain.addPeer("grpc://fa4be0db-9a04-40be-86ae-5d7e0ec363ee_vp0.blockchain.ibm.com:30304");
+    chain.addPeer("grpc://dhyey-shah-vm1.rtp.raleigh.ibm.com:30303");
     //chain.addPeer("grpc://1d06ff84-0d57-4df5-8807-6c9e23e210de_vp2-discovery.blockchain.ibm.com:30303");
     //chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
     //chain.setDevMode(true);
-    chain.getMember("admin", function (err, WebAppAdmin) {
+    chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
         if (err) {
             console.log("Failed to get WebAppAdmin member " + " ---> " + err);
             //t.end(err);
@@ -174,7 +166,7 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = "57a703ff4f";
+            var pw = "DJY27pEnl16d";
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -205,7 +197,7 @@ function deploy(WebAppAdmin) {
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
-        chaincodePath: "github.com/cp-chaincode-v2/"
+        chaincodePath: "cp-cc/"
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
@@ -265,7 +257,7 @@ function cb_deployed(e, d) {
         //clients will need to know if blockheight changes 
         setInterval(function () {
             var options = {
-                host: 'test-peer1.rtp.raleigh.ibm.com',
+                host: 'dhyey-shah-vm1.rtp.raleigh.ibm.com',
                 port: '5000',
                 path: '/chain',
                 method: 'GET'
