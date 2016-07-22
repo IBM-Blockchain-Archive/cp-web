@@ -132,31 +132,104 @@ require("cf-deployment-tracker-client").track();
 var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
-// Start up the network!!
 var user_manager = require('./utils/users');
-var hlc = require('hlc');
-var chain = hlc.newChain("cp");
 var testChaincodePath = "cp-cc/";
 var testChaincodeID = "cp";
+var hfc = require('hfc');
+var chaincodeName = 'cp_chaincode'
+var chain = hfc.newChain(chaincodeName);
+chain.setDeployWaitTime(45);
 var WebAppAdmin;
-configure_network();
 
+// Configure the KeyValStore which is used to store sensitive keys
+// as so it is important to secure this storage.
+chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
+// ==================================
+// load peers manually or from VCAP, VCAP will overwrite hardcoded list!
+// ==================================
+
+var peerURLs = [];
+var caURL = null;
+var users = null;
+var registrar = null; //user used to register other users and deploy chaincode
+var peerHosts = [];
+
+//hard-coded the peers and CA addresses.
+//added for reading configs from file
+try{
+  var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
+	var peers = manual.credentials.peers;
+  for (var i in peers) {
+          peerURLs.push("grpc://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
+          peerHosts.push("" + peers[i].discovery_host);
+  }
+  var ca = manual.credentials.ca;
+  for(var i in ca){
+    caURL = "grpc://" + ca[i].url;
+  }
+  console.log('loading hardcoded peers');
+	var users = null;																			//users are only found if security is on
+	if(manual.credentials.users) users = manual.credentials.users;
+	  console.log('loading hardcoded users');
+}
+catch(e){
+	console.log('Error - could not find hardcoded peers/users, this is okay if running in bluemix');
+}
+
+if (process.env.VCAP_SERVICES) {															//load from vcap, search for service, 1 of the 3 should be found...
+  var servicesObject = JSON.parse(process.env.VCAP_SERVICES);
+  for (var i in servicesObject) {
+    if (i.indexOf('ibm-blockchain') >= 0) {											//looks close enough
+      if (servicesObject[i][0].credentials.error) {
+        console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
+        peers = null;
+        users = null;
+        process.error = { type: 'network', msg: 'Due to overwhelming demand the IBM Blockchain Network service is at maximum capacity.  Please try recreating this service at a later date.' };
+      }
+      if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
+        console.log('overwritting peers, loading from a vcap service: ', i);
+        peers = servicesObject[i][0].credentials.peers;
+        for (var i in peers) {
+          peerURLs.push(
+            peers[i].discovery_host + ":" + peers[i].discovery_port
+          );
+        }
+        if (servicesObject[i][0].credentials.ca) {
+          console.log('overwritting ca, loading from a vcap service: ', i);
+          ca = servicesObject[i][0].credentials.ca;
+          caURL = ca.discovery_host + ":" + ca.discovery_port;
+          if (servicesObject[i][0].credentials.users) {
+            console.log('overwritting users, loading from a vcap service: ', i);
+            users = servicesObject[i][0].credentials.users;
+            //TODO extract registrar from users once user list has been updated to new SDK
+          }
+          else users = null;													//no security	
+        }
+        else ca = null;
+        break;
+      }
+    }
+  }
+} 
+
+console.log(peerURLs);
+console.log(caURL);
+console.log("calling network config");
 // ==================================
 // configure ibm-blockchain-js sdk
 // ==================================
+configure_network();
 
 function configure_network() {
-
-    chain.setKeyValStore(hlc.newFileKeyValStore('/tmp/keyValStore'));
     if (fs.existsSync("tlsca.cert")) {
-        chain.setMemberServicesUrl("grpcs://dhyey-shah-vm5.rtp.raleigh.ibm.com:50051", fs.readFileSync('tlsca.cert'));
+        chain.setMemberServicesUrl(caURL, fs.readFileSync('tlsca.cert'));
     } else {
-        chain.setMemberServicesUrl("grpc://dhyey-shah-vm5.rtp.raleigh.ibm.com:50051");
+        chain.setMemberServicesUrl(caURL);
     }
-    chain.addPeer("grpc://dhyey-shah-vm1.rtp.raleigh.ibm.com:30303");
-    //chain.addPeer("grpc://1d06ff84-0d57-4df5-8807-6c9e23e210de_vp2-discovery.blockchain.ibm.com:30303");
-    //chain.addPeer("grpc://test-peer3.rtp.raleigh.ibm.com:30303");
-    //chain.setDevMode(true);
+    for(var i in peerURLs){
+        chain.addPeer(peerURLs[i]);
+    }
+    
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
         if (err) {
             console.log("Failed to get WebAppAdmin member " + " ---> " + err);
@@ -191,7 +264,7 @@ function configure_network() {
         }
     });
 }
-//var sleep = require('sleep')
+
 var gccID = {};
 function deploy(WebAppAdmin) {
     var deployRequest = {
@@ -208,7 +281,7 @@ function deploy(WebAppAdmin) {
     deployTx.on('complete', function (results) {
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
         //sleep.sleep(60);
-        part2.setup(results.chaincodeID, chain);
+        part2.setup(results.chaincodeID, chain, peerHosts);
         user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
 
@@ -257,7 +330,7 @@ function cb_deployed(e, d) {
         //clients will need to know if blockheight changes 
         setInterval(function () {
             var options = {
-                host: 'dhyey-shah-vm1.rtp.raleigh.ibm.com',
+                host: peerHosts[0],
                 port: '5000',
                 path: '/chain',
                 method: 'GET'

@@ -6,11 +6,13 @@ var chain = {};
 var async = require('async');
 var http = require('http');
 var util = require('util');
+var peers = null;
 
 
-function setup(ccID, c) {
+function setup(ccID, c, peerHosts) {
     chaincode = ccID;
     chain = c;
+    peers = peerHosts;
 };
 
 module.exports.setup = setup;
@@ -101,7 +103,7 @@ module.exports.process_msg = function (ws, data) {
             }
             else if (data.type == 'chainstats') {
                 var options = {
-                    host: 'dhyey-shah-vm1.rtp.raleigh.ibm.com',
+                    host: peers[0],
                     port: '5000',
                     path: '/chain',
                     method: 'GET'
@@ -209,7 +211,7 @@ module.exports.process_msg = function (ws, data) {
                     async.eachLimit(list, 1, function (key, cb) {							//iter through each one, and send it
                         //get chainstats through REST API
                         var options = {
-                            host: 'dhyey-shah-vm1.rtp.raleigh.ibm.com',
+                            host: peers[0],
                             port: '5000',
                             path: '/chain/blocks/' + key,
                             method: 'GET'
