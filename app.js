@@ -189,10 +189,11 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
       if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
         console.log('overwritting peers, loading from a vcap service: ', i);
         peers = servicesObject[i][0].credentials.peers;
+        peerURLs = [];
+        peerHosts = [];
         for (var i in peers) {
-          peerURLs.push(
-            peers[i].discovery_host + ":" + peers[i].discovery_port
-          );
+          peerURLs.push(peers[i].discovery_host + ":" + peers[i].discovery_port);
+          peerHosts.push("" + peers[i].discovery_host);
         }
         if (servicesObject[i][0].credentials.ca) {
           console.log('overwritting ca, loading from a vcap service: ', i);
