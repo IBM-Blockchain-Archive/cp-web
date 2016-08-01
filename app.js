@@ -138,12 +138,15 @@ var testChaincodeID = "cp";
 var hfc = require('hfc');
 var chaincodeName = 'cp_chaincode'
 var chain = hfc.newChain(chaincodeName);
-chain.setDeployWaitTime(45);
 var WebAppAdmin;
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
 chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
+chain.setDeployWaitTime(60);
+chain.certificatePath = "/certs/blockchain-cert.pem"; 
+chain.setECDSAModeForGRPC(true);
+process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
 // ==================================
@@ -160,12 +163,12 @@ try{
   var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
 	var peers = manual.credentials.peers;
   for (var i in peers) {
-          peerURLs.push("grpc://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
+          peerURLs.push("grpcs://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
           peerHosts.push("" + peers[i].discovery_host);
   }
   var ca = manual.credentials.ca;
   for(var i in ca){
-    caURL = "grpc://" + ca[i].url;
+    caURL = "grpcs://" + ca[i].url;
   }
   console.log('loading hardcoded peers');
 	var users = null;																			//users are only found if security is on
@@ -213,8 +216,6 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
   }
 } 
 
-console.log(peerURLs);
-console.log(caURL);
 console.log("calling network config");
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -222,13 +223,18 @@ console.log("calling network config");
 configure_network();
 
 function configure_network() {
-    if (fs.existsSync("tlsca.cert")) {
-        chain.setMemberServicesUrl(caURL, fs.readFileSync('tlsca.cert'));
-    } else {
-        chain.setMemberServicesUrl(caURL);
+    var pem = null;
+    if (fs.existsSync('us.blockchain.ibm.com.cert')) {
+        pem = fs.readFileSync('us.blockchain.ibm.com.cert');
+        
+        chain.setMemberServicesUrl(caURL, {pem:pem});
     }
+    else{
+        console.log("Failed to get the certificate....");
+    }
+    
     for(var i in peerURLs){
-        chain.addPeer(peerURLs[i]);
+        chain.addPeer(peerURLs[i], {pem:pem});
     }
     
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
@@ -240,7 +246,7 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = "DJY27pEnl16d";
+            var pw = "c072f20ef7";
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -332,7 +338,7 @@ function cb_deployed(e, d) {
         setInterval(function () {
             var options = {
                 host: peerHosts[0],
-                port: '5000',
+                port: '443',
                 path: '/chain',
                 method: 'GET'
             };
