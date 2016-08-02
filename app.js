@@ -143,7 +143,7 @@ var WebAppAdmin;
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
-chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/keyValStore'));
+chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
 chain.setDeployWaitTime(60); 
 chain.setECDSAModeForGRPC(true);
 process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';
@@ -244,7 +244,7 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = "1402ac6dfa";
+            var pw = "a99db39164";
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -360,7 +360,6 @@ function cb_deployed(e, d) {
             var goodJSON = false;
             var request = https.request(options, function (resp) {
                 var str = '', temp, chunks = 0;
-                console.log("https response: : "+resp);
                 resp.setEncoding('utf8');
                 resp.on('data', function (chunk) {                                                            //merge chunks of request
                     str += chunk;
