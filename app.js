@@ -22,6 +22,7 @@ var morgan = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var http = require('http');
+var https = require('https');
 var app = express();
 var url = require('url');
 var async = require('async');
@@ -142,9 +143,8 @@ var WebAppAdmin;
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
-chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
-chain.setDeployWaitTime(60);
-chain.certificatePath = "/certs/blockchain-cert.pem"; 
+chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/keyValStore'));
+chain.setDeployWaitTime(60); 
 chain.setECDSAModeForGRPC(true);
 process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';
 // ==================================
@@ -223,10 +223,8 @@ console.log("calling network config");
 configure_network();
 
 function configure_network() {
-    var pem = null;
+    var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
-        pem = fs.readFileSync('us.blockchain.ibm.com.cert');
-        
         chain.setMemberServicesUrl(caURL, {pem:pem});
     }
     else{
@@ -246,7 +244,7 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = "c072f20ef7";
+            var pw = "1402ac6dfa";
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -277,7 +275,8 @@ function deploy(WebAppAdmin) {
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
-        chaincodePath: "cp-cc/"
+        chaincodePath: "cp-cc/",
+        certificatePath: "/certs/blockchain-cert.pem"
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
@@ -287,7 +286,6 @@ function deploy(WebAppAdmin) {
 
     deployTx.on('complete', function (results) {
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
-        //sleep.sleep(60);
         part2.setup(results.chaincodeID, chain, peerHosts);
         user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
@@ -356,12 +354,13 @@ function cb_deployed(e, d) {
                 console.log('status code: ' + statusCode);
                 console.log('headers: ' + headers);
                 console.log('message: ' + msg);
+                console.log('peer: '+peerHosts[0]);
             };
 
             var goodJSON = false;
-            var request = http.request(options, function (resp) {
+            var request = https.request(options, function (resp) {
                 var str = '', temp, chunks = 0;
-
+                console.log("https response: : "+resp);
                 resp.setEncoding('utf8');
                 resp.on('data', function (chunk) {                                                            //merge chunks of request
                     str += chunk;
