@@ -13,6 +13,8 @@
 /////////////////////////////////////////
 ///////////// Setup Node.js /////////////
 /////////////////////////////////////////
+process.env.GOPATH=__dirname;
+process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';
 var express = require('express');
 var session = require('express-session');
 var compression = require('compression');
@@ -103,7 +105,8 @@ require("cf-deployment-tracker-client").track();
 var server = http.createServer(app).listen(port, function () {});
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 process.env.NODE_ENV = 'production';
-server.timeout = 240000;																							// Ta-da.
+server.timeout = 240000;
+																						// Ta-da.
 console.log('------------------------------------------ Server Up - ' + host + ':' + port + ' ------------------------------------------');
 if (process.env.PRODUCTION) console.log('Running using Production settings');
 else console.log('Running using Developer settings');
@@ -134,7 +137,7 @@ var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
 var user_manager = require('./utils/users');
-var testChaincodePath = "cp-cc/";
+var testChaincodePath = "chaincode/";
 var testChaincodeID = "cp";
 var hfc = require('hfc');
 var chaincodeName = 'cp_chaincode'
@@ -179,7 +182,8 @@ catch(e){
 	console.log('Error - could not find hardcoded peers/users, this is okay if running in bluemix');
 }
 
-if (process.env.VCAP_SERVICES) {															//load from vcap, search for service, 1 of the 3 should be found...
+if (process.env.VCAP_SERVICES) {
+//load from vcap, search for service, 1 of the 3 should be found...
   var servicesObject = JSON.parse(process.env.VCAP_SERVICES);
   for (var i in servicesObject) {
     if (i.indexOf('ibm-blockchain') >= 0) {											//looks close enough
@@ -194,14 +198,16 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
         peers = servicesObject[i][0].credentials.peers;
         peerURLs = [];
         peerHosts = [];
-        for (var i in peers) {
-          peerURLs.push(peers[i].discovery_host + ":" + peers[i].discovery_port);
-          peerHosts.push("" + peers[i].discovery_host);
+        for (var j in peers) {
+          peerURLs.push("grpcs://"+peers[j].discovery_host + ":" + peers[j].discovery_port);
+          peerHosts.push("" + peers[j].discovery_host);
         }
         if (servicesObject[i][0].credentials.ca) {
           console.log('overwritting ca, loading from a vcap service: ', i);
           ca = servicesObject[i][0].credentials.ca;
-          caURL = ca.discovery_host + ":" + ca.discovery_port;
+          for (var z in ca){
+              caURL = "grpcs://"+ca[z].discovery_host + ":" + ca[z].discovery_port;
+          }
           if (servicesObject[i][0].credentials.users) {
             console.log('overwritting users, loading from a vcap service: ', i);
             users = servicesObject[i][0].credentials.users;
@@ -216,6 +222,14 @@ if (process.env.VCAP_SERVICES) {															//load from vcap, search for serv
   }
 } 
 
+var pwd = "";
+for(var z in users){
+    if(users[z].username=="WebAppAdmin"){
+        pwd = users[z].secret;
+    }
+}
+console.log("password is "+pwd+".");
+
 console.log("calling network config");
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -225,6 +239,7 @@ configure_network();
 function configure_network() {
     var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
+        console.log("found cert us.blockchain.ibm.com");
         chain.setMemberServicesUrl(caURL, {pem:pem});
     }
     else{
@@ -238,13 +253,12 @@ function configure_network() {
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
         if (err) {
             console.log("Failed to get WebAppAdmin member " + " ---> " + err);
-            //t.end(err);
         } else {
             console.log("Successfully got WebAppAdmin member" + " ---> " /*+ JSON.stringify(crypto)*/);
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = "a99db39164";
+            var pw = pwd; //"be5ae8a801";
             WebAppAdmin.enroll(pw, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -275,7 +289,7 @@ function deploy(WebAppAdmin) {
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
-        chaincodePath: "cp-cc/",
+        chaincodePath: "chaincode/",
         certificatePath: "/certs/blockchain-cert.pem"
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
