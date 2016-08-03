@@ -137,7 +137,7 @@ var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
 var user_manager = require('./utils/users');
-var testChaincodePath = "chain_code/";
+var testChaincodePath = "chain_code/";  //this is bs pls change it down there
 var testChaincodeID = "cp";
 var hfc = require('hfc');
 var chaincodeName = 'cp_chaincode'
@@ -292,7 +292,7 @@ function deploy(WebAppAdmin) {
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
-        chaincodePath: "chaincode/",
+        chaincodePath: "chain_code/",
         certificatePath: "/certs/blockchain-cert.pem"
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
