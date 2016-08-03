@@ -68,7 +68,7 @@ app.use(function (req, res, next) {
     req.session.count = eval(req.session.count) + 1;
     req.bag.session = req.session;
 
-    var url_parts = url.parse(req.url, true);
+    var url_parts = require('url').parse(req.url, true);
     req.parameters = url_parts.query;
     keys = Object.keys(req.parameters);
     keys = Object.keys(req.body);
@@ -149,7 +149,6 @@ var WebAppAdmin;
 chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
 chain.setDeployWaitTime(60); 
 chain.setECDSAModeForGRPC(true);
-process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
 // ==================================
@@ -229,6 +228,10 @@ for(var z in users){
     }
 }
 console.log("password is "+pwd+".");
+for(var url in peerURLs){
+    console.log(peerURLs[url]+".");
+}
+console.log(caURL+".");
 
 console.log("calling network config");
 // ==================================
@@ -258,8 +261,8 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = pwd; //"be5ae8a801";
-            WebAppAdmin.enroll(pw, function (err, crypto) {
+            var pw = pwd; //"b50cad0cf6";
+            WebAppAdmin.enroll(pwd, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
                     //t.end(err);
