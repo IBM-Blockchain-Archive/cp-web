@@ -13,8 +13,8 @@
 /////////////////////////////////////////
 ///////////// Setup Node.js /////////////
 /////////////////////////////////////////
-process.env.GOPATH=__dirname;
-process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';
+process.env.GOPATH=__dirname;   //set the gopath to current dir and place chaincode inside src folder
+process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';   //no need but just to be sure
 var express = require('express');
 var session = require('express-session');
 var compression = require('compression');
@@ -88,7 +88,7 @@ app.use(function (req, res, next) {
     next(err);
 });
 app.use(function (err, req, res, next) {		// = development error handler, print stack trace
-    console.log("Error Handeler -", req.url);
+    console.log("Error Handler -", req.url);
     var errorCode = err.status || 500;
     res.status(errorCode);
     req.bag.error = { msg: err.stack, status: errorCode };
@@ -137,7 +137,6 @@ var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
 var user_manager = require('./utils/users');
-var testChaincodePath = "chain_code/";  //this is bs pls change it down there
 var testChaincodeID = "cp";
 var hfc = require('hfc');
 var chaincodeName = 'cp_chaincode'
@@ -227,11 +226,6 @@ for(var z in users){
         pwd = users[z].secret;
     }
 }
-console.log("password is "+pwd+".");
-for(var url in peerURLs){
-    console.log(peerURLs[url]+".");
-}
-console.log(caURL+".");
 
 console.log("calling network config");
 // ==================================
@@ -261,7 +255,6 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            var pw = pwd; //"b50cad0cf6";
             WebAppAdmin.enroll(pwd, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -341,7 +334,6 @@ function cb_deployed(e, d) {
             wss.clients.forEach(function each(client) {
                 try {
                     data.v = '2';
-                    //console.log("\n\nSending data using client.send\n\n")
                     client.send(JSON.stringify(data));
                 }
                 catch (e) {
@@ -359,8 +351,6 @@ function cb_deployed(e, d) {
             };
 
             function success(statusCode, headers, resp) {
-                //console.log('chainstats success!');
-                //console.log(resp);
                 resp = JSON.parse(resp);
                 if (resp && resp.height) {
                     wss.broadcast({ msg: 'reset' });

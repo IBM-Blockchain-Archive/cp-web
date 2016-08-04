@@ -9,7 +9,6 @@ var https = require('https');
 var util = require('util');
 var peers = null;
 
-
 function setup(ccID, c, peerHosts) {
     chaincode = ccID;
     chain = c;
@@ -77,7 +76,6 @@ module.exports.process_msg = function (ws, data) {
                     cb_got_papers(err, null);
                     console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
                 });
-                //chaincode.query.query(['GetAllCPs', data.user], cb_got_papers);									//(args, enrollID, callback)
             }
             else if (data.type == 'transfer_paper') {
                 console.log('transfering msg', data.transfer);
@@ -90,12 +88,10 @@ module.exports.process_msg = function (ws, data) {
                 invokeTx.on('submitted', function (results) {
                     // Invoke transaction submitted successfully
                     console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
-                    //cb_invoked();
                 });
                 invokeTx.on('complete', function (results) {
                     // Invoke transaction submitted successfully
                     console.log(util.format("Successfully completed chaincode invoke transaction: request=%j, response=%j", Request, results));
-                    //cb_invoked();
                 });
                 invokeTx.on('error', function (err) {
                     // Invoke transaction submission failed
@@ -112,7 +108,6 @@ module.exports.process_msg = function (ws, data) {
 
                 function success(statusCode, headers, resp) {
                     console.log('chainstats success!');
-                    //console.log(resp);
                     cb_chainstats(null, JSON.parse(resp));
                 };
                 function failure(statusCode, headers, msg) {
@@ -156,7 +151,6 @@ module.exports.process_msg = function (ws, data) {
                 Request.fcn = 'query';
                 Request.args = ['GetCompany', data.company];
 
-                //usr.setTCertBatchSize(1);
                 var queryTx = usr.query(Request);
 
                 // Print the query results
