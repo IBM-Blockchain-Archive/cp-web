@@ -147,7 +147,7 @@ var WebAppAdmin;
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
 chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
-chain.setDeployWaitTime(60); 
+chain.setDeployWaitTime(100); 
 chain.setECDSAModeForGRPC(true);
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
