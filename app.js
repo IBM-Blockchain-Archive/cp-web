@@ -14,7 +14,7 @@
 ///////////// Setup Node.js /////////////
 /////////////////////////////////////////
 
-//process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder
+process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder
 
 var express = require('express');
 var session = require('express-session');
@@ -315,7 +315,6 @@ function cb_deployed(e, d) {
     }
     else {
         console.log('------------------------------------------ Websocket Up ------------------------------------------');
-        //ibc.save('./cc_summaries');	
         var gws = {};														//save it here for chaincode investigator
         wss = new ws.Server({ server: server });												//start the websocket now
         wss.on('connection', function connection(ws) {
@@ -360,7 +359,6 @@ function cb_deployed(e, d) {
                 console.log('status code: ' + statusCode);
                 console.log('headers: ' + headers);
                 console.log('message: ' + msg);
-                console.log('peer: ' + peerHosts[0]);
             };
 
             var goodJSON = false;

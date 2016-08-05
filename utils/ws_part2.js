@@ -68,8 +68,7 @@ module.exports.process_msg = function (ws, data) {
                 // Print the query results
                 queryTx.on('complete', function (results) {
                     // Query completed successfully
-                    console.log(util.format("Successfully queried existing chaincode state"));
-                    //console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
+                    console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
                     cb_got_papers(null, results.result.toString());
                 });
                 queryTx.on('error', function (err) {
@@ -108,11 +107,9 @@ module.exports.process_msg = function (ws, data) {
                 };
 
                 function success(statusCode, headers, resp) {
-                    console.log('chainstats success!');
                     cb_chainstats(null, JSON.parse(resp));
                 };
                 function failure(statusCode, headers, msg) {
-                    console.log('chainstats failure :(');
                     console.log('status code: ' + statusCode);
                     console.log('headers: ' + headers);
                     console.log('message: ' + msg);
@@ -157,8 +154,7 @@ module.exports.process_msg = function (ws, data) {
                 // Print the query results
                 queryTx.on('complete', function (results) {
                     // Query completed successfully
-                    console.log(util.format("Successfully queried existing chaincode state"));
-                    //console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
+                    console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
                     cb_got_company(null, results.result.toString());
                 });
                 queryTx.on('error', function (err) {
@@ -216,7 +212,6 @@ module.exports.process_msg = function (ws, data) {
                         };
 
                         function success(statusCode, headers, stats) {
-                            console.log("success is called");
                             stats = JSON.parse(stats);
                             stats.height = key;
                             sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
@@ -224,7 +219,6 @@ module.exports.process_msg = function (ws, data) {
                         };
 
                         function failure(statusCode, headers, msg) {
-                            console.log("failure is called");
                             console.log('chainstats block ' + key + ' failure :(');
                             console.log('status code: ' + statusCode);
                             console.log('headers: ' + headers);
@@ -242,7 +236,6 @@ module.exports.process_msg = function (ws, data) {
                             });
                             resp.on('end', function () {
                                 if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
-                                    console.log("-------str :"+str);
                                     success(resp.statusCode, resp.headers, str);
                                 }
                                 else {
