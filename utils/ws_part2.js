@@ -203,7 +203,6 @@ module.exports.process_msg = function (ws, data) {
                     list.reverse();
                     async.eachLimit(list, 1, function (key, cb) {							//iter through each one, and send it
                         //get chainstats through REST API
-                        console.log("block key is "+key);
                         var options = {
                             host: peers[0],
                             port: '443',
