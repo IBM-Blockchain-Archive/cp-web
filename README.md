@@ -70,9 +70,22 @@ that was assigned to each user.
 
 ## Notes on the Key Value store
 
-When using the SDK to enroll users on the blockchain.
+When the fabric SDK is used to enroll users, the enrollment certificate for the user is downloaded from the CA and the
+secret for the user you enrolled is invalidated.  Basically, nobody will be able to enroll the user again.  By default,
+the SDK will download this certificate into a local key value store.  So, the only apps that will be able to use the
+enrolled users are those that have access to the enrollment certificate.
+
+#### Why is this a problem?
+
+When this demo is initialized, it attempts to enroll one of the blockchain networks registrar users, `WebAppAdmin`, 
+downloading the enrollment certificate for that user into the demo applications filesystem on Bluemix.  This will
+prevent other demos or apps on that network from being able to use the `WebAppAdmin` user.  The message to take away
+from all of this is that you should only use this demo on it's own blockchain network, for now.  
 
 ## Limitations
+
+* Passwords don't mean anything in the demo.  We're working on it.  You still need to register users to interact with
+the demo, but you can use anything in the password field to log in.
 
 * Having the string 'auditor' in the username will cause the user to be registered as an auditor, while anything else
 will register the user as a regular user, meaning that they can create and trade paper.  These limitations
