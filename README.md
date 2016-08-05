@@ -1,6 +1,6 @@
 # Commercial Paper Demo
 
-[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/dhyey20/cp-web.git)
+[![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)
 
 ## Description
 This application is a demonstration of how a commercial paper trading network might be implemented
@@ -68,7 +68,7 @@ that was assigned to each user.
 5. Open the 'TRADE' tab to participate in your commercial paper trading network.
 6. Open the 'AUDIT' tab to view all of the trades on the network.
 
-## Notes on the Key Value store
+## Notes on the Key Value Store
 
 When the fabric SDK is used to enroll users, the enrollment certificate for the user is downloaded from the CA and the
 secret for the user you enrolled is invalidated.  Basically, nobody will be able to enroll the user again.  By default,
