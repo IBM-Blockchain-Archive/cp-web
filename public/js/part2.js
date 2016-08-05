@@ -125,7 +125,7 @@ $(document).on('ready', function () {
         $('span').remove('.sort-indicator');
 
         // Clicking the column again should reverse the sort
-        if(sort_papers[sort] === sort_selected) {
+        if (sort_papers[sort] === sort_selected) {
             console.log("Reversing the table");
             sort_reversed = !sort_reversed;
         }
@@ -322,11 +322,7 @@ function connect_to_server() {
  */
 function build_trades(papers, panelDesc) {
 
-    if(!user.name)
-    bag.papers = papers;						//store the trades for posterity
-    //console.log('papers:', bag.papers);
-
-    if(papers && papers.length > 0) {
+    if (papers && papers.length > 0) {
 
         // Break the papers down into entries
         console.log('breaking papers into individual entries');
@@ -493,7 +489,7 @@ function processFilterForm(panelDesc) {
 function excluded(entry, filter) {
     "use strict";
 
-    if (filter.owner && filter.owner !== "" && entry.owner.company.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1) return false;
+    if (filter.owner && filter.owner !== "" && entry.owner.toUpperCase().indexOf(filter.owner.toUpperCase()) == -1) return false;
 
     if (filter.issuer && filter.issuer !== "" && entry.issuer.toUpperCase().indexOf(filter.issuer.toUpperCase()) == -1) return false;
 
