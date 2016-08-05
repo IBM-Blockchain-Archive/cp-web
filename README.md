@@ -20,7 +20,10 @@ on IBM Blockchain.  The components of the demo are:
 1. Clone this repository.
 2. Create an instance of the IBM Blockchain service in the Bluemix catalog.
 3. Copy the credentials from the service into the file 'my_creds.json'.
-4. Run these commands in the cloned directory:
+4. Make sure the key/value store only has values for your current network (See below).
+5. Comment out the following line in app.js: ```process.env.GOPATH = __dirname;```
+6. Copy the `./src/chain_code` folder of this repository to the `$GOPATH/src/` folder on your machine.
+7. Run these commands in the cloned directory:
 
 ```shell
 npm install
@@ -65,6 +68,10 @@ that was assigned to each user.
 5. Open the 'TRADE' tab to participate in your commercial paper trading network.
 6. Open the 'AUDIT' tab to view all of the trades on the network.
 
+## Notes on the Key Value store
+
+When using the SDK to enroll users on the blockchain.
+
 ## Limitations
 
 * Having the string 'auditor' in the username will cause the user to be registered as an auditor, while anything else
@@ -75,7 +82,7 @@ will be fixed in future versions of the demo.
 
 * For now, the permissions for auditors and regular users are only enforced within the web application.
 An updated user architecture will be coming to the
-fabric to fix this very soon!
+fabric to fix this in the future.
 
 ## Privacy Notice
 
