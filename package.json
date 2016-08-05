@@ -7,28 +7,18 @@
     "start": "node app.js"
   },
   "dependencies": {
-    "adm-zip": "0.4.7",
-    "aes-js": "^0.2.4",
     "async": "0.9.0",
     "body-parser": "1.0.2",
-    "cf-deployment-tracker-client": "0.0.8",
+    "cf-deployment-tracker-client": "*",
     "compression": "1.4.4",
     "cookie-parser": "1.0.1",
     "cors": "2.5.3",
-    "debug": "0.7.4",
-    "elliptic": "^6.2.3",
     "express": "4.0.0",
     "express-session": "1.2.1",
-    "grpc": "^1.0.0-pre1",
     "hfc":"0.5.0",
-    "ibm-blockchain-js": "1.2.*",
     "jade": "1.3.1",
-    "js-sha3": "^0.5.1",
-    "jsrsasign": "^5.0.5",
-    "key-encoder": "^1.1.6",
     "morgan": "1.1.1",
     "serve-static": "1.9.2",
-    "sjcl": "^1.0.3",
     "ws": "1.0.1"
   },
   "engines": {
@@ -47,11 +37,7 @@
     "gulp-util": "^3.0.6",
     "gulp-watch": "^4.3.4",
     "gulp-sourcemaps": "*",
-    "gulp-rename": "*",
-    "watchify": "^3.3.1",
-    "loopback": "^2.26.2",
-    "loopback-datasource-juggler": "^2.44.0",
-    "tape": "^4.4.0"
+    "gulp-rename": "*"
   },
   "license": "Apache-2.0"
 }

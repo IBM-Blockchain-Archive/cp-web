@@ -13,8 +13,9 @@
 /////////////////////////////////////////
 ///////////// Setup Node.js /////////////
 /////////////////////////////////////////
-process.env.GOPATH=__dirname;   //set the gopath to current dir and place chaincode inside src folder
-process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-ECDSA-AES128-GCM-SHA256';   //no need but just to be sure
+
+//process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder
+
 var express = require('express');
 var session = require('express-session');
 var compression = require('compression');
@@ -26,12 +27,10 @@ var bodyParser = require('body-parser');
 var http = require('http');
 var https = require('https');
 var app = express();
-var url = require('url');
-var async = require('async');
 var setup = require('./setup');
 var cors = require("cors");
 var fs = require("fs");
-var util = require('util');
+
 //// Set Server Parameters ////
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
@@ -102,11 +101,11 @@ require("cf-deployment-tracker-client").track();
 // ============================================================================================================================
 // 														Launch Webserver
 // ============================================================================================================================
-var server = http.createServer(app).listen(port, function () {});
+var server = http.createServer(app).listen(port, function () { });
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 process.env.NODE_ENV = 'production';
 server.timeout = 240000;
-																						// Ta-da.
+// Ta-da.
 console.log('------------------------------------------ Server Up - ' + host + ':' + port + ' ------------------------------------------');
 if (process.env.PRODUCTION) console.log('Running using Production settings');
 else console.log('Running using Developer settings');
@@ -146,7 +145,7 @@ var WebAppAdmin;
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
 chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
-chain.setDeployWaitTime(100); 
+chain.setDeployWaitTime(100);
 chain.setECDSAModeForGRPC(true);
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
@@ -160,93 +159,92 @@ var peerHosts = [];
 
 //hard-coded the peers and CA addresses.
 //added for reading configs from file
-try{
-  var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
-	var peers = manual.credentials.peers;
-  for (var i in peers) {
-          peerURLs.push("grpcs://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
-          peerHosts.push("" + peers[i].discovery_host);
-  }
-  var ca = manual.credentials.ca;
-  for(var i in ca){
-    caURL = "grpcs://" + ca[i].url;
-  }
-  console.log('loading hardcoded peers');
-	var users = null;																			//users are only found if security is on
-	if(manual.credentials.users) users = manual.credentials.users;
-	  console.log('loading hardcoded users');
+try {
+    var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
+    var peers = manual.credentials.peers;
+    for (var i in peers) {
+        peerURLs.push("grpcs://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
+        peerHosts.push("" + peers[i].discovery_host);
+    }
+    var ca = manual.credentials.ca;
+    for (var i in ca) {
+        caURL = "grpcs://" + ca[i].url;
+    }
+    console.log('loading hardcoded peers');
+    var users = null;																			//users are only found if security is on
+    if (manual.credentials.users) users = manual.credentials.users;
+    console.log('loading hardcoded users');
 }
-catch(e){
-	console.log('Error - could not find hardcoded peers/users, this is okay if running in bluemix');
+catch (e) {
+    console.log('Error - could not find hardcoded peers/users, this is okay if running in bluemix');
 }
 
 if (process.env.VCAP_SERVICES) {
-//load from vcap, search for service, 1 of the 3 should be found...
-  var servicesObject = JSON.parse(process.env.VCAP_SERVICES);
-  for (var i in servicesObject) {
-    if (i.indexOf('ibm-blockchain') >= 0) {											//looks close enough
-      if (servicesObject[i][0].credentials.error) {
-        console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
-        peers = null;
-        users = null;
-        process.error = { type: 'network', msg: 'Due to overwhelming demand the IBM Blockchain Network service is at maximum capacity.  Please try recreating this service at a later date.' };
-      }
-      if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
-        console.log('overwritting peers, loading from a vcap service: ', i);
-        peers = servicesObject[i][0].credentials.peers;
-        peerURLs = [];
-        peerHosts = [];
-        for (var j in peers) {
-          peerURLs.push("grpcs://"+peers[j].discovery_host + ":" + peers[j].discovery_port);
-          peerHosts.push("" + peers[j].discovery_host);
+    //load from vcap, search for service, 1 of the 3 should be found...
+    var servicesObject = JSON.parse(process.env.VCAP_SERVICES);
+    for (var i in servicesObject) {
+        if (i.indexOf('ibm-blockchain') >= 0) {											//looks close enough
+            if (servicesObject[i][0].credentials.error) {
+                console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
+                peers = null;
+                users = null;
+                process.error = { type: 'network', msg: 'Due to overwhelming demand the IBM Blockchain Network service is at maximum capacity.  Please try recreating this service at a later date.' };
+            }
+            if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
+                console.log('overwritting peers, loading from a vcap service: ', i);
+                peers = servicesObject[i][0].credentials.peers;
+                peerURLs = [];
+                peerHosts = [];
+                for (var j in peers) {
+                    peerURLs.push("grpcs://" + peers[j].discovery_host + ":" + peers[j].discovery_port);
+                    peerHosts.push("" + peers[j].discovery_host);
+                }
+                if (servicesObject[i][0].credentials.ca) {
+                    console.log('overwritting ca, loading from a vcap service: ', i);
+                    ca = servicesObject[i][0].credentials.ca;
+                    for (var z in ca) {
+                        caURL = "grpcs://" + ca[z].discovery_host + ":" + ca[z].discovery_port;
+                    }
+                    if (servicesObject[i][0].credentials.users) {
+                        console.log('overwritting users, loading from a vcap service: ', i);
+                        users = servicesObject[i][0].credentials.users;
+                        //TODO extract registrar from users once user list has been updated to new SDK
+                    }
+                    else users = null;													//no security	
+                }
+                else ca = null;
+                break;
+            }
         }
-        if (servicesObject[i][0].credentials.ca) {
-          console.log('overwritting ca, loading from a vcap service: ', i);
-          ca = servicesObject[i][0].credentials.ca;
-          for (var z in ca){
-              caURL = "grpcs://"+ca[z].discovery_host + ":" + ca[z].discovery_port;
-          }
-          if (servicesObject[i][0].credentials.users) {
-            console.log('overwritting users, loading from a vcap service: ', i);
-            users = servicesObject[i][0].credentials.users;
-            //TODO extract registrar from users once user list has been updated to new SDK
-          }
-          else users = null;													//no security	
-        }
-        else ca = null;
-        break;
-      }
-    }
-  }
-} 
-
-var pwd = "";
-for(var z in users){
-    if(users[z].username=="WebAppAdmin"){
-        pwd = users[z].secret;
     }
 }
 
+var pwd = "";
+for (var z in users) {
+    if (users[z].username == "WebAppAdmin") {
+        pwd = users[z].secret;
+    }
+}
 console.log("calling network config");
+configure_network();
 // ==================================
 // configure ibm-blockchain-js sdk
 // ==================================
-configure_network();
 
 function configure_network() {
     var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
         console.log("found cert us.blockchain.ibm.com");
-        chain.setMemberServicesUrl(caURL, {pem:pem});
+        chain.setMemberServicesUrl(caURL, { pem: pem });
     }
-    else{
+    else {
         console.log("Failed to get the certificate....");
     }
-    
-    for(var i in peerURLs){
-        chain.addPeer(peerURLs[i], {pem:pem});
+
+    for (var i in peerURLs) {
+        chain.addPeer(peerURLs[i], { pem: pem });
     }
-    
+
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
         if (err) {
             console.log("Failed to get WebAppAdmin member " + " ---> " + err);
@@ -305,6 +303,7 @@ function deploy(WebAppAdmin) {
         console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + err);
     });
 }
+
 // ============================================================================================================================
 // 												WebSocket Communication Madness
 // ============================================================================================================================
@@ -361,7 +360,7 @@ function cb_deployed(e, d) {
                 console.log('status code: ' + statusCode);
                 console.log('headers: ' + headers);
                 console.log('message: ' + msg);
-                console.log('peer: '+peerHosts[0]);
+                console.log('peer: ' + peerHosts[0]);
             };
 
             var goodJSON = false;
@@ -372,7 +371,7 @@ function cb_deployed(e, d) {
                     str += chunk;
                     chunks++;
                 });
-                resp.on('end', function () {                                                                    //wait for end before decision
+                resp.on('end', function () {
                     if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
                         success(resp.statusCode, resp.headers, str);
                     }

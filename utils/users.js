@@ -13,9 +13,6 @@
  * Created by davery on 3/16/2016.
  *******************************************************************************/
 "use strict";
-// This connector let's us register users against a CA
-var connector = require('./loopback-connector-obcca');
-//var ibc = {};
 var chain = {};
 var chaincodeID = {};
 var ca = {};
