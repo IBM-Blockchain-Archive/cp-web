@@ -160,19 +160,20 @@ var peerHosts = [];
 //hard-coded the peers and CA addresses.
 //added for reading configs from file
 try {
+    console.log('Attempting to read hardcoded network credentials...');
     var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
-    var peers = manual.credentials.peers;
+    var peers = manual.peers;
     for (var i in peers) {
         peerURLs.push("grpcs://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
         peerHosts.push("" + peers[i].discovery_host);
     }
-    var ca = manual.credentials.ca;
+    var ca = manual.ca;
     for (var i in ca) {
         caURL = "grpcs://" + ca[i].url;
     }
     console.log('loading hardcoded peers');
-    var users = null;																			//users are only found if security is on
-    if (manual.credentials.users) users = manual.credentials.users;
+    users = null;																			//users are only found if security is on
+    if (manual.users) users = manual.users;
     console.log('loading hardcoded users');
 }
 catch (e) {
@@ -235,6 +236,7 @@ function configure_network() {
     var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
         console.log("found cert us.blockchain.ibm.com");
+        console.log("Setting membership service url:", caURL);
         chain.setMemberServicesUrl(caURL, { pem: pem });
     }
     else {
