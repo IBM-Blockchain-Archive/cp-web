@@ -95,9 +95,6 @@ app.use(function (err, req, res, next) {		// = development error handler, print 
     res.render('template/error', { bag: req.bag });
 });
 
-// Track the application deployments
-require("cf-deployment-tracker-client").track();
-
 // ============================================================================================================================
 // 														Launch Webserver
 // ============================================================================================================================
@@ -138,7 +135,7 @@ var wss = {};
 var user_manager = require('./utils/users');
 var testChaincodeID = "cp";
 var hfc = require('hfc');
-var chaincodeName = 'cp_chaincode'
+var chaincodeName = 'cp_chaincode';
 var chain = hfc.newChain(chaincodeName);
 var WebAppAdmin;
 
@@ -222,8 +219,8 @@ if (process.env.VCAP_SERVICES) {
 
 var pwd = "";
 for (var z in users) {
-    if (users[z].username == "WebAppAdmin") {
-        pwd = users[z].secret;
+    if (users[z].enrollId == "WebAppAdmin") {
+        pwd = users[z].enrollSecret;
     }
 }
 console.log("calling network config");
@@ -234,8 +231,8 @@ configure_network();
 
 function configure_network() {
     var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
+
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
-        console.log("found cert us.blockchain.ibm.com");
         console.log("Setting membership service url:", caURL);
         chain.setMemberServicesUrl(caURL, { pem: pem });
     }
@@ -243,6 +240,7 @@ function configure_network() {
         console.log("Failed to get the certificate....");
     }
 
+    console.log("Peer urls:", peerURLs);
     for (var i in peerURLs) {
         chain.addPeer(peerURLs[i], { pem: pem });
     }
@@ -255,6 +253,7 @@ function configure_network() {
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
+            console.log("Enrolling: WebAppAdmin", pwd);
             WebAppAdmin.enroll(pwd, function (err, crypto) {
                 if (err) {
                     console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
@@ -282,6 +281,7 @@ function configure_network() {
 
 var gccID = {};
 function deploy(WebAppAdmin) {
+    console.log("Deploying commercial paper chaincode as: WebAppAdmin");
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
@@ -302,7 +302,7 @@ function deploy(WebAppAdmin) {
 
     deployTx.on('error', function (err) {
         // Invoke transaction submission failed
-        console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.function + ", args: " + deployRequest.arguments + " : " + err);
+        console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + err);
     });
 }
 
@@ -344,8 +344,8 @@ function cb_deployed(e, d) {
         //clients will need to know if blockheight changes 
         setInterval(function () {
             var options = {
-                host: peerHosts[0],
-                port: '443',
+                host: peers[0].api_host,
+                port: peers[0].api_port,
                 path: '/chain',
                 method: 'GET'
             };
