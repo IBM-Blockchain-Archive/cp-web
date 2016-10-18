@@ -100,8 +100,8 @@ module.exports.process_msg = function (ws, data) {
             }
             else if (data.type == 'chainstats') {
                 var options = {
-                    host: peers[0],
-                    port: '443',
+                    host: peers[0].api_host,
+                    port: peers[0].api_port,
                     path: '/chain',
                     method: 'GET'
                 };
@@ -204,8 +204,8 @@ module.exports.process_msg = function (ws, data) {
                     async.eachLimit(list, 1, function (key, cb) {							//iter through each one, and send it
                         //get chainstats through REST API
                         var options = {
-                            host: peers[0],
-                            port: '443',
+                            host: peers[0].api_host,
+                            port: peers[0].api_port,
                             path: '/chain/blocks/' + key,
                             method: 'GET'
                         };

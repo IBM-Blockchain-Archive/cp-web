@@ -48,8 +48,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 app.use(cookieParser());
 app.use('/cc/summary', serve_static(path.join(__dirname, 'cc_summaries')));												//for chaincode investigator
-app.use(serve_static(path.join(__dirname, 'public'), { maxAge: '1d', setHeaders: setCustomCC }));							//1 day cache
-app.use(session({ secret: 'Somethignsomething1234!test', resave: true, saveUninitialized: true }));
+app.use(serve_static(path.join(__dirname, 'public'), {maxAge: '1d', setHeaders: setCustomCC}));							//1 day cache
+app.use(session({secret: 'Somethignsomething1234!test', resave: true, saveUninitialized: true}));
 function setCustomCC(res, path) {
     if (serve_static.mime.lookup(path) === 'image/jpeg') res.setHeader('Cache-Control', 'public, max-age=2592000');		//30 days cache
     else if (serve_static.mime.lookup(path) === 'image/png') res.setHeader('Cache-Control', 'public, max-age=2592000');
@@ -90,15 +90,16 @@ app.use(function (err, req, res, next) {		// = development error handler, print 
     console.log("Error Handler -", req.url);
     var errorCode = err.status || 500;
     res.status(errorCode);
-    req.bag.error = { msg: err.stack, status: errorCode };
+    req.bag.error = {msg: err.stack, status: errorCode};
     if (req.bag.error.status == 404) req.bag.error.msg = "Sorry, I cannot locate that file";
-    res.render('template/error', { bag: req.bag });
+    res.render('template/error', {bag: req.bag});
 });
 
 // ============================================================================================================================
 // 														Launch Webserver
 // ============================================================================================================================
-var server = http.createServer(app).listen(port, function () { });
+var server = http.createServer(app).listen(port, function () {
+});
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 process.env.NODE_ENV = 'production';
 server.timeout = 240000;
@@ -159,6 +160,12 @@ var peerHosts = [];
 try {
     console.log('Attempting to read hardcoded network credentials...');
     var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
+
+    // Sometimes the credentials from Bluemix are wrapped, sometimes not.
+    if (manual.credentials) {
+        manual = manual.credentials;
+    }
+
     var peers = manual.peers;
     for (var i in peers) {
         peerURLs.push("grpcs://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
@@ -186,7 +193,10 @@ if (process.env.VCAP_SERVICES) {
                 console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
                 peers = null;
                 users = null;
-                process.error = { type: 'network', msg: 'Due to overwhelming demand the IBM Blockchain Network service is at maximum capacity.  Please try recreating this service at a later date.' };
+                process.error = {
+                    type: 'network',
+                    msg: 'Due to overwhelming demand the IBM Blockchain Network service is at maximum capacity.  Please try recreating this service at a later date.'
+                };
             }
             if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
                 console.log('overwritting peers, loading from a vcap service: ', i);
@@ -234,7 +244,7 @@ function configure_network() {
 
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
         console.log("Setting membership service url:", caURL);
-        chain.setMemberServicesUrl(caURL, { pem: pem });
+        chain.setMemberServicesUrl(caURL, {pem: pem});
     }
     else {
         console.log("Failed to get the certificate....");
@@ -242,7 +252,7 @@ function configure_network() {
 
     console.log("Peer urls:", peerURLs);
     for (var i in peerURLs) {
-        chain.addPeer(peerURLs[i], { pem: pem });
+        chain.addPeer(peerURLs[i], {pem: pem});
     }
 
     chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
@@ -296,13 +306,13 @@ function deploy(WebAppAdmin) {
 
     deployTx.on('complete', function (results) {
         console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
-        part2.setup(results.chaincodeID, chain, peerHosts);
+        part2.setup(results.chaincodeID, chain, peers);
         user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
 
     deployTx.on('error', function (err) {
         // Invoke transaction submission failed
-        console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + err);
+        console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + JSON.stringify(err));
     });
 }
 
@@ -313,12 +323,12 @@ function cb_deployed(e, d) {
     if (e != null) {
         //look at tutorial_part1.md in the trouble shooting section for help
         console.log('! looks like the final configuration failed, holding off on the starting the socket\n', e);
-        if (!process.error) process.error = { type: 'deploy', msg: e.details };
+        if (!process.error) process.error = {type: 'deploy', msg: e.details};
     }
     else {
         console.log('------------------------------------------ Websocket Up ------------------------------------------');
         var gws = {};														//save it here for chaincode investigator
-        wss = new ws.Server({ server: server });												//start the websocket now
+        wss = new ws.Server({server: server});												//start the websocket now
         wss.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
                 console.log('received ws msg:', message);
@@ -353,7 +363,7 @@ function cb_deployed(e, d) {
             function success(statusCode, headers, resp) {
                 resp = JSON.parse(resp);
                 if (resp && resp.height) {
-                    wss.broadcast({ msg: 'reset' });
+                    wss.broadcast({msg: 'reset'});
                 }
             };
             function failure(statusCode, headers, msg) {
