@@ -104,7 +104,7 @@ type Transaction struct {
 	Discount    float64  `json:"discount"`
 }
 
-func (t *SimpleChaincode) init(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+func (t *SimpleChaincode) init(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
     // Initialize the collection of commercial paper keys
     fmt.Println("Initializing paper keys collection")
 	var blank []string
@@ -118,7 +118,7 @@ func (t *SimpleChaincode) init(stub *shim.ChaincodeStub, args []string) ([]byte,
 	return nil, nil
 }
 
-func (t *SimpleChaincode) createAccounts(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+func (t *SimpleChaincode) createAccounts(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	//  				0
 	// "number of accounts to create"
@@ -156,7 +156,7 @@ func (t *SimpleChaincode) createAccounts(stub *shim.ChaincodeStub, args []string
 
 }
 
-func (t *SimpleChaincode) createAccount(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
     // Obtain the username to associate with the account
     if len(args) != 1 {
         fmt.Println("Error obtaining username")
@@ -220,7 +220,7 @@ func (t *SimpleChaincode) createAccount(stub *shim.ChaincodeStub, args []string)
     
 }
 
-func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	if function == "init" {
         fmt.Println("Firing init")
         return t.init(stub, args)
@@ -228,7 +228,7 @@ func (t *SimpleChaincode) Init(stub *shim.ChaincodeStub, function string, args [
 	return nil, nil
 }
 
-func (t *SimpleChaincode) issueCommercialPaper(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+func (t *SimpleChaincode) issueCommercialPaper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	/*		0
 		json
@@ -409,7 +409,7 @@ func (t *SimpleChaincode) issueCommercialPaper(stub *shim.ChaincodeStub, args []
 }
 
 
-func GetAllCPs(stub *shim.ChaincodeStub) ([]CP, error){
+func GetAllCPs(stub shim.ChaincodeStubInterface) ([]CP, error){
 	
 	var allCPs []CP
 	
@@ -444,7 +444,7 @@ func GetAllCPs(stub *shim.ChaincodeStub) ([]CP, error){
 	return allCPs, nil
 }
 
-func GetCP(cpid string, stub *shim.ChaincodeStub) (CP, error){
+func GetCP(cpid string, stub shim.ChaincodeStubInterface) (CP, error){
 	var cp CP
 
 	cpBytes, err := stub.GetState(cpid)
@@ -463,7 +463,7 @@ func GetCP(cpid string, stub *shim.ChaincodeStub) (CP, error){
 }
 
 
-func GetCompany(companyID string, stub *shim.ChaincodeStub) (Account, error){
+func GetCompany(companyID string, stub shim.ChaincodeStubInterface) (Account, error){
 	var company Account
 	companyBytes, err := stub.GetState(accountPrefix+companyID)
 	if err != nil {
@@ -482,7 +482,7 @@ func GetCompany(companyID string, stub *shim.ChaincodeStub) (Account, error){
 
 
 // Still working on this one
-func (t *SimpleChaincode) transferPaper(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+func (t *SimpleChaincode) transferPaper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	/*		0
 		json
 	  	{
@@ -660,7 +660,7 @@ func (t *SimpleChaincode) transferPaper(stub *shim.ChaincodeStub, args []string)
 	return nil, nil
 }
 
-func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//need one arg
 	if len(args) < 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting ......")
@@ -725,7 +725,7 @@ func (t *SimpleChaincode) Query(stub *shim.ChaincodeStub, function string, args 
 	}
 }
 
-func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("run is running " + function)
 	
 	if function == "issueCommercialPaper" {
