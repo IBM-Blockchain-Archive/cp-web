@@ -22,7 +22,7 @@ on IBM Blockchain.  The components of the demo are:
 3. Copy the credentials from the service into the file 'my_creds.json'.
 4. Make sure the key/value store only has values for your current network (See below).
 5. Comment out the following line in app.js: ```process.env.GOPATH = __dirname;```
-6. Copy the `./src/chain_code` folder of this repository to the `$GOPATH/src/` folder on your machine.
+6. Copy the `./src/chaincode` folder of this repository to the `$GOPATH/src/` folder on your machine.
 7. Run these commands in the cloned directory:
 
 ```shell
