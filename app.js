@@ -283,7 +283,7 @@ function deploy(WebAppAdmin) {
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
-        chaincodePath: "chain_code/",
+        chaincodePath: "chaincode/",
         certificatePath: "/certs/blockchain-cert.pem"
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
