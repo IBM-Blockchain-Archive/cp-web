@@ -142,9 +142,12 @@ var WebAppAdmin;
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
-chain.setKeyValStore(hfc.newFileKeyValStore('/tmp/keyValStore'));
+var keyValStoreDir = __dirname + '/keyValStore';
+console.log('Creating keyValStore in', keyValStoreDir);
+chain.setKeyValStore(hfc.newFileKeyValStore(__dirname + '/keyValStore'));
 chain.setDeployWaitTime(100);
 chain.setECDSAModeForGRPC(true);
+
 // ==================================
 // load peers manually or from VCAP, VCAP will overwrite hardcoded list!
 // ==================================
@@ -266,7 +269,7 @@ function configure_network() {
             console.log("Enrolling: WebAppAdmin", pwd);
             WebAppAdmin.enroll(pwd, function (err, crypto) {
                 if (err) {
-                    console.log("Failed to enroll WebAppAdmin member " + " ---> " + err);
+                    console.log("Failed to enroll WebAppAdmin member");
                     //t.end(err);
                 } else {
                     console.log("Successfully enrolled WebAppAdmin member" + " ---> " /*+ JSON.stringify(crypto)*/);
@@ -296,7 +299,8 @@ function deploy(WebAppAdmin) {
         fcn: "init",
         args: ['a', '100'],
         chaincodePath: "chain_code/",
-        certificatePath: "/certs/blockchain-cert.pem"
+        //certificatePath: "/certs/blockchain-cert.pem"
+        certificatePath: "/certs/peer/cert.pem"  // Bluemix cert path has changed
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
