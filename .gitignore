@@ -4,11 +4,17 @@ node_modules/
 **/.vscode
 **/temp
 **/public/logs/**
+
+# CSS is built at runtime from SCSS
+**/public/css/**
 .project
 cc_summaries/*.json
 
 
+# IntelliJ
 .idea
+
+
 .tmp
 test.js
 
