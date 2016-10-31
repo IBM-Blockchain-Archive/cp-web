@@ -62,11 +62,11 @@ func TestIndexesAsync_GetTransactionByBlockHashAndTxIndex(t *testing.T) {
 	testIndexesGetTransactionByBlockHashAndTxIndex(t)
 }
 
-func TestIndexesAsync_GetTransactionByUUID(t *testing.T) {
+func TestIndexesAsync_GetTransactionByID(t *testing.T) {
 	defaultSetting := indexBlockDataSynchronously
 	indexBlockDataSynchronously = false
 	defer func() { indexBlockDataSynchronously = defaultSetting }()
-	testIndexesGetTransactionByUUID(t)
+	testIndexesGetTransactionByID(t)
 }
 
 func TestIndexesAsync_IndexingErrorScenario(t *testing.T) {
@@ -74,14 +74,14 @@ func TestIndexesAsync_IndexingErrorScenario(t *testing.T) {
 	indexBlockDataSynchronously = false
 	defer func() { indexBlockDataSynchronously = defaultSetting }()
 
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	testBlockchainWrapper := newTestBlockchainWrapper(t)
 	chain := testBlockchainWrapper.blockchain
 	asyncIndexer, _ := chain.indexer.(*blockchainIndexerAsync)
 
 	defer func() {
 		// first stop and then set the error to nil.
-		// Otherwise stop may hang (waiting for cathing up the index with the committing block)
+		// Otherwise stop may hang (waiting for catching up the index with the committing block)
 		testBlockchainWrapper.blockchain.indexer.stop()
 		asyncIndexer.indexerState.setError(nil)
 	}()
@@ -117,7 +117,7 @@ func TestIndexesAsync_ClientWaitScenario(t *testing.T) {
 	indexBlockDataSynchronously = false
 	defer func() { indexBlockDataSynchronously = defaultSetting }()
 
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	testBlockchainWrapper := newTestBlockchainWrapper(t)
 	defer func() { testBlockchainWrapper.blockchain.indexer.stop() }()
 
@@ -155,16 +155,13 @@ func (noop *NoopIndexer) isSynchronous() bool {
 func (noop *NoopIndexer) start(blockchain *blockchain) error {
 	return nil
 }
-func (noop *NoopIndexer) createIndexesSync(block *protos.Block, blockNumber uint64, blockHash []byte, writeBatch *gorocksdb.WriteBatch) error {
-	return nil
-}
-func (noop *NoopIndexer) createIndexesAsync(block *protos.Block, blockNumber uint64, blockHash []byte) error {
+func (noop *NoopIndexer) createIndexes(block *protos.Block, blockNumber uint64, blockHash []byte, writeBatch *gorocksdb.WriteBatch) error {
 	return nil
 }
 func (noop *NoopIndexer) fetchBlockNumberByBlockHash(blockHash []byte) (uint64, error) {
 	return 0, nil
 }
-func (noop *NoopIndexer) fetchTransactionIndexByUUID(txUUID string) (uint64, uint64, error) {
+func (noop *NoopIndexer) fetchTransactionIndexByID(txID string) (uint64, uint64, error) {
 	return 0, 0, nil
 }
 func (noop *NoopIndexer) stop() {
@@ -175,7 +172,7 @@ func TestIndexesAsync_IndexPendingBlocks(t *testing.T) {
 	indexBlockDataSynchronously = false
 	defer func() { indexBlockDataSynchronously = defaultSetting }()
 
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	testBlockchainWrapper := newTestBlockchainWrapper(t)
 
 	// stop the original indexer and change the indexer to Noop - so, no block is indexed
@@ -187,8 +184,11 @@ func TestIndexesAsync_IndexPendingBlocks(t *testing.T) {
 		t.Fatalf("Error populating block chain with sample data: %s", err)
 	}
 
-	// close the db and create new instance of blockchain (and the associated async indexer) - the indexer should index the pending blocks
+	// close the db
 	testDBWrapper.CloseDB(t)
+	// open the db again and create new instance of blockchain (and the associated async indexer)
+	// the indexer should index the pending blocks
+	testDBWrapper.OpenDB(t)
 	testBlockchainWrapper = newTestBlockchainWrapper(t)
 	defer chain.indexer.stop()
 

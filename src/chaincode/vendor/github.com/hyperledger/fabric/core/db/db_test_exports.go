@@ -37,35 +37,32 @@ func NewTestDBWrapper() *TestDBWrapper {
 ///////////////////////////
 // Test db creation and cleanup functions
 
-// CreateFreshDB This method closes existing db, remove the db dir and create db again.
+// CleanDB This method closes existing db, remove the db dir.
 // Can be called before starting a test so that data from other tests does not interfere
-func (testDB *TestDBWrapper) CreateFreshDB(t testing.TB) {
+func (testDB *TestDBWrapper) CleanDB(t testing.TB) {
 	// cleaning up test db here so that each test does not have to call it explicitly
 	// at the end of the test
 	testDB.cleanup()
 	testDB.removeDBPath()
 	t.Logf("Creating testDB")
-	err := CreateDB()
-	if err != nil {
-		t.Fatalf("Error in creating test db. Error = [%s]", err)
-	}
+
+	Start()
 	testDB.performCleanup = true
 }
 
 // CreateFreshDBGinkgo creates a fresh database for ginkgo testing
-func (testDB *TestDBWrapper) CreateFreshDBGinkgo() error {
+func (testDB *TestDBWrapper) CreateFreshDBGinkgo() {
 	// cleaning up test db here so that each test does not have to call it explicitly
 	// at the end of the test
 	testDB.cleanup()
 	testDB.removeDBPath()
-	errx := CreateDB()
+	Start()
 	testDB.performCleanup = true
-	return errx
 }
 
 func (testDB *TestDBWrapper) cleanup() {
 	if testDB.performCleanup {
-		GetDBHandle().CloseDB()
+		Stop()
 		testDB.performCleanup = false
 	}
 }
@@ -121,8 +118,12 @@ func (testDB *TestDBWrapper) GetFromStateDeltaCF(t testing.TB, key []byte) []byt
 
 // CloseDB closes the db
 func (testDB *TestDBWrapper) CloseDB(t testing.TB) {
-	openchainDB := GetDBHandle()
-	openchainDB.CloseDB()
+	Stop()
+}
+
+// OpenDB opens the db
+func (testDB *TestDBWrapper) OpenDB(t testing.TB) {
+	Start()
 }
 
 // GetEstimatedNumKeys returns estimated number of key-values in db. This is not accurate in all the cases

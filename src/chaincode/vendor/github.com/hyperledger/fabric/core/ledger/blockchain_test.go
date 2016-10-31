@@ -26,7 +26,7 @@ import (
 )
 
 func TestBlockchain_InfoNoBlock(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	blockchainTestWrapper := newTestBlockchainWrapper(t)
 	blockchain := blockchainTestWrapper.blockchain
 	blockchainInfo, err := blockchain.getBlockchainInfo()
@@ -37,7 +37,7 @@ func TestBlockchain_InfoNoBlock(t *testing.T) {
 }
 
 func TestBlockchain_Info(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	blockchainTestWrapper := newTestBlockchainWrapper(t)
 	blocks, _, _ := blockchainTestWrapper.populateBlockChainWithSampleData()
 
@@ -51,16 +51,16 @@ func TestBlockchain_Info(t *testing.T) {
 }
 
 func TestBlockChain_SingleBlock(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	blockchainTestWrapper := newTestBlockchainWrapper(t)
 	blockchain := blockchainTestWrapper.blockchain
 
 	// Create the Chaincode specification
 	chaincodeSpec := &protos.ChaincodeSpec{Type: protos.ChaincodeSpec_GOLANG,
 		ChaincodeID: &protos.ChaincodeID{Path: "Contracts"},
-		CtorMsg:     &protos.ChaincodeInput{Function: "Initialize", Args: []string{"param1"}}}
+		CtorMsg:     &protos.ChaincodeInput{Args: util.ToChaincodeArgs("Initialize", "param1")}}
 	chaincodeDeploymentSepc := &protos.ChaincodeDeploymentSpec{ChaincodeSpec: chaincodeSpec}
-	uuid := testutil.GenerateUUID(t)
+	uuid := testutil.GenerateID(t)
 	newChaincodeTx, err := protos.NewChaincodeDeployTransaction(chaincodeDeploymentSepc, uuid)
 	testutil.AssertNoError(t, err, "Failed to create new chaincode Deployment Transaction")
 	t.Logf("New chaincode tx: %v", newChaincodeTx)
@@ -74,7 +74,7 @@ func TestBlockChain_SingleBlock(t *testing.T) {
 }
 
 func TestBlockChain_SimpleChain(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	blockchainTestWrapper := newTestBlockchainWrapper(t)
 	blockchain := blockchainTestWrapper.blockchain
 	allBlocks, allStateHashes, err := blockchainTestWrapper.populateBlockChainWithSampleData()
@@ -109,7 +109,7 @@ func TestBlockChain_SimpleChain(t *testing.T) {
 }
 
 func TestBlockChainEmptyChain(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	blockchainTestWrapper := newTestBlockchainWrapper(t)
 	testutil.AssertEquals(t, blockchainTestWrapper.blockchain.getSize(), uint64(0))
 	block := blockchainTestWrapper.getLastBlock()
@@ -120,7 +120,7 @@ func TestBlockChainEmptyChain(t *testing.T) {
 }
 
 func TestBlockchainBlockLedgerCommitTimestamp(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	blockchainTestWrapper := newTestBlockchainWrapper(t)
 	block1 := protos.NewBlock(nil, nil)
 	startTime := util.CreateUtcTimestamp()

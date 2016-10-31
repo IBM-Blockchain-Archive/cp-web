@@ -18,7 +18,6 @@ package chaincode
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -32,6 +31,7 @@ import (
 	"github.com/hyperledger/fabric/core/container"
 	"github.com/hyperledger/fabric/core/container/ccintf"
 	"github.com/hyperledger/fabric/core/crypto"
+	"github.com/hyperledger/fabric/core/db"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/util"
 	"github.com/hyperledger/fabric/membersrvc/ca"
@@ -46,6 +46,8 @@ import (
 // attributes to request in the batch of tcerts while deploying, invoking or querying
 var attributes = []string{"company", "position"}
 
+var testDBWrapper = db.NewTestDBWrapper()
+
 func getNowMillis() int64 {
 	nanos := time.Now().UnixNano()
 	return nanos / 1000000
@@ -56,10 +58,10 @@ func initMemSrvc() (net.Listener, error) {
 	//start clean
 	finitMemSrvc(nil)
 
-	ca.LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, os.Stdout)
+	ca.CacheConfiguration() // Cache configuration
 
 	aca := ca.NewACA()
-	eca := ca.NewECA()
+	eca := ca.NewECA(aca)
 	tca := ca.NewTCA(eca)
 	tlsca := ca.NewTLSCA(eca)
 
@@ -284,8 +286,8 @@ func invoke(ctx context.Context, spec *pb.ChaincodeSpec, typ pb.Transaction_Type
 		ledger, _ := ledger.GetLedger()
 		ledger.BeginTxBatch("1")
 		retval, ccevt, execErr = Execute(ctx, GetChain(DefaultChain), transaction)
-		if err != nil {
-			return nil, uuid, nil, fmt.Errorf("Error invoking chaincode: %s ", err)
+		if execErr != nil {
+			return nil, uuid, nil, fmt.Errorf("Error invoking chaincode: %s ", execErr)
 		}
 		ledger.CommitTxBatch("1", []*pb.Transaction{transaction}, nil, nil)
 	}
@@ -336,8 +338,8 @@ func executeDeployTransaction(t *testing.T, url string) {
 	var ctxt = context.Background()
 
 	f := "init"
-	args := []string{"a", "100", "b", "200"}
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Path: url}, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	args := util.ToChaincodeArgs(f, "a", "100", "b", "200")
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Path: url}, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	_, err = deploy(ctxt, spec)
 	chaincodeID := spec.ChaincodeID.Name
 	if err != nil {
@@ -354,6 +356,7 @@ func executeDeployTransaction(t *testing.T, url string) {
 
 // Test deploy of a transaction
 func TestExecuteDeployTransaction(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	executeDeployTransaction(t, "github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example01")
 }
 
@@ -363,6 +366,7 @@ func TestGopathExecuteDeployTransaction(t *testing.T) {
 	// and a couple of elements - it doesn't matter what they are
 	os.Setenv("GOPATH", os.Getenv("GOPATH")+string(os.PathSeparator)+string(os.PathListSeparator)+"/tmp/foo"+string(os.PathListSeparator)+"/tmp/bar")
 	fmt.Printf("set GOPATH to: \"%s\"\n", os.Getenv("GOPATH"))
+	testDBWrapper.CleanDB(t)
 	executeDeployTransaction(t, "github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example01")
 }
 
@@ -371,7 +375,8 @@ func TestHTTPExecuteDeployTransaction(t *testing.T) {
 	// The chaincode used here cannot be from the fabric repo
 	// itself or it won't be downloaded because it will be found
 	// in GOPATH, which would defeat the test
-	executeDeployTransaction(t, "http://github.com/hyperledger/fabric-test-resources/examples/chaincode/go/chaincode_example01")
+	testDBWrapper.CleanDB(t)
+	executeDeployTransaction(t, "http://gopkg.in/mastersingh24/fabric-test-resources.v0")
 }
 
 // Check the correctness of the final state after transaction execution.
@@ -418,8 +423,8 @@ func checkFinalState(uuid string, chaincodeID string) error {
 func invokeExample02Transaction(ctxt context.Context, cID *pb.ChaincodeID, args []string, destroyImage bool) error {
 
 	f := "init"
-	argsDeploy := []string{"a", "100", "b", "200"}
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: argsDeploy}}
+	argsDeploy := util.ToChaincodeArgs(f, "a", "100", "b", "200")
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: argsDeploy}}
 	_, err := deploy(ctxt, spec)
 	chaincodeID := spec.ChaincodeID.Name
 	if err != nil {
@@ -440,7 +445,8 @@ func invokeExample02Transaction(ctxt context.Context, cID *pb.ChaincodeID, args 
 	}
 
 	f = "invoke"
-	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	invokeArgs := append([]string{f}, args...)
+	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: util.ToChaincodeArgs(invokeArgs...)}}
 	_, uuid, _, err := invoke(ctxt, spec, pb.Transaction_CHAINCODE_INVOKE)
 	if err != nil {
 		return fmt.Errorf("Error invoking <%s>: %s", chaincodeID, err)
@@ -453,8 +459,8 @@ func invokeExample02Transaction(ctxt context.Context, cID *pb.ChaincodeID, args 
 
 	// Test for delete state
 	f = "delete"
-	delArgs := []string{"a"}
-	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: delArgs}}
+	delArgs := util.ToChaincodeArgs(f, "a")
+	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: delArgs}}
 	_, uuid, _, err = invoke(ctxt, spec, pb.Transaction_CHAINCODE_INVOKE)
 	if err != nil {
 		return fmt.Errorf("Error deleting state in <%s>: %s", chaincodeID, err)
@@ -464,10 +470,14 @@ func invokeExample02Transaction(ctxt context.Context, cID *pb.ChaincodeID, args 
 }
 
 func TestExecuteInvokeTransaction(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 
 	//TLS is on by default. This is the ONLY test that does NOT use TLS
 	viper.Set("peer.tls.enabled", false)
+
+	//turn OFF keepalive. All other tests use keepalive
+	viper.Set("peer.chaincode.keepalive", "0")
 
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -529,14 +539,14 @@ func exec(ctxt context.Context, chaincodeID string, numTrans int, numQueries int
 		var spec *pb.ChaincodeSpec
 		if typ == pb.Transaction_CHAINCODE_INVOKE {
 			f := "invoke"
-			args := []string{"a", "b", "10"}
+			args := util.ToChaincodeArgs(f, "a", "b", "10")
 
-			spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: chaincodeID}, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+			spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: chaincodeID}, CtorMsg: &pb.ChaincodeInput{Args: args}}
 		} else {
 			f := "query"
-			args := []string{"a"}
+			args := util.ToChaincodeArgs(f, "a")
 
-			spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: chaincodeID}, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+			spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: chaincodeID}, CtorMsg: &pb.ChaincodeInput{Args: args}}
 		}
 
 		_, _, _, err := invoke(ctxt, spec, typ)
@@ -566,6 +576,7 @@ func exec(ctxt context.Context, chaincodeID string, numTrans int, numQueries int
 
 // Test the execution of a query.
 func TestExecuteQuery(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -603,9 +614,9 @@ func TestExecuteQuery(t *testing.T) {
 
 	cID := &pb.ChaincodeID{Path: url}
 	f := "init"
-	args := []string{"a", "100", "b", "200"}
+	args := util.ToChaincodeArgs(f, "a", "100", "b", "200")
 
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec)
 	chaincodeID := spec.ChaincodeID.Name
@@ -649,6 +660,7 @@ func TestExecuteQuery(t *testing.T) {
 
 // Test the execution of an invalid transaction.
 func TestExecuteInvokeInvalidTransaction(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -710,6 +722,7 @@ func TestExecuteInvokeInvalidTransaction(t *testing.T) {
 
 // Test the execution of an invalid query.
 func TestExecuteInvalidQuery(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -747,9 +760,9 @@ func TestExecuteInvalidQuery(t *testing.T) {
 
 	cID := &pb.ChaincodeID{Path: url}
 	f := "init"
-	args := []string{"a", "100"}
+	args := util.ToChaincodeArgs(f, "a", "100")
 
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec)
 	chaincodeID := spec.ChaincodeID.Name
@@ -764,9 +777,9 @@ func TestExecuteInvalidQuery(t *testing.T) {
 	time.Sleep(time.Second)
 
 	f = "query"
-	args = []string{"b", "200"}
+	args = util.ToChaincodeArgs(f, "b", "200")
 
-	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	// This query should fail as it attempts to put state
 	_, _, _, err = invoke(ctxt, spec, pb.Transaction_CHAINCODE_QUERY)
 
@@ -781,6 +794,8 @@ func TestExecuteInvalidQuery(t *testing.T) {
 
 // Test the execution of a chaincode that invokes another chaincode.
 func TestChaincodeInvokeChaincode(t *testing.T) {
+	t.Logf("TestChaincodeInvokeChaincode starting")
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -819,9 +834,9 @@ func TestChaincodeInvokeChaincode(t *testing.T) {
 
 	cID1 := &pb.ChaincodeID{Path: url1}
 	f := "init"
-	args := []string{"a", "100", "b", "200"}
+	args := util.ToChaincodeArgs(f, "a", "100", "b", "200")
 
-	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec1)
 	chaincodeID1 := spec1.ChaincodeID.Name
@@ -833,6 +848,8 @@ func TestChaincodeInvokeChaincode(t *testing.T) {
 		return
 	}
 
+	t.Logf("deployed chaincode_example02 got cID1:% s,\n chaincodeID1:% s", cID1, chaincodeID1)
+
 	time.Sleep(time.Second)
 
 	// Deploy second chaincode
@@ -840,9 +857,9 @@ func TestChaincodeInvokeChaincode(t *testing.T) {
 
 	cID2 := &pb.ChaincodeID{Path: url2}
 	f = "init"
-	args = []string{"e", "0"}
+	args = util.ToChaincodeArgs(f, "e", "0")
 
-	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec2)
 	chaincodeID2 := spec2.ChaincodeID.Name
@@ -859,9 +876,9 @@ func TestChaincodeInvokeChaincode(t *testing.T) {
 
 	// Invoke second chaincode, which will inturn invoke the first chaincode
 	f = "invoke"
-	args = []string{"e", "1"}
+	args = util.ToChaincodeArgs(f, "e", "1")
 
-	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	// Invoke chaincode
 	var uuid string
 	_, uuid, _, err = invoke(ctxt, spec2, pb.Transaction_CHAINCODE_INVOKE)
@@ -894,6 +911,7 @@ func TestChaincodeInvokeChaincode(t *testing.T) {
 // Test the execution of a chaincode that invokes another chaincode with wrong parameters. Should receive error from
 // from the called chaincode
 func TestChaincodeInvokeChaincodeErrorCase(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -932,9 +950,9 @@ func TestChaincodeInvokeChaincodeErrorCase(t *testing.T) {
 
 	cID1 := &pb.ChaincodeID{Path: url1}
 	f := "init"
-	args := []string{"a", "100", "b", "200"}
+	args := util.ToChaincodeArgs(f, "a", "100", "b", "200")
 
-	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec1)
 	chaincodeID1 := spec1.ChaincodeID.Name
@@ -953,9 +971,9 @@ func TestChaincodeInvokeChaincodeErrorCase(t *testing.T) {
 
 	cID2 := &pb.ChaincodeID{Path: url2}
 	f = "init"
-	args = []string{""}
+	args = util.ToChaincodeArgs(f)
 
-	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec2)
 	chaincodeID2 := spec2.ChaincodeID.Name
@@ -972,9 +990,9 @@ func TestChaincodeInvokeChaincodeErrorCase(t *testing.T) {
 
 	// Invoke second chaincode, which will inturn invoke the first chaincode but pass bad params
 	f = chaincodeID1
-	args = []string{"invoke", "a"} //expect {"invoke", "a","b","10"}
+	args = util.ToChaincodeArgs(f, "invoke", "a")
 
-	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	// Invoke chaincode
 	_, _, _, err = invoke(ctxt, spec2, pb.Transaction_CHAINCODE_INVOKE)
 
@@ -1009,9 +1027,9 @@ func chaincodeQueryChaincode(user string) error {
 
 	cID1 := &pb.ChaincodeID{Path: url1}
 	f := "init"
-	args := []string{"a", "100", "b", "200"}
+	args := util.ToChaincodeArgs(f, "a", "100", "b", "200")
 
-	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}, SecureContext: user}
+	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Args: args}, SecureContext: user}
 
 	_, err := deploy(ctxt, spec1)
 	chaincodeID1 := spec1.ChaincodeID.Name
@@ -1027,9 +1045,9 @@ func chaincodeQueryChaincode(user string) error {
 
 	cID2 := &pb.ChaincodeID{Path: url2}
 	f = "init"
-	args = []string{"sum", "0"}
+	args = util.ToChaincodeArgs(f, "sum", "0")
 
-	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}, SecureContext: user}
+	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}, SecureContext: user}
 
 	_, err = deploy(ctxt, spec2)
 	chaincodeID2 := spec2.ChaincodeID.Name
@@ -1043,9 +1061,9 @@ func chaincodeQueryChaincode(user string) error {
 
 	// Invoke second chaincode, which will inturn query the first chaincode
 	f = "invoke"
-	args = []string{chaincodeID1, "sum"}
+	args = util.ToChaincodeArgs(f, chaincodeID1, "sum")
 
-	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}, SecureContext: user}
+	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}, SecureContext: user}
 	// Invoke chaincode
 	var retVal []byte
 	_, _, retVal, err = invoke(ctxt, spec2, pb.Transaction_CHAINCODE_INVOKE)
@@ -1066,9 +1084,9 @@ func chaincodeQueryChaincode(user string) error {
 
 	// Query second chaincode, which will inturn query the first chaincode
 	f = "query"
-	args = []string{chaincodeID1, "sum"}
+	args = util.ToChaincodeArgs(f, chaincodeID1, "sum")
 
-	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}, SecureContext: user}
+	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}, SecureContext: user}
 	// Invoke chaincode
 	_, _, retVal, err = invoke(ctxt, spec2, pb.Transaction_CHAINCODE_QUERY)
 
@@ -1094,6 +1112,7 @@ func chaincodeQueryChaincode(user string) error {
 
 // Test the execution of a chaincode query that queries another chaincode without security enabled
 func TestChaincodeQueryChaincode(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var peerLis net.Listener
 	var err error
 	if peerLis, err = initPeer(); err != nil {
@@ -1115,6 +1134,7 @@ func TestChaincodeQueryChaincode(t *testing.T) {
 // Test the execution of a chaincode that queries another chaincode with invalid parameter. Should receive error from
 // from the called chaincode
 func TestChaincodeQueryChaincodeErrorCase(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -1153,9 +1173,9 @@ func TestChaincodeQueryChaincodeErrorCase(t *testing.T) {
 
 	cID1 := &pb.ChaincodeID{Path: url1}
 	f := "init"
-	args := []string{"a", "100", "b", "200"}
+	args := util.ToChaincodeArgs(f, "a", "100", "b", "200")
 
-	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec1 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID1, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec1)
 	chaincodeID1 := spec1.ChaincodeID.Name
@@ -1174,9 +1194,9 @@ func TestChaincodeQueryChaincodeErrorCase(t *testing.T) {
 
 	cID2 := &pb.ChaincodeID{Path: url2}
 	f = "init"
-	args = []string{""}
+	args = util.ToChaincodeArgs(f)
 
-	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec2 := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec2)
 	chaincodeID2 := spec2.ChaincodeID.Name
@@ -1193,9 +1213,9 @@ func TestChaincodeQueryChaincodeErrorCase(t *testing.T) {
 
 	// Invoke second chaincode, which will inturn invoke the first chaincode but pass bad params
 	f = chaincodeID1
-	args = []string{"query", "c"} //expect {"query", "a"}
+	args = util.ToChaincodeArgs(f, "query", "c")
 
-	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec2 = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID2, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	// Invoke chaincode
 	_, _, _, err = invoke(ctxt, spec2, pb.Transaction_CHAINCODE_QUERY)
 
@@ -1225,6 +1245,7 @@ func TestChaincodeQueryChaincodeErrorCase(t *testing.T) {
 // Test the execution of a chaincode query that queries another chaincode with security enabled
 // NOTE: this really needs to be a behave test. Remove when we have support in behave for multiple chaincodes
 func TestChaincodeQueryChaincodeWithSec(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	viper.Set("security.enabled", "true")
 
 	//Initialize crypto
@@ -1278,6 +1299,7 @@ func TestChaincodeQueryChaincodeWithSec(t *testing.T) {
 
 // Test the invocation of a transaction.
 func TestRangeQuery(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -1314,10 +1336,10 @@ func TestRangeQuery(t *testing.T) {
 	url := "github.com/hyperledger/fabric/examples/chaincode/go/map"
 	cID := &pb.ChaincodeID{Path: url}
 
-	args := []string{}
 	f := "init"
+	args := util.ToChaincodeArgs(f)
 
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	_, err = deploy(ctxt, spec)
 	chaincodeID := spec.ChaincodeID.Name
@@ -1331,9 +1353,9 @@ func TestRangeQuery(t *testing.T) {
 
 	// Invoke second chaincode, which will inturn invoke the first chaincode
 	f = "keys"
-	args = []string{}
+	args = util.ToChaincodeArgs(f)
 
-	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	_, _, _, err = invoke(ctxt, spec, pb.Transaction_CHAINCODE_QUERY)
 
 	if err != nil {
@@ -1348,6 +1370,7 @@ func TestRangeQuery(t *testing.T) {
 }
 
 func TestGetEvent(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	if viper.GetBool("peer.tls.enabled") {
 		creds, err := credentials.NewServerTLSFromFile(viper.GetString("peer.tls.cert.file"), viper.GetString("peer.tls.key.file"))
@@ -1384,7 +1407,8 @@ func TestGetEvent(t *testing.T) {
 	url := "github.com/hyperledger/fabric/examples/chaincode/go/eventsender"
 
 	cID := &pb.ChaincodeID{Path: url}
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: "init", Args: []string{}}}
+	f := "init"
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: util.ToChaincodeArgs(f)}}
 
 	_, err = deploy(ctxt, spec)
 	chaincodeID := spec.ChaincodeID.Name
@@ -1398,9 +1422,9 @@ func TestGetEvent(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	args := []string{"i", "am", "satoshi"}
+	args := util.ToChaincodeArgs("", "i", "am", "satoshi")
 
-	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Function: "", Args: args}}
+	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: cID, CtorMsg: &pb.ChaincodeInput{Args: args}}
 
 	var ccevt *pb.ChaincodeEvent
 	ccevt, _, _, err = invoke(ctxt, spec, pb.Transaction_CHAINCODE_INVOKE)

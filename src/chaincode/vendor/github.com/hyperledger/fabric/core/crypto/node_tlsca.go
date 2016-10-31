@@ -23,10 +23,10 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"errors"
-	"google/protobuf"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/hyperledger/fabric/core/util"
 	"golang.org/x/net/context"
@@ -34,6 +34,10 @@ import (
 )
 
 func (node *nodeImpl) retrieveTLSCertificate(id, affiliation string) error {
+	if !node.ks.certMissing(node.conf.getTLSCertFilename()) {
+		return nil
+	}
+
 	key, tlsCertRaw, err := node.getTLSCertificateFromTLSCA(id, affiliation)
 	if err != nil {
 		node.Errorf("Failed getting tls certificate [id=%s] %s", id, err)
@@ -53,6 +57,21 @@ func (node *nodeImpl) retrieveTLSCertificate(id, affiliation string) error {
 	// Store tls cert
 	if err := node.ks.storeCert(node.conf.getTLSCertFilename(), tlsCertRaw); err != nil {
 		node.Errorf("Failed storing tls certificate [id=%s]: %s", id, err)
+		return err
+	}
+
+	return nil
+}
+
+func (node *nodeImpl) deleteTLSCertificate(id, affiliation string) error {
+	if err := node.ks.deletePrivateKeyInClear(node.conf.getTLSKeyFilename()); err != nil {
+		node.Errorf("Failed deleting tls key [id=%s]: %s", id, err)
+		return err
+	}
+
+	// Store tls cert
+	if err := node.ks.deleteCert(node.conf.getTLSCertFilename()); err != nil {
+		node.Errorf("Failed deleting tls certificate [id=%s]: %s", id, err)
 		return err
 	}
 
@@ -116,7 +135,7 @@ func (node *nodeImpl) getTLSCertificateFromTLSCA(id, affiliation string) (interf
 	// Prepare the request
 	pubraw, _ := x509.MarshalPKIXPublicKey(&priv.PublicKey)
 	now := time.Now()
-	timestamp := google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
+	timestamp := timestamp.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
 
 	req := &membersrvc.TLSCertCreateReq{
 		Ts: &timestamp,

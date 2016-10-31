@@ -24,16 +24,16 @@ import (
 )
 
 func TestStateTrie_ComputeHash_AllInMemory_NoContents(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
-	stateTrie := NewStateTrie()
+	testDBWrapper.CleanDB(t)
+	stateTrie := NewStateImpl()
 	stateTrieTestWrapper := &stateTrieTestWrapper{stateTrie, t}
 	hash := stateTrieTestWrapper.PrepareWorkingSetAndComputeCryptoHash(statemgmt.NewStateDelta())
 	testutil.AssertEquals(t, hash, nil)
 }
 
 func TestStateTrie_ComputeHash_AllInMemory(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
-	stateTrie := NewStateTrie()
+	testDBWrapper.CleanDB(t)
+	stateTrie := NewStateImpl()
 	stateTrieTestWrapper := &stateTrieTestWrapper{stateTrie, t}
 	stateDelta := statemgmt.NewStateDelta()
 
@@ -75,8 +75,8 @@ func TestStateTrie_ComputeHash_AllInMemory(t *testing.T) {
 }
 
 func TestStateTrie_GetSet_WithDB(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
-	stateTrie := NewStateTrie()
+	testDBWrapper.CleanDB(t)
+	stateTrie := NewStateImpl()
 	stateTrieTestWrapper := &stateTrieTestWrapper{stateTrie, t}
 	stateDelta := statemgmt.NewStateDelta()
 	stateDelta.Set("chaincodeID1", "key1", []byte("value1"), nil)
@@ -99,8 +99,8 @@ func TestStateTrie_GetSet_WithDB(t *testing.T) {
 }
 
 func TestStateTrie_ComputeHash_WithDB_Spread_Keys(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
-	stateTrie := NewStateTrie()
+	testDBWrapper.CleanDB(t)
+	stateTrie := NewStateImpl()
 	stateTrieTestWrapper := &stateTrieTestWrapper{stateTrie, t}
 
 	// Add a few keys and write to DB
@@ -179,8 +179,8 @@ func TestStateTrie_ComputeHash_WithDB_Spread_Keys(t *testing.T) {
 }
 
 func TestStateTrie_ComputeHash_WithDB_Staggered_Keys(t *testing.T) {
-	testDBWrapper.CreateFreshDB(t)
-	stateTrie := NewStateTrie()
+	testDBWrapper.CleanDB(t)
+	stateTrie := NewStateImpl()
 	stateTrieTestWrapper := &stateTrieTestWrapper{stateTrie, t}
 
 	/////////////////////////////////////////////////////////

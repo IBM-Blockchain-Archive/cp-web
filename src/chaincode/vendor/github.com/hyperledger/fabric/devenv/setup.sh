@@ -34,6 +34,12 @@ set -e
 BASEIMAGE_RELEASE=`cat /etc/hyperledger-baseimage-release`
 DEVENV_REVISION=`(cd /hyperledger/devenv; git rev-parse --short HEAD)`
 
+# Install WARNING before we start provisioning so that it
+# will remain active.  We will remove the warning after
+# success
+SCRIPT_DIR="$(readlink -f "$(dirname "$0")")"
+cat "$SCRIPT_DIR/failure-motd.in" >> /etc/motd
+
 # Update system
 apt-get update -qq
 
@@ -101,9 +107,6 @@ sudo chown -R vagrant:vagrant $GOPATH
 # Update limits.conf to increase nofiles for RocksDB
 sudo cp /hyperledger/devenv/limits.conf /etc/security/limits.conf
 
-# Set our shell prompt to something less ugly than the default from packer
-echo "PS1=\"\u@hyperledger-devenv:v$BASEIMAGE_RELEASE-$DEVENV_REVISION:\w$ \"" >> /home/vagrant/.bashrc
-
 # configure vagrant specific environment
 cat <<EOF >/etc/profile.d/vagrant-devenv.sh
 # Expose the devenv/tools in the $PATH
@@ -112,3 +115,9 @@ export VAGRANT=1
 export CGO_CFLAGS=" "
 export CGO_LDFLAGS="-lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy"
 EOF
+
+# Set our shell prompt to something less ugly than the default from packer
+echo "PS1=\"\u@hyperledger-devenv:v$BASEIMAGE_RELEASE-$DEVENV_REVISION:\w$ \"" >> /home/vagrant/.bashrc
+
+# finally, remove our warning so the user knows this was successful
+rm /etc/motd

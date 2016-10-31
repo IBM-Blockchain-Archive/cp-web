@@ -30,7 +30,7 @@ var path = require("path");
 var zlib = require("zlib");
 
 var debugModule = require('debug');
-let debug = debugModule('hlc'); // 'hlc' stands for 'HyperLedger Client'
+let debug = debugModule('hfc'); // 'hfc' stands for 'HyperLedger Fabric Client'
 
 //
 // Load required crypto stuff.
@@ -149,7 +149,8 @@ export function GenerateTarGz(src, dest, cb) {
     ".yaml",
     ".json",
     ".c",
-    ".h"
+    ".h",
+    ".pem"
   ];
 
   // Create the pack stream specifying the ignore/filtering function

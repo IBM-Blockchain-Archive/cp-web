@@ -16,28 +16,67 @@ limitations under the License.
 
 package main
 
-// This file is mandatory as otherwise the filebeat.test binary is not generated correctly.
-
 import (
-	"flag"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
-var systemTest *bool
+func TestBuildcommandNameOutputSingleCommand(t *testing.T) {
+	command := &cobra.Command{Use: "command"}
 
-func init() {
-	systemTest = flag.Bool("systemTest", false, "Set to true when running system tests")
-	// err := flag.Set("test.coverprofile", "coverage.cov")
-	// if err != nil {
-	// 	panic("Could not set flag")
-	// }
+	commandNameOutput := getPeerCommandFromCobraCommand(command)
+
+	assertEqual(t, "command", commandNameOutput)
 }
 
-// Test started when the test binary is started. Only calls main.
-func TestSystem(t *testing.T) {
-	//test.coverprofile=coverage.cov
-	// if *systemTest {
-	// 	main()
-	// }
-	main()
+func TestBuildcommandNameOutputNilCommand(t *testing.T) {
+	var command *cobra.Command
+
+	commandNameOutput := getPeerCommandFromCobraCommand(command)
+
+	assertEqual(t, "", commandNameOutput)
+}
+
+func TestBuildcommandNameOutputTwoCommands(t *testing.T) {
+	rootCommand := &cobra.Command{Use: "rootcommand"}
+	childCommand := &cobra.Command{Use: "childcommand"}
+	rootCommand.AddCommand(childCommand)
+
+	commandNameOutput := getPeerCommandFromCobraCommand(childCommand)
+
+	assertEqual(t, "childcommand", commandNameOutput)
+}
+
+func TestBuildcommandNameOutputThreeCommands(t *testing.T) {
+	rootCommand := &cobra.Command{Use: "rootcommand"}
+	childCommand := &cobra.Command{Use: "childcommand"}
+	leafCommand := &cobra.Command{Use: "leafCommand"}
+	rootCommand.AddCommand(childCommand)
+	childCommand.AddCommand(leafCommand)
+
+	commandNameOutput := getPeerCommandFromCobraCommand(leafCommand)
+
+	assertEqual(t, "childcommand", commandNameOutput)
+}
+
+func TestBuildcommandNameOutputFourCommands(t *testing.T) {
+	rootCommand := &cobra.Command{Use: "rootcommand"}
+	childCommand := &cobra.Command{Use: "childcommand"}
+	secondChildCommand := &cobra.Command{Use: "secondChildCommand"}
+	leafCommand := &cobra.Command{Use: "leafCommand"}
+
+	rootCommand.AddCommand(childCommand)
+	childCommand.AddCommand(secondChildCommand)
+	secondChildCommand.AddCommand(leafCommand)
+
+	commandNameOutput := getPeerCommandFromCobraCommand(leafCommand)
+
+	assertEqual(t, "childcommand", commandNameOutput)
+}
+
+func assertEqual(t *testing.T, expected interface{}, actual interface{}) {
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
 }

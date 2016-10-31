@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode"
+	"github.com/hyperledger/fabric/core/db"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/system_chaincode/api"
 	"github.com/hyperledger/fabric/core/system_chaincode/samplesyscc"
@@ -33,6 +34,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
+
+var testDBWrapper = db.NewTestDBWrapper()
 
 // Invoke or query a chaincode.
 func invoke(ctx context.Context, spec *pb.ChaincodeSpec, typ pb.Transaction_Type) (*pb.ChaincodeEvent, string, []byte, error) {
@@ -75,6 +78,7 @@ func closeListenerAndSleep(l net.Listener) {
 
 // Test deploy of a transaction.
 func TestExecuteDeploySysChaincode(t *testing.T) {
+	testDBWrapper.CleanDB(t)
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	viper.Set("peer.fileSystemPath", "/var/hyperledger/test/tmpdb")
@@ -106,18 +110,20 @@ func TestExecuteDeploySysChaincode(t *testing.T) {
 			Enabled:   true,
 			Name:      "sample_syscc",
 			Path:      "github.com/hyperledger/fabric/core/system_chaincode/samplesyscc",
-			InitArgs:  []string{},
+			InitArgs:  [][]byte{},
 			Chaincode: &samplesyscc.SampleSysCC{},
 		},
 	}
 
+	// System chaincode has to be enabled
+	viper.Set("chaincode.system", map[string]string{"sample_syscc": "true"})
 	RegisterSysCCs()
 
 	url := "github.com/hyperledger/fabric/core/system_chaincode/sample_syscc"
 	f := "putval"
-	args := []string{"greeting", "hey there"}
+	args := util.ToChaincodeArgs(f, "greeting", "hey there")
 
-	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: "sample_syscc", Path: url}, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	spec := &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: "sample_syscc", Path: url}, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	_, _, _, err = invoke(ctxt, spec, pb.Transaction_CHAINCODE_INVOKE)
 	if err != nil {
 		closeListenerAndSleep(lis)
@@ -127,8 +133,8 @@ func TestExecuteDeploySysChaincode(t *testing.T) {
 	}
 
 	f = "getval"
-	args = []string{"greeting"}
-	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: "sample_syscc", Path: url}, CtorMsg: &pb.ChaincodeInput{Function: f, Args: args}}
+	args = util.ToChaincodeArgs(f, "greeting")
+	spec = &pb.ChaincodeSpec{Type: 1, ChaincodeID: &pb.ChaincodeID{Name: "sample_syscc", Path: url}, CtorMsg: &pb.ChaincodeInput{Args: args}}
 	_, _, _, err = invoke(ctxt, spec, pb.Transaction_CHAINCODE_QUERY)
 	if err != nil {
 		closeListenerAndSleep(lis)

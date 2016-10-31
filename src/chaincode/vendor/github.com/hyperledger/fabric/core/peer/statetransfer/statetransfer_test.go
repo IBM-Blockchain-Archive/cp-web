@@ -164,6 +164,75 @@ func makeSimpleFilter(failureTrigger mockRequest, failureType mockResponse) (fun
 
 }
 
+func TestStartupValidStateGenesis(t *testing.T) {
+	mrls := createRemoteLedgers(2, 1) // No remote targets available
+
+	// Test from blockheight of 1, with valid genesis block
+	ml := NewMockLedger(mrls, nil, t)
+	ml.PutBlock(0, SimpleGetBlock(0))
+
+	sts := newTestStateTransfer(ml, mrls)
+	defer sts.Stop()
+	if err := executeStateTransfer(sts, ml, 0, 0, mrls); nil != err {
+		t.Fatalf("Startup failure: %s", err)
+	}
+
+}
+
+func TestStartupValidStateExisting(t *testing.T) {
+	mrls := createRemoteLedgers(2, 1) // No remote targets available
+
+	// Test from blockheight of 1, with valid genesis block
+	ml := NewMockLedger(mrls, nil, t)
+	height := uint64(50)
+	for i := uint64(0); i < height; i++ {
+		ml.PutBlock(i, SimpleGetBlock(i))
+	}
+	ml.state = SimpleGetState(height - 1)
+
+	sts := newTestStateTransfer(ml, mrls)
+	defer sts.Stop()
+	if err := executeStateTransfer(sts, ml, height-1, height-1, mrls); nil != err {
+		t.Fatalf("Startup failure: %s", err)
+	}
+
+}
+
+func TestStartupInvalidStateGenesis(t *testing.T) {
+	mrls := createRemoteLedgers(1, 3)
+
+	// Test from blockheight of 1, with valid genesis block
+	ml := NewMockLedger(mrls, nil, t)
+	ml.PutBlock(0, SimpleGetBlock(0))
+	ml.state = ^ml.state // Ensure the state is wrong
+
+	sts := newTestStateTransfer(ml, mrls)
+	defer sts.Stop()
+	if err := executeStateTransfer(sts, ml, 0, 0, mrls); nil != err {
+		t.Fatalf("Startup failure: %s", err)
+	}
+
+}
+
+func TestStartupInvalidStateExisting(t *testing.T) {
+	mrls := createRemoteLedgers(1, 3)
+
+	// Test from blockheight of 1, with valid genesis block
+	ml := NewMockLedger(mrls, nil, t)
+	height := uint64(50)
+	for i := uint64(0); i < height; i++ {
+		ml.PutBlock(i, SimpleGetBlock(i))
+	}
+	ml.state = ^SimpleGetState(height - 1) // Ensure the state is wrong
+
+	sts := newTestStateTransfer(ml, mrls)
+	defer sts.Stop()
+	if err := executeStateTransfer(sts, ml, height-1, height-1, mrls); nil != err {
+		t.Fatalf("Startup failure: %s", err)
+	}
+
+}
+
 func TestCatchupSimple(t *testing.T) {
 	mrls := createRemoteLedgers(1, 3)
 
@@ -240,9 +309,14 @@ func TestCatchupWithoutDeltas(t *testing.T) {
 	}, t)
 	ml.PutBlock(0, SimpleGetBlock(0))
 
-	sts := newTestStateTransfer(ml, mrls)
+	sts := NewCoordinatorImpl(newPartialStack(ml, mrls)).(*coordinatorImpl)
 	sts.maxStateDeltas = 0
-	defer sts.Stop()
+
+	done := make(chan struct{})
+	go func() {
+		sts.blockThread()
+		close(done)
+	}()
 
 	if err := executeStateTransfer(sts, ml, 7, 10, mrls); nil != err {
 		t.Fatalf("Without deltas case: %s", err)
@@ -252,8 +326,10 @@ func TestCatchupWithoutDeltas(t *testing.T) {
 		t.Fatalf("State delta retrieval should not occur during this test")
 	}
 
+	sts.Stop()
+
 	select {
-	case <-sts.blockThreadIdleChan:
+	case <-done:
 	case <-time.After(2 * time.Second):
 		t.Fatalf("Timed out waiting for block sync to complete")
 	}
@@ -576,31 +652,6 @@ func TestCatchupCorruptChains(t *testing.T) {
 	}()
 	if err := executeBlockRecoveryWithPanic(ml, 10, mrls); nil != err {
 		t.Fatalf("TestCatchupCorruptChains short chain failure: %s", err)
-	}
-}
-
-func TestIdle(t *testing.T) {
-	mrls := createRemoteLedgers(0, 1)
-
-	ml := NewMockLedger(nil, nil, t)
-	ml.PutBlock(0, SimpleGetBlock(0))
-	sts := newTestStateTransfer(ml, mrls)
-	defer sts.Stop()
-
-	idle := make(chan struct{})
-	go func() {
-		sts.blockUntilIdle()
-		idle <- struct{}{}
-	}()
-
-	select {
-	case <-idle:
-	case <-time.After(2 * time.Second):
-		t.Fatalf("Timed out waiting for state transfer to become idle")
-	}
-
-	if !sts.blockThreadIdle {
-		t.Fatalf("State transfer unblocked from idle but did not remain that way")
 	}
 }
 

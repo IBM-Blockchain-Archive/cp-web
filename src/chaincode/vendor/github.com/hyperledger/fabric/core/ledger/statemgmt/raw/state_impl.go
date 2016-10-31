@@ -28,8 +28,8 @@ type StateImpl struct {
 	stateDelta *statemgmt.StateDelta
 }
 
-// NewRawState constructs new instance of raw state
-func NewRawState() *StateImpl {
+// NewStateImpl constructs new instance of raw state
+func NewStateImpl() *StateImpl {
 	return &StateImpl{}
 }
 
@@ -73,7 +73,7 @@ func (impl *StateImpl) AddChangesForPersistence(writeBatch *gorocksdb.WriteBatch
 		updates := delta.GetUpdates(updatedChaincodeID)
 		for updatedKey, value := range updates {
 			compositeKey := statemgmt.ConstructCompositeKey(updatedChaincodeID, updatedKey)
-			if value.IsDelete() {
+			if value.IsDeleted() {
 				writeBatch.DeleteCF(openchainDB.StateCF, compositeKey)
 			} else {
 				writeBatch.PutCF(openchainDB.StateCF, compositeKey, value.GetValue())

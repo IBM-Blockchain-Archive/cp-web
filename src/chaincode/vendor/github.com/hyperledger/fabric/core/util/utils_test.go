@@ -18,6 +18,7 @@ package util
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 )
@@ -58,12 +59,42 @@ func TestTimestamp(t *testing.T) {
 }
 
 func TestGenerateHashFromSignature(t *testing.T) {
-	if bytes.Compare(GenerateHashFromSignature("aPath", "aCtor", []string{"1", "2"}),
-		GenerateHashFromSignature("aPath", "aCtor", []string{"1", "2"})) != 0 {
+	if bytes.Compare(GenerateHashFromSignature("aPath", []byte("aCtor12")),
+		GenerateHashFromSignature("aPath", []byte("aCtor12"))) != 0 {
 		t.Fatalf("Expected hashes to match, but they did not match")
 	}
-	if bytes.Compare(GenerateHashFromSignature("aPath", "aCtor", []string{"1", "2"}),
-		GenerateHashFromSignature("bPath", "bCtor", []string{"3", "4"})) == 0 {
+	if bytes.Compare(GenerateHashFromSignature("aPath", []byte("aCtor12")),
+		GenerateHashFromSignature("bPath", []byte("bCtor34"))) == 0 {
 		t.Fatalf("Expected hashes to be different, but they match")
+	}
+}
+
+func TestGeneratIDfromTxSHAHash(t *testing.T) {
+	txid := GenerateIDfromTxSHAHash([]byte("foobar"))
+	txid2 := GenerateIDfromTxSHAHash([]byte("foobar1"))
+	if txid == txid2 {
+		t.Fatalf("Two TxIDs are equal. This should never occur")
+	}
+}
+
+func TestGenerateIDWithAlg(t *testing.T) {
+	_, err := GenerateIDWithAlg("sha256", []byte{1, 1, 1, 1})
+	if err != nil {
+		t.Fatalf("Decoder failure: %v", err)
+	}
+}
+
+func TestFindMissingElements(t *testing.T) {
+	all := []string{"a", "b", "c", "d"}
+	some := []string{"b", "c"}
+	expectedDelta := []string{"a", "d"}
+	actualDelta := FindMissingElements(all, some)
+	if len(expectedDelta) != len(actualDelta) {
+		t.Fatalf("Got %v, expected %v", actualDelta, expectedDelta)
+	}
+	for i := range expectedDelta {
+		if strings.Compare(expectedDelta[i], actualDelta[i]) != 0 {
+			t.Fatalf("Got %v, expected %v", actualDelta, expectedDelta)
+		}
 	}
 }

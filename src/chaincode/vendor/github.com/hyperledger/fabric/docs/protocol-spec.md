@@ -1,4 +1,4 @@
-﻿# Protocol Specification
+# Protocol Specification
 
 ## Preface
 This document is the protocol specification for a permissioned blockchain implementation for industry use-cases. It is not intended to be a complete explanation of the implementation, but rather a description of the interfaces and relationships between components in the system and the application.
@@ -9,135 +9,144 @@ The intended audience for this specification includes the following groups:
 - Blockchain vendors who want to implement blockchain systems that conform to this specification
 - Tool developers who want to extend the capabilities of the fabric
 - Application developers who want to leverage blockchain technologies to enrich their applications
-
-### Authors
-The following authors have written sections of this document:  Binh Q Nguyen, Elli Androulaki, Angelo De Caro, Sheehan Anderson, Manish Sethi, Thorsten Kramp, Alessandro Sorniotti, Marko Vukolic, Florian Simon Schubert, Jason K Yellick, Konstantinos Christidis, Srinivasan Muralidharan, Anna D Derbakova, Dulce Ponceleon, David Kravitz, Diego Masini.
-
-### Reviewers
-The following reviewers have contributed to this document:  Frank Lu, John Wolpert, Bishop Brock, Nitin Gaur, Sharon Weed, Konrad Pabjan.
-
-### Acknowledgements
-The following contributors have provided invaluable technical input to this specification:
-Gennaro Cuomo, Joseph A Latone, Christian Cachin
 ________________________________________________________
 
 ## Table of Contents
-#### 1. Introduction
+#### [1. Introduction](#1-introduction_1)
+   * [1.1 What is the fabric?](#11-what-is-the-fabric)
+   * [1.2 Why the fabric?](#12-why-the-fabric)
+   * [1.3 Terminology](#13-terminology)
 
-   - 1.1 What is the fabric?
-   - 1.2 Why the fabric?
-   - 1.3 Terminology
+#### [2. Fabric](#2-fabric_1)
+   * [2.1 Architecture](#21-architecture)
+     - [2.1.1 Membership Services](#211-membership-services)
+     - [2.1.2 Blockchain Services](#212-blockchain-services)
+     - [2.1.3 Chaincode Services](#213-chaincode-services)
+     - [2.1.4 Events](#214-events)
+     - [2.1.5 Application Programming Interface (API)](#215-application-programming-interface-api)
+     - [2.1.6 Command Line Interface (CLI)](#216-command-line-interface-cli)
+   * [2.2 Topology](#22-topology)
+     - [2.2.1 Single Validating Peer](#221-single-validating-peer)
+     - [2.2.2 Multiple Validating Peers](#222-multiple-validating-peers)
+     - [2.2.3 Multichain](#223-multichain)
 
-#### 2. Fabric
+#### [3. Protocol](#3-protocol_1)
+   * [3.1 Message](#31-message)
+     - [3.1.1 Discovery Messages](#311-discovery-messages)
+     - [3.1.2 Transaction Messages](#312-transaction-messages)
+        * [3.1.2.1 Transaction Data Structure](#3121-transaction-data-structure)
+        * [3.1.2.2 Transaction Specification](#3122-transaction-specification)
+        * [3.1.2.3 Deploy Transaction](#3123-deploy-transaction)
+        * [3.1.2.4 Invoke Transaction](#3124-invoke-transaction)
+        * [3.1.2.5 Query Transaction](#3125-query-transaction)
+     - [3.1.3 Synchronization Messages](#313-synchronization-messages)
+     - [3.1.4 Consensus Messages](#314-consensus-messages)
+   * [3.2 Ledger](#32-ledger)
+     - [3.2.1 Blockchain](#321-blockchain)
+        * [3.2.1.1 Block](#3211-block)
+        * [3.2.1.2 Block Hashing](#3212-block-hashing)
+        * [3.2.1.3 NonHashData](#3213-nonhashdata)
+        * [3.2.1.4 Transaction Execution](#3214-transaction-execution)
+     - [3.2.2 World State](#322-world-state)
+        * [3.2.2.1 Hashing the world state](#3221-hashing-the-world-state)
+        * [3.2.2.1.1 Bucket-tree](#32211-buckettree)
+   * [3.3 Chaincode](#33-chaincode)
+     - [3.3.1 Virtual Machine Instantiation](#331-virtual-machine-instantiation)
+     - [3.3.2 Chaincode Protocol](#332-chaincode-protocol)
+        * [3.3.2.1 Chaincode Deploy](#3321-chaincode-deploy)
+        * [3.3.2.2 Chaincode Invoke](#3322-chaincode-invoke)
+        * [3.3.2.3 Chaincode Query](#3323-chaincode-query)
+        * [3.3.2.4 Chaincode State](#3324-chaincode-state)
+   * [3.4 Pluggable Consensus Framework](#34-pluggable-consensus-framework)
+     - [3.4.1 Consenter interface](#341-consenter-interface)
+     - [3.4.2 CPI interface](#342-cpi-interface)
+     - [3.4.3 Inquirer interface](#343-inquirer-interface)
+     - [3.4.4 Communicator interface](#344-communicator-interface)
+     - [3.4.5 SecurityUtils interface](#345-securityutils-interface)
+     - [3.4.6 LedgerStack interface](#346-ledgerstack-interface)
+     - [3.4.7 Executor interface](#347-executor-interface)
+        * [3.4.7.1 Beginning a transaction batch](#3471-beginning-a-transaction-batch)
+        * [3.4.7.2 Executing transactions](#3472-executing-transactions)
+        * [3.4.7.3 Committing and rolling-back transactions](#3473-committing-and-rollingback-transactions)
+     - [3.4.8 Ledger interface](#348-ledger-interface)
+        * [3.4.8.1 ReadOnlyLedger interface](#3481-readonlyledger-interface)
+        * [3.4.8.2 UtilLedger interface](#3482-utilledger-interface)
+        * [3.4.8.3 WritableLedger interface](#3483-writableledger-interface)
+     - [3.4.9 RemoteLedgers interface](#349-remoteledgers-interface)
+     - [3.4.10 controller package](#3410-controller-package)
+        * [3.4.10.1 controller.NewConsenter](#34101-controllernewconsenter)
+     - [3.4.11 helper package](#3411-helper-package)
+        * [3.4.11.1 High-level overview](#34111-highlevel-overview)
+        * [3.4.11.2 helper.ConsensusHandler](#34112-helperconsensushandler)
+        * [3.4.11.3 helper.NewConsensusHandler](#34113-helpernewconsensushandler)
+        * [3.4.11.4 helper.Helper](#34114-helperhelper)
+        * [3.4.11.5 helper.NewHelper](#34115-helpernewhelper)
+        * [3.4.11.6 helper.HandleMessage](#34116-helperhandlemessage)
+   * [3.5 Events](#35-events)
+     - [3.5.1 Event Stream](#351-event-stream)
+        * [3.5.1.1 Event Producer](#3511-event-producer)
+        * [3.5.1.2 Event Consumer](#3512-event-consumer)
+     - [3.5.2 Event Adapters](#352-event-adapters)
+     - [3.5.3 Event Structure](#353-event-structure)
 
-   - 2.1 Architecture
-   - 2.1.1 Membership Services
-   - 2.1.2 Blockchain Services
-   - 2.1.3 Chaincode Services
-   - 2.1.4 Events
-   - 2.1.5 Application Programming Interface
-   - 2.1.6 Command Line Interface
-   - 2.2 Topology
-   - 2.2.1 Single Validating Peer
-   - 2.2.2 Multiple Validating Peers
-   - 2.2.3 Multichain
+#### [4. Security](#4-security_1)
+   * [4.1 Business security requirements](#41-business-security-requirements)
+   * [4.2 User Privacy through Membership Services](#42-user-privacy-through-membership-services)
+     - [4.2.1 User/Client Enrollment Process](#421-userclient-enrollment-process)
+     - [4.2.2 Expiration and revocation of certificates](#422-expiration-and-revocation-of-certificates)
+   * [4.3 Transaction security offerings at the infrastructure level](#43-transaction-security-offerings-at-the-infrastructure-level)
+     - [4.3.1 Security Lifecycle of Transactions](#431-security-lifecycle-of-transactions)
+     - [4.3.2 Transaction confidentiality](#432-transaction-confidentiality)
+        * [4.3.2.1 Confidentiality against users](#4321-confidentiality-against-users)
+        * [4.3.2.2 Confidentiality against validators](#4322-confidentiality-against-validators)
+     - [4.3.3 Replay attack resistance](#433-replay-attack-resistance)
+   * [4.4 Access control features on the application](#44-access-control-features-on-the-application)
+     - [4.4.1 Invocation access control](#441-invocation-access-control)
+     - [4.4.2 Read access control](#442-read-access-control)
+   * [4.5 Online wallet service](#45-online-wallet-service)
+   * [4.6 Network security (TLS)](#46-network-security-tls)
+   * [4.7 Restrictions in the current release](#47-restrictions-in-the-current-release)
+     - [4.7.1 Simplified client](#471-simplified-client)
+     - [4.7.2 Simplified transaction confidentiality](#472-simplified-transaction-confidentiality)
 
-#### 3. Protocol
+#### [5. Byzantine Consensus](#5-byzantine-consensus_1)
+   * [5.1 Overview](#51-overview)
+   * [5.2 Core PBFT Functions](#52-core-pbft-functions)
+   * [5.2.1 newPbftCore](#521-newpbftcore)
 
-   - 3.1 Message
-   - 3.1.1 Discovery Messages
-   - 3.1.2 Transaction Messages
-   - 3.1.2.1 Transaction Data Structure
-   - 3.1.2.2 Transaction Specification
-   - 3.1.2.3 Deploy Transaction
-   - 3.1.2.4 Invoke Transaction
-   - 3.1.2.5 Query Transaction
-   - 3.1.3 Synchronization Messages
-   - 3.1.4 Consensus Messages
-   - 3.2 Ledger
-   - 3.2.1 Blockchain
-   - 3.2.1.1 Block
-   - 3.2.1.2 Block Hashing
-   - 3.2.1.3 NonHashData
-   - 3.2.1.4 Transaction
-   - 3.2.2 World State
-   - 3.2.2.1 Hashing the world state
-   - 3.2.2.1.1 Bucket-tree
-   - 3.3 Chaincode
-   - 3.3.1 Virtual Machine Instantiation
-   - 3.3.2 Chaincode Protocol
-   - 3.3.2.1 Chaincode Deploy
-   - 3.3.2.2 Chaincode Invoke
-   - 3.3.2.3 Chaincode Query
-   - 3.3.2.4 Chaincode State
-   - 3.4 Pluggable Consensus Framework
-   - 3.4.1 Consenter interface
-   - 3.4.2 Consensus Programming Interface
-   - 3.4.3 Inquirer interface
-   - 3.4.4 Communicator interface
-   - 3.4.5 SecurityUtils interface
-   - 3.4.6 LedgerStack interface
-   - 3.4.7 Executor interface
-   - 3.4.7.1 Beginning a transaction batch
-   - 3.4.7.2 Executing transactions
-   - 3.4.7.3 Committing and rolling-back transactions
-   - 3.4.8 Ledger interface
-   - 3.4.8.1 ReadOnlyLedger interface
-   - 3.4.8.2 UtilLedger interface
-   - 3.4.8.3 WritableLedger interface
-   - 3.4.9 RemoteLedgers interface
-   - 3.4.10 Controller package
-   - 3.4.11 Helper package
-   - 3.5 Events
-   - 3.4.1 Event Stream
-   - 3.4.2 Event Structure
-   - 3.4.3 Event Adapters
+#### [6. Application Programming Interface](#6-application-programming-interface_1)
+   * [6.1 REST Service](#61-rest-service)
+   * [6.2 REST API](#62-rest-api)
+     - [6.2.1 REST Endpoints](#621-rest-endpoints)
+        * [6.2.1.1 Block API](#6211-block-api)
+        * [6.2.1.2 Blockchain API](#6212-blockchain-api)
+        * [6.2.1.3 Chaincode API](#6213-chaincode-api)
+        * [6.2.1.4 Network API](#6214-network-api)
+        * [6.2.1.5 Registrar API (member services)](#6215-registrar-api-member-services)
+        * [6.2.1.6 Transactions API](#6216-transactions-api)
+   * [6.3 CLI](#63-cli)
+     - [6.3.1 CLI Commands](#631-cli-commands)
+        * [6.3.1.1 node start](#6311-node-start)
+        * [6.3.1.2 network login](#6312-network-login)
+        * [6.3.1.3 chaincode deploy](#6313-chaincode-deploy)
+        * [6.3.1.4 chaincode invoke](#6314-chaincode-invoke)
+        * [6.3.1.5 chaincode query](#6315-chaincode-query)
 
-#### 4. Security
-   - 4. Security
-   - 4.1 Business security requirements
-   - 4.2 User Privacy through Membership Services
-   - 4.2.1 User/Client Enrollment Process
-   - 4.2.2 Expiration and revocation of certificates
-   - 4.2.3 Online wallet service
-   - 4.3 Transaction security offerings at the infrastructure level
-   - 4.3.1 Security lifecycle of transactions
-   - 4.3.2 Transaction confidentiality
-   - 4.3.2.1 Confidentiality against users
-   - 4.3.2.2 Confidentiality against validators
-   - 4.3.3 Invocation access control
-   - 4.3.4 Replay attack resistance
-   - 4.4 Access control features on the application
-   - 4.4.1 Invocation access control
-   - 4.4.2 Read access control
-   - 4.5 Online wallet service
-   - 4.6 Network security (TLS)
-   - 4.7 Restrictions in the current release
-   - 4.7.1 Simplified client
-   - 4.7.1 Simplified transaction confidentiality
+#### [7. Application Model](#7-application-model_1)
+   * [7.1 Composition of an Application](#71-composition-of-an-application)
+   * [7.2 Sample Application](#72-sample-application)
 
-#### 5. Byzantine Consensus
-   - 5.1 Overview
-   - 5.2 Core PBFT
-   - 5.3 Inner Consensus Programming Interface
-   - 5.4 Sieve Consensus
+#### [8. Future Directions](#8-future-directions_1)
+   * [8.1 Enterprise Integration](#81-enterprise-integration)
+   * [8.2 Performance and Scalability](#82-performance-and-scalability)
+   * [8.3 Additional Consensus Plugins](#83-additional-consensus-plugins)
+   * [8.4 Additional Languages](#84-additional-languages)
 
-#### 6. Application Programming Interface
-   - 6.1 REST Service
-   - 6.2 REST API
-   - 6.3 CLI
+#### [9.1 Authors](#91-authors)
+#### [9.2 Reviewers](#92-reviewers)
+#### [9.3 Acknowledgements](#93-acknowledgements)
 
-#### 7. Application Model
-   - 7.1 Composition of an Application
-   - 7.2 Sample Application
-
-#### 8. Future Directions
-   - 8.1 Enterprise Integration
-   - 8.2 Performance and Scalability
-   - 8.3 Additional Consensus Plugins
-   - 8.4 Additional Languages
-
-#### 9. References
+#### [10. References](#10-references_1)
 
 ________________________________________________________
 
@@ -193,42 +202,42 @@ The reference architecture is aligned in 3 categories: Membership, Blockchain, a
 
 ![Reference architecture](images/refarch.png)
 
-### 2.1.1 Membership Services
-Membership provides services for managing identity, privacy, confidentiality and auditability on the network. In a non-permissioned blockchain, participation does not require authorization and all nodes can equally submit transactions and/or attempt to accumulate them into acceptable blocks, i.e. there are no distinctions of roles. Membership services combine elements of Public Key Infrastructure (PKI) and decentralization/consensus to transform a non-permissioned blockchain into a permissioned blockchain. In the latter, entities register in order to acquire long-term identity credentials (enrollment certificates), and may be distinguished according to entity type. In the case of users, such credentials enable the Transaction Certificate Authority (TCA) to issue pseudonymous credentials. Such credentials, i.e., transaction certificates, are used to authorize submitted transactions. Transaction certificates persist on the blockchain, and enable authorized auditors to cluster otherwise unlinkable transactions.  
+#### 2.1.1 Membership Services
+Membership provides services for managing identity, privacy, confidentiality and auditability on the network. In a non-permissioned blockchain, participation does not require authorization and all nodes can equally submit transactions and/or attempt to accumulate them into acceptable blocks, i.e. there are no distinctions of roles. Membership services combine elements of Public Key Infrastructure (PKI) and decentralization/consensus to transform a non-permissioned blockchain into a permissioned blockchain. In the latter, entities register in order to acquire long-term identity credentials (enrollment certificates), and may be distinguished according to entity type. In the case of users, such credentials enable the Transaction Certificate Authority (TCA) to issue pseudonymous credentials. Such credentials, i.e., transaction certificates, are used to authorize submitted transactions. Transaction certificates persist on the blockchain, and enable authorized auditors to cluster otherwise unlinkable transactions.
 
-### 2.1.2 Blockchain Services
+#### 2.1.2 Blockchain Services
 Blockchain services manage the distributed ledger through a peer-to-peer protocol, built on HTTP/2. The data structures are highly optimized to provide the most efficient hash algorithm for maintaining the world state replication. Different consensus (PBFT, Raft, PoW, PoS) may be plugged in and configured per deployment.
 
-### 2.1.3 Chaincode Services
+#### 2.1.3 Chaincode Services
 Chaincode services provides a secured and lightweight way to sandbox the chaincode execution on the validating nodes. The environment is a “locked down” and secured container along with a set of signed base images containing secure OS and chaincode language, runtime and SDK layers for Go, Java, and Node.js. Other languages can be enabled if required.
 
-### 2.1.4 Events
+#### 2.1.4 Events
 Validating peers and chaincodes can emit events on the network that applications may listen for and take actions on. There is a set of pre-defined events, and chaincodes can generate custom events. Events are consumed by 1 or more event adapters. Adapters may further deliver events using other vehicles such as Web hooks or Kafka.
 
-### 2.1.5 Application Programming Interface (API)
+#### 2.1.5 Application Programming Interface (API)
 The primary interface to the fabric is a REST API and its variations over Swagger 2.0. The API allows applications to register users, query the blockchain, and to issue transactions. There is a set of APIs specifically for chaincode to interact with the stack to execute transactions and query transaction results.
 
-### 2.1.6 Command Line Interface (CLI)
+#### 2.1.6 Command Line Interface (CLI)
 CLI includes a subset of the REST API to enable developers to quickly test chaincodes or query for status of transactions. CLI is implemented in Golang and operable on multiple OS platforms.
 
 ### 2.2 Topology
 A deployment of the fabric can consist of a membership service, many validating peers, non-validating peers, and 1 or more applications. All of these components make up a chain. There can be multiple chains; each one having its own operating parameters and security requirements.
 
-### 2.2.1 Single Validating Peer
+#### 2.2.1 Single Validating Peer
 Functionally, a non-validating peer is a subset of a validating peer; that is, every capability on a non-validating peer may be enabled on a validating peer, so the simplest network may consist of a single validating peer node. This configuration is most appropriate for a development environment, where a single validating peer may be started up during the edit-compile-debug cycle.
 
 ![Single Validating Peer](images/top-single-peer.png)
 
 A single validating peer doesn't require consensus, and by default uses the `noops` plugin, which executes transactions as they arrive. This gives the developer an immediate feedback during development.
 
-### 2.2.2 Multiple Validating Peers
+#### 2.2.2 Multiple Validating Peers
 Production or test networks should be made up of multiple validating and non-validating peers as necessary. Non-validating peers can take workload off the validating peers, such as handling API requests and processing events.
 
 ![Multiple Validating Peers](images/top-multi-peer.png)
 
 The validating peers form a mesh-network (every validating peer connects to every other validating peer) to disseminate information. A non-validating peer connects to a neighboring validating peer that it is allowed to connect to. Non-validating peers are optional since applications may communicate directly with validating peers.
 
-### 2.2.3 Multichain
+#### 2.2.3 Multichain
 Each network of validating and non-validating peers makes up a chain. Many chains may be created to address different needs, similar to having multiple Web sites, each serving a different purpose.
 
 
@@ -273,7 +282,7 @@ message Message {
 ```
 The `payload` is an opaque byte array containing other objects such as `Transaction` or `Response` depending on the type of the message. For example, if the `type` is `CHAIN_TRANSACTION`, the `payload` is a `Transaction` object.
 
-### 3.1.1 Discovery Messages
+#### 3.1.1 Discovery Messages
 Upon start up, a peer runs discovery protocol if `CORE_PEER_DISCOVERY_ROOTNODE` is specified. `CORE_PEER_DISCOVERY_ROOTNODE` is the IP address of another peer on the network (any peer) that serves as the starting point for discovering all the peers on the network. The protocol sequence begins with `DISC_HELLO`, whose `payload` is a `HelloMessage` object, containing its endpoint:
 
 ```
@@ -310,10 +319,10 @@ If the block height received upon `DISC_HELLO` is higher than the current block 
 
 After `DISC_HELLO`, peer sends `DISC_GET_PEERS` periodically to discover any additional peers joining the network. In response to `DISC_GET_PEERS`, a peer sends `DISC_PEERS` with `payload` containing an array of `PeerEndpoint`. Other discovery message types are not used at this point.
 
-### 3.1.2 Transaction Messages
+#### 3.1.2 Transaction Messages
 There are 3 types of transactions: Deploy, Invoke and Query. A deploy transaction installs the specified chaincode on the chain, while invoke and query transactions call a function of a deployed chaincode. Another type in consideration is Create transaction, where a deployed chaincode may be instantiated on the chain and is addressable. This type has not been implemented as of this writing.
 
-### 3.1.2.1 Transaction Data Structure
+##### 3.1.2.1 Transaction Data Structure
 
 Messages with type `CHAIN_TRANSACTION` or `CHAIN_QUERY` carry a `Transaction` object in the `payload`:
 
@@ -370,7 +379,7 @@ enum ConfidentialityLevel {
 
 More detail on transaction security can be found in section 4.
 
-### 3.1.2.2 Transaction Specification
+##### 3.1.2.2 Transaction Specification
 A transaction is always associated with a chaincode specification which defines the chaincode and the execution environment such as language and security context. Currently there is an implementation that uses Golang for writing chaincode. Other languages may be added in the future.
 
 ```
@@ -410,7 +419,7 @@ message ChaincodeInput {
 
 The peer, receiving the `chaincodeSpec`, wraps it in an appropriate transaction message and broadcasts to the network.
 
-### 3.1.2.3 Deploy Transaction
+##### 3.1.2.3 Deploy Transaction
 Transaction `type` of a deploy transaction is `CHAINCODE_DEPLOY` and the payload contains an object of `ChaincodeDeploymentSpec`.
 
 ```
@@ -427,7 +436,7 @@ message ChaincodeDeploymentSpec {
 
 The validating peers always verify the hash of the `codePackage` when they deploy the chaincode to make sure the package has not been tampered with since the deploy transaction entered the network.
 
-### 3.1.2.4 Invoke Transaction
+##### 3.1.2.4 Invoke Transaction
 Transaction `type` of an invoke transaction is `CHAINCODE_INVOKE` and the `payload` contains an object of `ChaincodeInvocationSpec`.
 
 ```
@@ -436,15 +445,15 @@ message ChaincodeInvocationSpec {
 }
 ```
 
-### 3.1.2.5 Query Transaction
+##### 3.1.2.5 Query Transaction
 A query transaction is similar to an invoke transaction, but the message `type` is `CHAINCODE_QUERY`.
 
-### 3.1.3 Synchronization Messages
+#### 3.1.3 Synchronization Messages
 Synchronization protocol starts with discovery, described above in section 3.1.1, when a peer realizes that it's behind or its current block is not the same with others. A peer broadcasts either `SYNC_GET_BLOCKS`, `SYNC_STATE_GET_SNAPSHOT`, or `SYNC_STATE_GET_DELTAS` and receives `SYNC_BLOCKS`, `SYNC_STATE_SNAPSHOT`, or `SYNC_STATE_DELTAS` respectively.
 
 The installed consensus plugin (e.g. pbft) dictates how synchronization protocol is being applied. Each message is designed for a specific situation:
 
-**SYNC_GET_BLOCKS** requests for a range of contiguous blocks expressed in the message `payload`, which is an object of `SyncBlockRange`.  The correlationId specified is included in the `SyncBlockRange` of any replies to this message.
+**SYNC_GET_BLOCKS** requests for a range of contiguous blocks expressed in the message `payload`, which is an object of `SyncBlockRange`. The correlationId specified is included in the `SyncBlockRange` of any replies to this message.
 ```
 message SyncBlockRange {
     uint64 correlationId = 1;
@@ -476,7 +485,7 @@ message SyncStateSnapshot {
     SyncStateSnapshotRequest request = 4;
 }
 ```
-This message contains the snapshot or a chunk of the snapshot on the stream, and in which case, the sequence indicate the order starting at 0.  The terminating message will have len(delta) == 0.
+This message contains the snapshot or a chunk of the snapshot on the stream, and in which case, the sequence indicate the order starting at 0. The terminating message will have len(delta) == 0.
 
 **SYNC_STATE_GET_DELTAS** requests for the state deltas of a range of contiguous blocks. By default, the Ledger maintains 500 transition deltas. A delta(j) is a state transition between block(i) and block(j) where i = j-1. The message `payload` contains an instance of `SyncStateDeltasRequest`
 ```
@@ -493,7 +502,7 @@ message SyncStateDeltas {
 ```
 A delta may be applied forward (from i to j) or backward (from j to i) in the state transition.
 
-### 3.1.4 Consensus Messages
+#### 3.1.4 Consensus Messages
 Consensus deals with transactions, so a `CONSENSUS` message is initiated internally by the consensus framework when it receives a `CHAIN_TRANSACTION` message. The framework converts `CHAIN_TRANSACTION` into `CONSENSUS` then broadcasts to the validating nodes with the same `payload`. The consensus plugin receives this message and process according to its internal algorithm. The plugin may create custom subtypes to manage consensus finite state machine. See section 3.4 for more details.
 
 
@@ -501,9 +510,9 @@ Consensus deals with transactions, so a `CONSENSUS` message is initiated interna
 
 The ledger consists of two primary pieces, the blockchain and the world state. The blockchain is a series of linked blocks that is used to record transactions within the ledger. The world state is a key-value database that chaincodes may use to store state when executed by a transaction.
 
-### 3.2.1 Blockchain
+#### 3.2.1 Blockchain
 
-#### 3.2.1.1 Block
+##### 3.2.1.1 Block
 
 The blockchain is defined as a linked list of blocks as each block contains the hash of the previous block in the chain. The two other important pieces of information that a block contains are the list of transactions contained within the block and the hash of the world state after executing all transactions in the block.
 
@@ -531,7 +540,7 @@ message BlockTransactions {
 * `nonHashData` - A `NonHashData` message that is set to nil before computing the hash of the block, but stored as part of the block in the database.
 * `BlockTransactions.transactions` - An array of Transaction messages. Transactions are not included in the block directly due to their size.
 
-#### 3.2.1.2 Block Hashing
+##### 3.2.1.2 Block Hashing
 
 * The `previousBlockHash` hash is calculated using the following algorithm.
   1. Serialize the Block message to bytes using the protocol buffer library.
@@ -542,7 +551,7 @@ message BlockTransactions {
 
 * The `stateHash` is defined in section 3.2.2.1.
 
-#### 3.2.1.3 NonHashData
+##### 3.2.1.3 NonHashData
 
 The NonHashData message is used to store block metadata that is not required to be the same value on all peers. These are suggested values.
 
@@ -573,24 +582,24 @@ message TransactionResult {
 * `TransactionResult.error` - A string that can be used to log errors associated with the transaction.
 
 
-#### 3.2.1.4 Transaction Execution
+##### 3.2.1.4 Transaction Execution
 
 A transaction defines either the deployment of a chaincode or the execution of a chaincode. All transactions within a block are run before recording a block in the ledger. When chaincodes execute, they may modify the world state. The hash of the world state is then recorded in the block.
 
 
-### 3.2.2 World State
+#### 3.2.2 World State
 The *world state* of a peer refers to the collection of the *states* of all the deployed chaincodes. Further, the state of a chaincode is represented as a collection of key-value pairs. Thus, logically, the world state of a peer is also a collection of key-value pairs where key consists of a tuple `{chaincodeID, ckey}`. Here, we use the term `key` to represent a key in the world state i.e., a tuple `{chaincodeID, ckey}` and we use the term `cKey` to represent a unique key within a chaincode.
 
 For the purpose of the description below, `chaincodeID` is assumed to be a valid utf8 string and `ckey` and the `value` can be a sequence of one or more arbitrary bytes.
 
-#### 3.2.2.1 Hashing the world state
+##### 3.2.2.1 Hashing the world state
 During the functioning of a network, many occasions such as committing transactions and synchronizing peers may require computing a crypto-hash of the world state observed by a peer. For instance, the consensus protocol may require to ensure that a *minimum* number of peers in the network observe the same world state.
 
 Since, computing the crypto-hash of the world state could be an expensive operation, this is highly desirable to organize the world state such that it enables an efficient crypto-hash computation of the world state when a change occurs in the world state. Further, different organization designs may be suitable under different workloads conditions.
 
 Because the fabric is expected to function under a variety of scenarios leading to different workloads conditions, a pluggable mechanism is supported for organizing the world state.
 
-#### 3.2.2.1.1 Bucket-tree
+###### 3.2.2.1.1 Bucket-tree
 
 *Bucket-tree* is one of the implementations for organizing the world state. For the purpose of the description below, a key in the world state is represented as a concatenation of the two components (`chaincodeID` and `ckey`)  separated by a `nil` byte i.e., `key` = `chaincodeID`+`nil`+`cKey`.
 
@@ -639,7 +648,7 @@ In a particular deployment, all the peer nodes are expected to use same values f
 ### 3.3 Chaincode
 Chaincode is an application-level code deployed as a transaction (see section 3.1.2) to be distributed to the network and managed by each validating peer as isolated sandbox. Though any virtualization technology can support the sandbox, currently Docker container is utilized to run the chaincode. The protocol described in this section enables different virtualization support implementation to plug and play.
 
-### 3.3.1 Virtual Machine Instantiation
+#### 3.3.1 Virtual Machine Instantiation
 A virtual machine implements the VM interface:  
 ```
 type VM interface {
@@ -652,7 +661,7 @@ The fabric instantiates the VM when it processes a Deploy transaction or other t
 
 Once the chaincode container is up, it makes a gRPC connection back to the validating peer that started the chaincode, and that establishes the channel for Invoke and Query transactions on the chaincode.
 
-### 3.3.2 Chaincode Protocol
+#### 3.3.2 Chaincode Protocol
 Communication between a validating peer and its chaincodes is based on a bidirectional gRPC stream. There is a shim layer on the chaincode container to handle the message protocol between the chaincode and the validating peer using protobuf message.
 ```
 message ChaincodeMessage {
@@ -704,23 +713,23 @@ i	Init(stub *ChaincodeStub, function string, args []string) ([]byte, error)
 
 `Init`, `Invoke` and `Query` functions take `function` and `args` as parameters to be used by those methods to support a variety of transactions. `Init` is a constructor function, which will only be invoked by the Deploy transaction. The `Query` function is not allowed to modify the state of the chaincode; it can only read and calculate the return value as a byte array.
 
-### 3.3.2.1 Chaincode Deploy
+##### 3.3.2.1 Chaincode Deploy
 Upon deploy (chaincode container is started), the shim layer sends a one time `REGISTER` message to the validating peer with the `payload` containing the `ChaincodeID`. The validating peer responds with `REGISTERED` or `ERROR` on success or failure respectively. The shim closes the connection and exits if it receives an `ERROR`.
 
 After registration, the validating peer sends `INIT` with the `payload` containing a `ChaincodeInput` object. The shim calls the `Init` function with the parameters from the `ChaincodeInput`, enabling the chaincode to perform any initialization, such as setting up the persistent state.
 
 The shim responds with `RESPONSE` or `ERROR` message depending on the returned value from the chaincode `Init` function. If there are no errors, the chaincode initialization is complete and is ready to receive Invoke and Query transactions.
 
-### 3.3.2.2 Chaincode Invoke
+##### 3.3.2.2 Chaincode Invoke
 When processing an invoke transaction, the validating peer sends a `TRANSACTION` message to the chaincode container shim, which in turn calls the chaincode `Invoke` function, passing the parameters from the `ChaincodeInput` object. The shim responds to the validating peer with `RESPONSE` or `ERROR` message, indicating the completion of the function. If `ERROR` is received, the `payload` contains the error message generated by the chaincode.
 
-### 3.3.2.3 Chaincode Query
+##### 3.3.2.3 Chaincode Query
 Similar to an invoke transaction, when processing a query, the validating peer sends a `QUERY` message to the chaincode container shim, which in turn calls the chaincode `Query` function, passing the parameters from the `ChaincodeInput` object. The `Query` function may return a state value or an error, which the shim forwards to the validating peer using `RESPONSE` or `ERROR` messages respectively.
 
-### 3.3.2.4 Chaincode State
+##### 3.3.2.4 Chaincode State
 Each chaincode may define its own persistent state variables. For example, a chaincode may create assets such as TVs, cars, or stocks using state variables to hold the assets attributes. During `Invoke` function processing, the chaincode may update the state variables, for example, changing an asset owner. A chaincode manipulates the state variables by using the following message types:
 
-#### PUT_STATE
+###### PUT_STATE
 Chaincode sends a `PUT_STATE` message to persist a key-value pair, with the `payload` containing `PutStateInfo` object.
 
 ```
@@ -730,13 +739,13 @@ message PutStateInfo {
 }
 ```
 
-#### GET_STATE
+###### GET_STATE
 Chaincode sends a `GET_STATE` message to retrieve the value whose key is specified in the `payload`.
 
-#### DEL_STATE
+###### DEL_STATE
 Chaincode sends a `DEL_STATE` message to delete the value whose key is specified in the `payload`.
 
-#### RANGE_QUERY_STATE
+###### RANGE_QUERY_STATE
 Chaincode sends a `RANGE_QUERY_STATE` message to get a range of values. The message `payload` contains a `RangeQueryStateInfo` object.
 
 ```
@@ -776,10 +785,10 @@ message RangeQueryStateClose {
 }
 ```
 
-#### INVOKE_CHAINCODE
+###### INVOKE_CHAINCODE
 Chaincode may call another chaincode in the same transaction context by sending an `INVOKE_CHAINCODE` message to the validating peer with the `payload` containing a `ChaincodeSpec` object.
 
-#### QUERY_CHAINCODE
+###### QUERY_CHAINCODE
 Chaincode may query another chaincode in the same transaction context by sending a `QUERY_CHAINCODE` message with the `payload` containing a `ChaincodeSpec` object.
 
 
@@ -797,15 +806,15 @@ As described below in more details, `consensus.LedgerStack` encapsulates, among 
 Currently, consensus framework consists of 3 packages `consensus`, `controller`, and `helper`. The primary reason for `controller` and `helper` packages is to avoid "import cycle" in Go (golang) and minimize code changes for plugin to update.
 
 - `controller` package specifies the consensus plugin used by a validating peer.
-- `helper` package is a shim around a consensus plugin that helps it interact with the rest of the stack, such as maintaining message handlers to other peers.  
+- `helper` package is a shim around a consensus plugin that helps it interact with the rest of the stack, such as maintaining message handlers to other peers.
 
 There are 2 consensus plugins provided: `pbft` and `noops`:
 
--  `obcpbft` package contains consensus plugin that implements *PBFT* [1] and *Sieve* consensus protocols. See section 5 for more detail.
+-  `pbft` package contains consensus plugin that implements the *PBFT* [1] consensus protocol. See section 5 for more detail.
 -  `noops` is a ''dummy'' consensus plugin for development and test purposes. It doesn't perform consensus but processes all consensus messages. It also serves as a good simple sample to start learning how to code a consensus plugin.
 
 
-### 3.4.1 `Consenter` interface
+#### 3.4.1 `Consenter` interface
 
 Definition:
 ```
@@ -817,7 +826,7 @@ The plugin's entry point for (external) client requests, and consensus messages 
 
 See `helper.HandleMessage` below to understand how the peer interacts with this interface.
 
-### 3.4.2 `CPI` interface
+#### 3.4.2 `CPI` interface
 
 Definition:
 ```
@@ -833,7 +842,7 @@ type CPI interface {
   1. Is instantiated when the `helper.NewConsensusHandler` is called.
   2. Is accessible to the plugin author when they construct their plugin's `consensus.Consenter` object.
 
-### 3.4.3 `Inquirer` interface
+#### 3.4.3 `Inquirer` interface
 
 Definition:
 ```
@@ -852,7 +861,7 @@ message PeerID {
 }
 ```
 
-### 3.4.4 `Communicator` interface
+#### 3.4.4 `Communicator` interface
 
 Definition:
 
@@ -865,7 +874,7 @@ type Communicator interface {
 
 This interface is a part of the `consensus.CPI` interface. It is used to communicate with other peers on the network (`helper.Broadcast`, `helper.Unicast`):
 
-### 3.4.5 `SecurityUtils` interface
+#### 3.4.5 `SecurityUtils` interface
 
 Definition:
 
@@ -878,7 +887,7 @@ type SecurityUtils interface {
 
 This interface is a part of the `consensus.CPI` interface. It is used to handle the cryptographic operations of message signing (`Sign`) and verifying signatures (`Verify`)
 
-### 3.4.6 `LedgerStack` interface
+#### 3.4.6 `LedgerStack` interface
 
 Definition:
 
@@ -890,9 +899,9 @@ type LedgerStack interface {
 }
 ```
 
-A key member of the `CPI` interface, `LedgerStack` groups interaction of consensus with the rest of the fabric, such as the execution of transactions, querying, and updating the ledger.  This interface supports querying the local blockchain and state, updating the local blockchain and state, and querying the blockchain and state of other nodes in the consensus network. It consists of three parts: `Executor`, `Ledger` and `RemoteLedgers` interfaces. These are described in the following.
+A key member of the `CPI` interface, `LedgerStack` groups interaction of consensus with the rest of the fabric, such as the execution of transactions, querying, and updating the ledger. This interface supports querying the local blockchain and state, updating the local blockchain and state, and querying the blockchain and state of other nodes in the consensus network. It consists of three parts: `Executor`, `Ledger` and `RemoteLedgers` interfaces. These are described in the following.
 
-### 3.4.7 `Executor` interface
+#### 3.4.7 `Executor` interface
 
 Definition:
 
@@ -906,9 +915,9 @@ type Executor interface {
 }
 ```
 
-The executor interface is the most frequently utilized portion of the `LedgerStack` interface, and is the only piece which is strictly necessary for a consensus network to make progress.  The interface allows for a transaction to be started, executed, rolled back if necessary, previewed, and potentially committed.  This interface is comprised of the following methods.
+The executor interface is the most frequently utilized portion of the `LedgerStack` interface, and is the only piece which is strictly necessary for a consensus network to make progress. The interface allows for a transaction to be started, executed, rolled back if necessary, previewed, and potentially committed. This interface is comprised of the following methods.
 
-#### 3.4.7.1 Beginning a transaction batch
+##### 3.4.7.1 Beginning a transaction batch
 
 ```
 BeginTxBatch(id interface{}) error
@@ -916,36 +925,36 @@ BeginTxBatch(id interface{}) error
 
 This call accepts an arbitrary `id`, deliberately opaque, as a way for the consensus plugin to ensure only the transactions associated with this particular batch are executed. For instance, in the pbft implementation, this `id` is the an encoded hash of the transactions to be executed.
 
-#### 3.4.7.2 Executing transactions
+##### 3.4.7.2 Executing transactions
 
 ```
 ExecTXs(id interface{}, txs []*pb.Transaction) ([]byte, []error)
 ```
 
-This call accepts an array of transactions to execute against the current state of the ledger and returns the current state hash in addition to an array of errors corresponding to the array of transactions.  Note that a transaction resulting in an error has no effect on whether a transaction batch is safe to commit.  It is up to the consensus plugin to determine the behavior which should occur when failing transactions are encountered.  This call is safe to invoke multiple times.
+This call accepts an array of transactions to execute against the current state of the ledger and returns the current state hash in addition to an array of errors corresponding to the array of transactions. Note that a transaction resulting in an error has no effect on whether a transaction batch is safe to commit. It is up to the consensus plugin to determine the behavior which should occur when failing transactions are encountered. This call is safe to invoke multiple times.
 
-#### 3.4.7.3 Committing and rolling-back transactions
+##### 3.4.7.3 Committing and rolling-back transactions
 
 ```
 RollbackTxBatch(id interface{}) error
 ```
 
-This call aborts an execution batch.  This will undo the changes to the current state, and restore the ledger to its previous state.  It concludes the batch begun with `BeginBatchTx` and a new one must be created before executing any transactions.
+This call aborts an execution batch. This will undo the changes to the current state, and restore the ledger to its previous state. It concludes the batch begun with `BeginBatchTx` and a new one must be created before executing any transactions.
 
 ```
 PreviewCommitTxBatchBlock(id interface{}, transactions []*pb.Transaction, metadata []byte) (*pb.Block, error)
 ```
 
-This call is most useful for consensus plugins which wish to test for non-deterministic transaction execution.  The hashable portions of the block returned are guaranteed to be identical to the block which would be committed if `CommitTxBatch` were immediately invoked.  This guarantee is violated if any new transactions are executed.
+This call is most useful for consensus plugins which wish to test for non-deterministic transaction execution. The hashable portions of the block returned are guaranteed to be identical to the block which would be committed if `CommitTxBatch` were immediately invoked. This guarantee is violated if any new transactions are executed.
 
 ```
 CommitTxBatch(id interface{}, transactions []*pb.Transaction, transactionsResults []*pb.TransactionResult, metadata []byte) error
 ```
 
-This call commits a block to the blockchain.  Blocks must be committed to a blockchain in total order. ``CommitTxBatch`` concludes the transaction batch, and a new call to `BeginTxBatch` must be made before any new transactions are executed and committed.
+This call commits a block to the blockchain. Blocks must be committed to a blockchain in total order. ``CommitTxBatch`` concludes the transaction batch, and a new call to `BeginTxBatch` must be made before any new transactions are executed and committed.
 
 
-### 3.4.8 `Ledger` interface
+#### 3.4.8 `Ledger` interface
 
 Definition:
 
@@ -959,7 +968,7 @@ type Ledger interface {
 
 ``Ledger`` interface is intended to allow the consensus plugin to interrogate and possibly update the current state and blockchain. It is comprised of the three interfaces described below.
 
-#### 3.4.8.1 `ReadOnlyLedger` interface
+##### 3.4.8.1 `ReadOnlyLedger` interface
 
 Definition:
 
@@ -971,31 +980,31 @@ type ReadOnlyLedger interface {
 }
 ```
 
-`ReadOnlyLedger` interface is intended to query the local copy of the ledger without the possibility of modifying it.  It is comprised of the following functions.
+`ReadOnlyLedger` interface is intended to query the local copy of the ledger without the possibility of modifying it. It is comprised of the following functions.
 
 ```
 GetBlockchainSize() (uint64, error)
 ```
 
-This call returns the current length of the blockchain ledger.  In general, this function should never fail, though in the unlikely event that this occurs, the error is passed to the caller to decide what if any recovery is necessary.  The block with the highest number will have block number `GetBlockchainSize()-1`.  
+This call returns the current length of the blockchain ledger. In general, this function should never fail, though in the unlikely event that this occurs, the error is passed to the caller to decide what if any recovery is necessary. The block with the highest number will have block number `GetBlockchainSize()-1`.
 
-Note that in the event that the local copy of the blockchain ledger is corrupt or incomplete, this call will return the highest block number in the chain, plus one.  This allows for a node to continue operating from the current state/block even when older blocks are corrupt or missing.
+Note that in the event that the local copy of the blockchain ledger is corrupt or incomplete, this call will return the highest block number in the chain, plus one. This allows for a node to continue operating from the current state/block even when older blocks are corrupt or missing.
 
 ```
 GetBlock(id uint64) (block *pb.Block, err error)
 ```
 
-This call returns the block from the blockchain with block number `id`.  In general, this call should not fail, except when the block queried exceeds the current blocklength, or when the underlying blockchain has somehow become corrupt.  A failure of `GetBlock` has a possible resolution of using the state transfer mechanism to retrieve it.
+This call returns the block from the blockchain with block number `id`. In general, this call should not fail, except when the block queried exceeds the current blocklength, or when the underlying blockchain has somehow become corrupt. A failure of `GetBlock` has a possible resolution of using the state transfer mechanism to retrieve it.
 
 
 ```
 GetCurrentStateHash() (stateHash []byte, err error)
 ```
 
-This call returns the current state hash for the ledger.  In general, this function should never fail, though in the unlikely event that this occurs, the error is passed to the caller to decide what if any recovery is necessary.
+This call returns the current state hash for the ledger. In general, this function should never fail, though in the unlikely event that this occurs, the error is passed to the caller to decide what if any recovery is necessary.
 
 
-#### 3.4.8.2 `UtilLedger` interface
+##### 3.4.8.2 `UtilLedger` interface
 
 Definition:
 
@@ -1006,23 +1015,23 @@ type UtilLedger interface {
 }
 ```
 
-`UtilLedger`  interface defines some useful utility functions which are provided by the local ledger.  Overriding these functions in a mock interface can be useful for testing purposes.  This interface is comprised of two functions.
+`UtilLedger`  interface defines some useful utility functions which are provided by the local ledger. Overriding these functions in a mock interface can be useful for testing purposes. This interface is comprised of two functions.
 
 ```
 HashBlock(block *pb.Block) ([]byte, error)
 ```
 
-Although `*pb.Block` has a `GetHash` method defined, for mock testing, overriding this method can be very useful.  Therefore, it is recommended that the `GetHash` method never be directly invoked, but instead invoked via this `UtilLedger.HashBlock` interface.  In general, this method should never fail, but the error is still passed to the caller to decide what if any recovery is appropriate.
+Although `*pb.Block` has a `GetHash` method defined, for mock testing, overriding this method can be very useful. Therefore, it is recommended that the `GetHash` method never be directly invoked, but instead invoked via this `UtilLedger.HashBlock` interface. In general, this method should never fail, but the error is still passed to the caller to decide what if any recovery is appropriate.
 
 ```
 VerifyBlockchain(start, finish uint64) (uint64, error)
 ```
 
-This utility method is intended for verifying large sections of the blockchain.  It proceeds from a high block `start` to a lower block `finish`, returning the block number of the first block whose `PreviousBlockHash` does not match the block hash of the previous block as well as an error.  Note, this generally indicates the last good block number, not the first bad block number.
+This utility method is intended for verifying large sections of the blockchain. It proceeds from a high block `start` to a lower block `finish`, returning the block number of the first block whose `PreviousBlockHash` does not match the block hash of the previous block as well as an error. Note, this generally indicates the last good block number, not the first bad block number.
 
 
 
-#### 3.4.8.3 `WritableLedger` interface
+##### 3.4.8.3 `WritableLedger` interface
 
 Definition:
 
@@ -1036,35 +1045,35 @@ type WritableLedger interface {
 }
 ```
 
-`WritableLedger`  interface allows for the caller to update the blockchain.  Note that this is _NOT_ intended for use in normal operation of a consensus plugin.  The current state should be modified by executing transactions using the `Executor` interface, and new blocks will be generated when transactions are committed.  This interface is instead intended primarily for state transfer or corruption recovery.  In particular, functions in this interface should _NEVER_ be exposed directly via consensus messages, as this could result in violating the immutability promises of the blockchain concept.  This interface is comprised of the following functions.
+`WritableLedger`  interface allows for the caller to update the blockchain. Note that this is _NOT_ intended for use in normal operation of a consensus plugin. The current state should be modified by executing transactions using the `Executor` interface, and new blocks will be generated when transactions are committed. This interface is instead intended primarily for state transfer or corruption recovery. In particular, functions in this interface should _NEVER_ be exposed directly via consensus messages, as this could result in violating the immutability promises of the blockchain concept. This interface is comprised of the following functions.
 
   -
   	```
 	PutBlock(blockNumber uint64, block *pb.Block) error
 	```
 
-	This function takes a provided, raw block, and inserts it into the blockchain at the given blockNumber.  Note that this intended to be an unsafe interface, so no error or sanity checking is performed.  Inserting a block with a number higher than the current block height is permitted, similarly overwriting existing already committed blocks is also permitted.  Remember, this does not affect the auditability or immutability of the chain, as the hashing techniques make it computationally infeasible to forge a block earlier in the chain.  Any attempt to rewrite the blockchain history is therefore easily detectable.  This is generally only useful to the state transfer API.
+	This function takes a provided, raw block, and inserts it into the blockchain at the given blockNumber. Note that this intended to be an unsafe interface, so no error or sanity checking is performed. Inserting a block with a number higher than the current block height is permitted, similarly overwriting existing already committed blocks is also permitted. Remember, this does not affect the auditability or immutability of the chain, as the hashing techniques make it computationally infeasible to forge a block earlier in the chain. Any attempt to rewrite the blockchain history is therefore easily detectable. This is generally only useful to the state transfer API.
 
   -
   	```
 	ApplyStateDelta(id interface{}, delta *statemgmt.StateDelta) error
 	```
 
-	This function takes a state delta, and applies it to the current state.  The delta will be applied to transition a state forward or backwards depending on the construction of the state delta.  Like the `Executor` methods, `ApplyStateDelta` accepts an opaque interface `id` which should also be passed into `CommitStateDelta` or `RollbackStateDelta` as appropriate.
+	This function takes a state delta, and applies it to the current state. The delta will be applied to transition a state forward or backwards depending on the construction of the state delta. Like the `Executor` methods, `ApplyStateDelta` accepts an opaque interface `id` which should also be passed into `CommitStateDelta` or `RollbackStateDelta` as appropriate.
 
   -
  	```
 	CommitStateDelta(id interface{}) error
 	```
 
-	This function commits the state delta which was applied in `ApplyStateDelta`.  This is intended to be invoked after the caller to `ApplyStateDelta` has verified the state via the state hash obtained via `GetCurrentStateHash()`.  This call takes the same `id` which was passed into `ApplyStateDelta`.
+	This function commits the state delta which was applied in `ApplyStateDelta`. This is intended to be invoked after the caller to `ApplyStateDelta` has verified the state via the state hash obtained via `GetCurrentStateHash()`. This call takes the same `id` which was passed into `ApplyStateDelta`.
 
   -
   	```
 	RollbackStateDelta(id interface{}) error
 	```
 
-	This function unapplies a state delta which was applied in `ApplyStateDelta`.  This is intended to be invoked after the caller to `ApplyStateDelta` has detected the state hash obtained via `GetCurrentStateHash()` is incorrect.  This call takes the same `id` which was passed into `ApplyStateDelta`.
+	This function unapplies a state delta which was applied in `ApplyStateDelta`. This is intended to be invoked after the caller to `ApplyStateDelta` has detected the state hash obtained via `GetCurrentStateHash()` is incorrect. This call takes the same `id` which was passed into `ApplyStateDelta`.
 
 
   -
@@ -1072,9 +1081,9 @@ type WritableLedger interface {
    	EmptyState() error
    	```
 
-	This function will delete the entire current state, resulting in a pristine empty state.  It is intended to be called before loading an entirely new state via deltas.  This is generally only useful to the state transfer API.
+	This function will delete the entire current state, resulting in a pristine empty state. It is intended to be called before loading an entirely new state via deltas. This is generally only useful to the state transfer API.
 
-### 3.4.9 `RemoteLedgers` interface
+#### 3.4.9 `RemoteLedgers` interface
 
 Definition:
 
@@ -1086,32 +1095,32 @@ type RemoteLedgers interface {
 }
 ```
 
-The `RemoteLedgers` interface exists primarily to enable state transfer and to interrogate the blockchain state at  other replicas.  Just like the `WritableLedger` interface, it is not intended to be used in normal operation and is designed to be used for catchup, error recovery, etc.  For all functions in this interface it is the caller's responsibility to enforce timeouts.  This interface contains the following functions.
+The `RemoteLedgers` interface exists primarily to enable state transfer and to interrogate the blockchain state at  other replicas. Just like the `WritableLedger` interface, it is not intended to be used in normal operation and is designed to be used for catchup, error recovery, etc. For all functions in this interface it is the caller's responsibility to enforce timeouts. This interface contains the following functions.
 
   -  
   	```
   	GetRemoteBlocks(peerID uint64, start, finish uint64) (<-chan *pb.SyncBlocks, error)
   	```
 
-	This function attempts to retrieve a stream of `*pb.SyncBlocks` from the peer designated by `peerID` for the range from `start` to `finish`.  In general, `start` should be specified with a higher block number than `finish`, as the blockchain must be validated from end to beginning.  The caller must validate that the desired block is being returned, as it is possible that slow results from another request could appear on this channel.  Invoking this call for the same `peerID` a second time will cause the first channel to close.
+	This function attempts to retrieve a stream of `*pb.SyncBlocks` from the peer designated by `peerID` for the range from `start` to `finish`. In general, `start` should be specified with a higher block number than `finish`, as the blockchain must be validated from end to beginning. The caller must validate that the desired block is being returned, as it is possible that slow results from another request could appear on this channel. Invoking this call for the same `peerID` a second time will cause the first channel to close.
 
   -  
   	```
    	GetRemoteStateSnapshot(peerID uint64) (<-chan *pb.SyncStateSnapshot, error)
    	```
 
-	This function attempts to retrieve a stream of `*pb.SyncStateSnapshot` from the peer designated by `peerID`.  To apply the result, the existing state should first be emptied via the `WritableLedger` `EmptyState` call, then the contained deltas in the stream should be applied sequentially.
+	This function attempts to retrieve a stream of `*pb.SyncStateSnapshot` from the peer designated by `peerID`. To apply the result, the existing state should first be emptied via the `WritableLedger` `EmptyState` call, then the contained deltas in the stream should be applied sequentially.
 
   -
   	```
    	GetRemoteStateDeltas(peerID uint64, start, finish uint64) (<-chan *pb.SyncStateDeltas, error)
    	```
 
-	This function attempts to retrieve a stream of `*pb.SyncStateDeltas` from the peer designated by `peerID` for the range from `start` to `finish`.  The caller must validated that the desired block delta is being returned, as it is possible that slow results from another request could appear on this channel.  Invoking this call for the same `peerID` a second time will cause the first channel to close.
+	This function attempts to retrieve a stream of `*pb.SyncStateDeltas` from the peer designated by `peerID` for the range from `start` to `finish`. The caller must validated that the desired block delta is being returned, as it is possible that slow results from another request could appear on this channel. Invoking this call for the same `peerID` a second time will cause the first channel to close.
 
-### 3.4.10 `controller` package
+#### 3.4.10 `controller` package
 
-#### 3.4.10.1 controller.NewConsenter
+##### 3.4.10.1 controller.NewConsenter
 
 Signature:
 
@@ -1119,19 +1128,19 @@ Signature:
 func NewConsenter(cpi consensus.CPI) (consenter consensus.Consenter)
 ```
 
-This function reads the `peer.validator.consensus` value in `core.yaml` configuration file, which is the  configuration file for the `peer` process. The value of the `peer.validator.consensus` key defines whether the validating peer will run with the `noops` consensus plugin or the `obcpbft` one. (Notice that this should eventually be changed to either `noops` or `custom`. In case of `custom`, the validating peer will run with the consensus plugin defined in `consensus/config.yaml`.)
+This function reads the `peer.validator.consensus` value in `core.yaml` configuration file, which is the  configuration file for the `peer` process. The value of the `peer.validator.consensus` key defines whether the validating peer will run with the `noops` consensus plugin or the `pbft` one. (Notice that this should eventually be changed to either `noops` or `custom`. In case of `custom`, the validating peer will run with the consensus plugin defined in `consensus/config.yaml`.)
 
-The plugin author needs to edit the function's body so that it routes to the right constructor for their package. For example, for `obcpbft` we point to the `obcpft.GetPlugin` constructor.
+The plugin author needs to edit the function's body so that it routes to the right constructor for their package. For example, for `pbft` we point to the `pbft.GetPlugin` constructor.
 
 This function is called by `helper.NewConsensusHandler` when setting the `consenter` field of the returned message handler. The input argument `cpi` is the output of the `helper.NewHelper` constructor and implements the `consensus.CPI` interface.
 
-### 3.4.11 `helper` package
+#### 3.4.11 `helper` package
 
-#### 3.4.11.1 High-level overview
+##### 3.4.11.1 High-level overview
 
 A validating peer establishes a message handler (`helper.ConsensusHandler`) for every connected peer, via the `helper.NewConsesusHandler` function (a handler factory). Every incoming message is inspected on its type (`helper.HandleMessage`); if it's a message for which consensus needs to be reached, it's passed on to the peer's consenter object (`consensus.Consenter`). Otherwise it's passed on to the next message handler in the stack.
 
-#### 3.4.11.2 helper.ConsensusHandler
+##### 3.4.11.2 helper.ConsensusHandler
 
 Definition:
 
@@ -1149,7 +1158,7 @@ Within the context of consensus, we focus only on the `coordinator` and `consent
 
 Notice that `fabric/peer/peer.go` defines the `peer.MessageHandler` (interface), and `peer.MessageHandlerCoordinator` (interface) types.
 
-#### 3.4.11.3 helper.NewConsensusHandler
+##### 3.4.11.3 helper.NewConsensusHandler
 
 Signature:
 
@@ -1159,7 +1168,7 @@ func NewConsensusHandler(coord peer.MessageHandlerCoordinator, stream peer.ChatS
 
 Creates a `helper.ConsensusHandler` object. Sets the same `coordinator` for every message handler. Also sets the `consenter` equal to: `controller.NewConsenter(NewHelper(coord))`
 
-### 3.4.11.4 helper.Helper
+##### 3.4.11.4 helper.Helper
 
 Definition:
 
@@ -1171,7 +1180,7 @@ type Helper struct {
 
 Contains the reference to the validating peer's `coordinator`. Is the object that implements the `consensus.CPI` interface for the peer.
 
-#### 3.4.11.5 helper.NewHelper
+##### 3.4.11.5 helper.NewHelper
 
 Signature:
 
@@ -1182,7 +1191,7 @@ func NewHelper(mhc peer.MessageHandlerCoordinator) consensus.CPI
 Returns a `helper.Helper` object whose `coordinator` is set to the input argument `mhc` (the `coordinator` field of the `helper.ConsensusHandler` message handler). This object implements the `consensus.CPI` interface, thus allowing the plugin to interact with the stack.
 
 
-#### 3.4.11.6 helper.HandleMessage
+##### 3.4.11.6 helper.HandleMessage
 
 Recall that the `helper.ConsesusHandler` object returned by `helper.NewConsensusHandler` implements the `peer.MessageHandler` interface:
 
@@ -1226,7 +1235,7 @@ The event stream initializes the buffer and timeout parameters. The buffer holds
 - If timeout is greater than 0, wait for the specified timeout and drop the event if the buffer remains full after the timeout
 
 
-#### 3.5.1.1 Event Producer
+##### 3.5.1.1 Event Producer
 The event producer exposes a function to send an event, `Send(e *pb.Event)`, where `Event` is either a pre-defined `Block` or a `Generic` event. More events will be defined in the future to include other elements of the fabric.
 
 ```
@@ -1238,7 +1247,7 @@ message Generic {
 
 The `eventType` and `payload` are freely defined by the event producer. For example, JSON data may be used in the `payload`. The `Generic` event may also be emitted by the chaincode or plugins to communicate with consumers.
 
-#### 3.5.1.2 Event Consumer
+##### 3.5.1.2 Event Consumer
 The event consumer enables external applications to listen to events. Each event consumer registers an event adapter with the event stream. The consumer framework can be viewed as a bridge between the event stream and the adapter. A typical use of the event consumer framework is:
 
 ```
@@ -1347,7 +1356,7 @@ in the entire network of validators, this transaction is executed and finds its 
 the blockchain network. Users can also invoke a function of an already deployed chain-code
 through an invocation transaction.
 
-The next section provides a summary of the business goals of the system that drive the security requirements. We then overview the security components and their operation and show how this design fulfills the security requirements.  
+The next section provides a summary of the business goals of the system that drive the security requirements. We then overview the security components and their operation and show how this design fulfills the security requirements.
 
 ### 4.1 Business security requirements
 This section presents business security requirements that are relevant to the context of the fabric.
@@ -1398,11 +1407,11 @@ Membership Services consists of an infrastructure of several entities that toget
 
 *Root Certificate Authority (Root CA):* entity that represents the trust anchor for the PKI scheme. Digital certificates verification follows a chain of trust. The Root CA is the top-most CA in the PKI hierarchy.
 
-*Registration Authority (RA):* a trusted entity that can ascertain the validity and identity of users who want to participate in the permissioned blockchain. It is responsible for out-of-band communication with the user to validate his/her identity and role.  It creates registration credentials needed for enrollment and information on root of trust.
+*Registration Authority (RA):* a trusted entity that can ascertain the validity and identity of users who want to participate in the permissioned blockchain. It is responsible for out-of-band communication with the user to validate his/her identity and role. It creates registration credentials needed for enrollment and information on root of trust.
 
 *Enrollment Certificate Authority (ECA):*  responsible for issuing Enrollment Certificates (ECerts) after validating the registration credentials provided by the user.
 
-*Transaction Certificate Authority (TCA):* responsible for issuing Transaction Certificates (TCerts) after validating the enrollment credentials provided by the user.  
+*Transaction Certificate Authority (TCA):* responsible for issuing Transaction Certificates (TCerts) after validating the enrollment credentials provided by the user.
 
 *TLS Certificate Authority (TLS-CA):* responsible for issuing TLS certificates and credentials that allow the user to make use of its network. It validates the credential(s) or evidence provided by the user that justifies issuance of a TLS certificate that includes specific information pertaining to the user.
 
@@ -1418,7 +1427,7 @@ ECerts are long-term certificates. They are issued for all roles, i.e. users, no
 *Transaction Certificates (TCerts)*
 TCerts are short-term certificates for each transaction. They are issued by the TCA upon authenticated user-request. They securely authorize a transaction and may be configured to not reveal the identities of who is involved in the transaction or to selectively reveal such identity/enrollmentID information. They include the public part of a signature key-pair, and may be configured to also include the public part of a key agreement key pair. They are issued only to users. They are uniquely associated to the owner – they may be configured so that this association is known only by the TCA (and to authorized auditors). TCerts may be configured to not carry information of the identity of the user. They enable the user not only to anonymously participate in the system but also prevent linkability of transactions.
 
-However, auditability and accountability requirements assume that the TCA is able to retrieve TCerts of a given identity, or retrieve the owner of a specific TCert. For details on how TCerts are used in deployment and invocation transactions see Section 4.3, Transaction Security offerings at the infrastructure level.  
+However, auditability and accountability requirements assume that the TCA is able to retrieve TCerts of a given identity, or retrieve the owner of a specific TCert. For details on how TCerts are used in deployment and invocation transactions see Section 4.3, Transaction Security offerings at the infrastructure level.
 
 TCerts can accommodate encryption or key agreement public keys (as well as digital signature verification public keys).
 If TCerts are thus equipped, then enrollment certificates need not also contain encryption or key agreement public keys.
@@ -1799,7 +1808,7 @@ chain-code are possible.
 These are encrypted using the state-specific key K<sub>s</sub> that was defined
 during that chain-code's deployment. In particular, K<sub>s</sub> is used the
 same way K<sub>iTx</sub> is used in the design of our current release
-(See, Section 4.7).  
+(See, Section 4.7).
 
 **Structure of query transaction.**
 Query transactions have the same format as invoke transactions.
@@ -1818,7 +1827,7 @@ section inhibits IP restrictions and will be expanded in the following few weeks
 In replay attacks the attacker "replays" a message it "eavesdropped" on the network or ''saw'' on the Blockchain.
 Replay attacks are a big problem here, as they can incur into the validating entities re-doing a computationally intensive
 process (chaincode invocation) and/or affect the state of the corresponding chaincode, while it requires minimal or no
-power from the attacker side.  To make matters worse, if a transaction was a payment transaction, replays could
+power from the attacker side. To make matters worse, if a transaction was a payment transaction, replays could
 potentially incur into the payment being performed more than once, without this being the original intention of the payer.
 Existing systems resist replay attacks as follows:
 * Record hashes of transactions in the system. This solution would require that validators maintain a log of the hash of
@@ -1831,7 +1840,7 @@ Existing systems resist replay attacks as follows:
   his local counter by one and adds the resulting value to the transaction. The transaction is subsequently signed by that
   user identity and released to the network. When picking up this transaction, validators check the counter value included
   within and compare it with the one they have stored locally; if the value is the same, they increase the local value of
-  that identity's counter and accept the transaction. Otherwise, they reject the transaction as invalid or replay.  
+  that identity's counter and accept the transaction. Otherwise, they reject the transaction as invalid or replay.
   Although this would work well in cases where we have limited number of user identities/pseudonyms (e.g., not too large),
   it would ultimately not scale in a system where users use a different identifier (transaction certificate) per transaction,
   and thus have a number of user pseudonyms proportional to the number of transactions.
@@ -2023,7 +2032,7 @@ message Transaction {
 ```
 
 To assist chaincode execution, at the chain-code invocation time, the validators provide the
-chaincode with additional information, like the metadata and the binding.  
+chaincode with additional information, like the metadata and the binding.
 
 **Application invocation access control.**
 This section describes how the application can leverage the means provided by the fabric
@@ -2134,7 +2143,7 @@ the code-metadata fields near it), and provide those to containers for deploymen
 ### 4.5 Online wallet service
 
 
-This section describes the security design of a wallet service, which in this case is a node where end-users can register, move their key material to, and perform transactions through.
+This section describes the security design of a wallet service, which in this case is a node with which end-users can register, store their key material and through which they can perform transactions.
 Because the wallet service is in possession of the user's key material, it is clear that without a secure authorization
 mechanism in place a malicious wallet service could successfully impersonate the user.
 We thus emphasize that this design corresponds to a wallet service that is **trusted** to only perform transactions
@@ -2203,9 +2212,9 @@ as depicted in Sections 4.7.1 and 4.7.2.
  - Client side enrollment and transaction creation is performed entirely by a
    non-validating peer that is trusted not to impersonate the user.
    See, Section 4.7.1 for more information.
- - A minimal set of confidentiality properties where a chain-code is accessible
+ - A minimal set of confidentiality properties where a chaincode is accessible
    by any entity that is member of the system, i.e., validators and users who
-   have registered to our membership services, and not accessible by any-one else.
+   have registered through Hyperledger Fabric's Membership Services and is not accessible by anyone else.
    The latter include any party that has access to the storage area where the
    ledger is maintained, or other entities that are able to see the transactions
    that are announced in the validator network. The design of the first release
@@ -2215,14 +2224,14 @@ as depicted in Sections 4.7.1 and 4.7.2.
  - Replay attack resistance mechanism is not available
  - Invocation access control can be enforced at the application layer:
    it is up to the application to leverage the infrastructure's tools properly
-   for security to be guaranteed. This means, that if the application ignores
-   to *bind* the transaction binding offered by our fabric, secure transaction
-   processing  may be at risk.
+   for security to be guaranteed. This means, that if the application fails to
+   *bind* the transaction binding offered by the fabric, secure transaction
+   processing may be at risk.
 
 #### 4.7.1 Simplified client
 
-Client side enrollment and transaction creation is performed entirely by a non-validating peer who plays the role of an online wallet.
-In particular, the end-user leverages his registration credentials <username, password> to open an account to a non-validating peer
+Client-side enrollment and transaction creation are performed entirely by a non-validating peer that plays the role of an online wallet.
+In particular, the end-user leverages their registration credentials <username, password> to open an account to a non-validating peer
 and uses these credentials to further authorize the peer to build transactions on the user's behalf. It needs to be noted, that such
 a design does not provide secure **authorization** for the peer to submit transactions on behalf of the user, as a malicious peer
 could impersonate the user. Details on the specifications of a design that deals with the security issues of online wallet can be found is Section 4.5.
@@ -2231,23 +2240,19 @@ Currently the maximum number of peers a user can register to and perform transac
 #### 4.7.2 Simplified transaction confidentiality
 
 **Disclaimer:** The current version of transaction confidentiality is minimal, and will be used as an intermediate step
-to reach a design that allows for fine grain (invocation) access control enforcement in the next versions.
+to reach a design that allows for fine grained (invocation) access control enforcement in a subsequent release.
 
 In its current form, confidentiality of transactions is offered solely at the chain-level, i.e., that the
 content of a transaction included in a ledger, is readable by all members of that chain, i.e., validators
-and users. At the same time, application auditors that are not member of the system can be given
-the means to perform auditing by passively observing the Blockchain data, while
+and users. At the same time, application auditors who are not members of the system can be given
+the means to perform auditing by passively observing the blockchain data, while
 guaranteeing that they are given access solely to the transactions related to the application under audit.
 State is encrypted in a way that such auditing requirements are satisfied, while not disrupting the
 proper operation of the underlying consensus network.
 
-More specifically, currently symmetric key encryption is supported in the process of offering transaction confidentiality.
-In this setting, one of the main challenges that is specific to the blockchain setting,
-is that validators need to run consensus over the state of the blockchain, that, aside the transactions themselves,
-also includes the state updates of individual contracts or chaincodes. Though this is trivial to do for non-confidential chaincodes,  
-for confidential chaincodes, one needs to design the state encryption mechanism such that the resulting ciphertexts are
-semantically secure, and yet, identical if the plaintext state is the same.
-
+More specifically, currently symmetric key encryption is supported in the process of offering transaction confidentiality. In this setting, one of the main challenges that is specific to the blockchain setting,
+is that validators need to run consensus over the state of the blockchain, that, aside from the transactions themselves,
+also includes the state updates of individual contracts or chaincode. Though this is trivial to do for non-confidential chaincode, for confidential chaincode, one needs to design the state encryption mechanism such that the resulting ciphertexts are semantically secure, and yet, identical if the plaintext state is the same.
 
 To overcome this challenge, the fabric utilizes a key hierarchy that reduces the number of ciphertexts
 that are encrypted under the same key. At the same time, as some of these keys are used for the generation of IVs,
@@ -2260,7 +2265,7 @@ Membership service generates a symmetric key for the ledger (K<sub>chain</sub>) 
 at registration time to all the entities of the blockchain system, i.e., the clients and the
 validating entities that have issued credentials through the membership service of the chain.
 At enrollment phase, user obtain (as before) an enrollment certificate, denoted by Cert<sub>u<sub>i</sub></sub>
-for user u<sub>i</sub> , while each validator v<sub>j</sub> obtain its enrollment certificate denoted by Cert<sub>v<sub>j</sub></sub>.
+for user u<sub>i</sub> , while each validator v<sub>j</sub> obtains its enrollment certificate denoted by Cert<sub>v<sub>j</sub></sub>.
 
 Entity enrollment would be enhanced, as follows. In addition to enrollment certificates,
 users who wish to anonymously participate in transactions issue transaction certificates.
@@ -2340,28 +2345,15 @@ One can notice that both deployment and invocation transactions consist of two s
 * Section *code-info*: contains information on the chain-code source code. For deployment transaction this is essentially the chain-code identifier/name and source code, while for invocation chain-code is the name of the function invoked and its arguments. As shown in the two figures code-info in both transactions are encrypted ultimately using the chain-specific symmetric key K<sub>chain</sub>.
 
 ## 5. Byzantine Consensus
-The ``obcpbft`` package is an implementation of the seminal [PBFT](http://dl.acm.org/citation.cfm?id=571640 "PBFT") consensus protocol [1], which provides consensus among validators despite a threshold of validators acting as _Byzantine_, i.e., being malicious or failing in an unpredictable manner. In the default configuration, PBFT tolerates up to t<n/3 Byzantine validators.
+The ``pbft`` package is an implementation of the seminal [PBFT](http://dl.acm.org/citation.cfm?id=571640 "PBFT") consensus protocol [1], which provides consensus among validators despite a threshold of validators acting as _Byzantine_, i.e., being malicious or failing in an unpredictable manner. In the default configuration, PBFT tolerates up to t<n/3 Byzantine validators.
 
-Besides providing a reference implementation of the PBFT consensus protocol, ``obcpbft`` plugin contains also implementation of the novel _Sieve_ consensus protocol. Basically the idea behind Sieve is to provide a fabric-level protection from _non-deterministic_ transactions, which PBFT and similar existing protocols do not offer. ``obcpbft`` is easily configured to use either the classic PBFT or Sieve.  
-
-In the default configuration, both PBFT and Sieve are designed to run on at least *3t+1* validators (replicas), tolerating up to *t* potentially faulty (including malicious, or *Byzantine*) replicas.
+In the default configuration, PBFT is designed to run on at least *3t+1* validators (replicas), tolerating up to *t* potentially faulty (including malicious, or *Byzantine*) replicas.
 
 ### 5.1 Overview
-The `obcpbft` plugin provides a modular implementation of the `CPI` interface which can be configured to run PBFT or Sieve consensus protocol. The modularity comes from the fact that, internally, `obcpbft` defines the `innerCPI`  interface (i.e., the _inner consensus programming interface_), that currently resides in `pbft-core.go`.
-
-The `innerCPI` interface defines all
-interactions between the inner PBFT consensus (called here *core PBFT* and implemented in `pbft-core.go`) and the outer consensus that uses the core PBFT.  This outer consensus is called *consumer* within core PBFT. `obcpbft` package contains implementations of several core PBFT consumers:
-
-  - `obc-classic.go`, a shim around core PBFT that implements the `innerCPI` interface and calls into the `CPI` interface;
-  - `obc-batch.go`, an `obc-classic` variant that adds batching capabilities to PBFT; and  
-  - `obc-sieve.go`, a core PBFT consumer that implements Sieve consensus protocol and `innerCPI` interface, calling into the `CPI interface`.
-
-In short, besides calls to send messages to other peers (`innerCPI.broadcast` and `innerCPI.unicast`), the `innerCPI` interface defines indications that the core consensus protocol (core PBFT) exports to the consumer. These indications are modeled after a classical *total order (atomic) broadcast* API [2], with `innerCPI.execute` call being used to signal the atomic delivery of a message. Classical total order broadcast is augmented with *external validity* checks [2] (`innerCPI.verify`) and a functionality similar to the unreliable eventual leader failure detector &Omega; [3] (`innerCPI.viewChange`).
-
-Besides `innerCPI`, core PBFT is defined by a set of calls into core PBFT. The most important call into core PBFT is `request` which is effectively used to invoke a total order broadcast primitive [2]. In the following, we first overview calls into core PBFT and then detail the ``innerCPI`` interface. Then, we briefly describe Sieve consensus protocol which will be specified and described in more details elsewhere.  
+The `pbft` plugin provides an implementation of the PBFT consensus protocol.
 
 ### 5.2 Core PBFT Functions
-The following functions control for parallelism using a non-recursive lock and can therefore be invoked from multiple threads in parallel. However, the functions typically run to completion and may invoke functions from the CPI passed in.  Care must be taken to prevent livelocks.
+The following functions control for parallelism using a non-recursive lock and can therefore be invoked from multiple threads in parallel. However, the functions typically run to completion and may invoke functions from the CPI passed in. Care must be taken to prevent livelocks.
 
 #### 5.2.1 newPbftCore
 
@@ -2371,7 +2363,7 @@ Signature:
 func newPbftCore(id uint64, config *viper.Viper, consumer innerCPI, ledger consensus.Ledger) *pbftCore
 ```
 
-The `newPbftCore` constructor instantiates a new PBFT box instance, with the specified `id`.  The `config` argument defines operating parameters of the PBFT network: number replicas *N*, checkpoint period *K*, and the timeouts for request completion and view change duration.
+The `newPbftCore` constructor instantiates a new PBFT box instance, with the specified `id`. The `config` argument defines operating parameters of the PBFT network: number replicas *N*, checkpoint period *K*, and the timeouts for request completion and view change duration.
 
 | configuration key            | type       | example value | description                                                    |
 |------------------------------|------------|---------------|----------------------------------------------------------------|
@@ -2382,142 +2374,8 @@ The `newPbftCore` constructor instantiates a new PBFT box instance, with the spe
 
 The arguments `consumer` and `ledger` pass in interfaces that are used
 to query the application state and invoke application requests once
-they have been totally ordered.  See the respective sections below for
+they have been totally ordered. See the respective sections below for
 these interfaces.
-
-
-#### 5.2.2 request
-
-Signature:
-
-```
-func (pbft *pbftCore) request(msgPayload []byte) error
-```
-
-The `request` method takes an opaque request payload and introduces this request into the total order consensus.  This payload will be passed to the CPI `execute` function on all correct, up-to-date replicas once PBFT processing is complete.  The `request` method does not wait for execution before returning; `request` merely submits the request into the consensus.
-
-PBFT does not support submission of the same request multiple times, i.e. a nonce is required if the same conceptual request has to be executed multiple times.  However, PBFT does not reliably prevent replay of requests; a nonce or sequence number can be used by the application to prevent against replays by a Byzantine client.
-
-In rare cases, a `request` may be dropped by the network, and it will never `execute`; if the consumer cannot tolerate this, the consumer needs to implement retries itself.
-
-#### 5.2.3 receive
-
-Signature:
-
-```
-func (pbft *pbftCore) receive(msgPayload []byte) error
-```
-
-The `receive` method takes an opaque message payload, which another instance passed to the `broadcast` or `unicast` CPI functions.  All communication is expected to ensure integrity and provide authentication; e.g. by the use of TLS.  Note that currently authentication is not yet used.  Once authentication is provided, the function signature of `receive` should include the id of the sending node.
-
-See also the discussion below regarding `innerCPI.broadcast` and `innerCPI.unicast`.
-
-
-#### 5.2.4 close
-
-Signature:
-
-```
-func (pbft *pbftCore) close()
-```
-
-The `close` method terminates all background operations. This interface is mostly exposed for testing, because during operation of the fabric, there is never a need to terminate the PBFT instance.
-
-### 5.3 Inner Consensus Programming Interface
-
-The consumer application provides the inner consensus programming interface to core PBFT.  PBFT will call these functions to query state and signal events.
-
-Definition:
-
-```
-type innerCPI interface {
-	broadcast(msgPayload []byte)
-	unicast(msgPayload []byte, receiverID uint64) (err error)
-	validate(txRaw []byte) error
-	execute(txRaw []byte, rawMetadata []byte)
-	viewChange(curView uint64)
-}
-```
-
-#### 5.3.1 broadcast
-
-Signature:
-
-```
-func (cpi innerCPI) broadcast(msgPayload []byte)
-```
-
-The `broadcast` function takes an opaque payload and delivers it to all other replicas via their `receive` method.  Messages may be lost or reordered.  See also the section on `receive` call coming into core PBFT.
-
-#### 5.3.2 unicast
-
-Signature:
-
-```
-func (cpi innerCPI) unicast(msgPayload []byte, receiverID uint64) (err error)
-```
-
-The `unicast` function is similar to `broadcast`, but takes a destination replica id.
-
-#### 5.3.3 validate
-
-Signature:
-
-```
-func (cpi innerCPI) validate(txRaw []byte) error
-```
-The `validate` function is invoked whenever PBFT receives a new request, either locally via `request`, or via consensus messages.  The argument of `validate` is the opaque request that was provided to the PBFT `request` method.  If `validate` returns a non-`nil` error, the local replica will discard the request and behave as if it had never received the request.
-
-The `validate` function can be used for syntactic validation of application requests (i.e., *external validity* checks [2]).  Care must be taken not to introduce non-determinism when validating requests; i.e. the validation must not use any state, e.g., if different replicas receive `validate` calls in different sequence, also with respect to `execute`.  If non-determinism occurs during validation, the behavior of different replicas may diverge, which may lead to dropped requests or complete malfunction of the consensus.
-
-#### 5.3.4 execute
-
-Signature:
-
-```
-func (cpi innerCPI) execute(txRaw []byte, opts ...interface{})
-```
-
-PBFT will invoke the `execute` function when a request has been successfully totally ordered by the consensus protocol.  The argument passed to `execute` is the opaque request, as it has been previously passed to `request`.  All correct, up-to-date replicas will receive the same sequence of `execute` calls.  The application must be deterministic when processing the request.  Any non-determinism will lead to the state on replicas diverging, which is considered a byzantine behavior.
-
-See also the discussion above on request replays in the `request` section.
-
-#### 5.3.5 viewChange
-
-Signature:
-
-```
-func (cpi innerCPI) viewChange(curView uint64)
-```
-
-The `viewChange` function is called by PBFT to signal a successful transition to a new view (and with it, a new primary).  This information is right now only of interest to the *Sieve* consensus algorithm, which uses PBFT leader election to avoid having to implement its own.
-
-Assuming a fixed number of replicas, it is simple to map curView uint64 to replica ID using modulo arithmetic. Having this in mind, with core PBFT implementation, assuming eventual synchrony [4], it is straightforward to argue that the functionality of the `viewChange` call allows simple implementation of the *eventual leader* unreliable failure detector &Omega; [3].  
-
-### 5.4 Sieve Consensus protocol
-
-The design goal of Sieve is to augment PBFT consensus protocol with two main design goals:
-
-- Enabling *consensus on the output state of replicas*, in addition to the consensus on the input state provided by PBFT. To achieve this, Sieve adopts the Execute-Verify (Eve) pattern introduced in [5].
-
-- Because the fabric allows execution of arbitrary chaincode, such chaincode may introduce *non-deterministic* transactions. Although non-deterministic transaction should in principle be disallowed by, e.g., careful inspection of chaincode, using domain specific languages (DSLs), or by otherwise enforcing determinism, the design goal of Sieve is to provide a separate *consensus fabric-level* protection against *non-deterministic* transactions that can be used in combination with the above mentioned approaches.
-
-	To this end, Sieve detects and *sieves out non-deterministic transactions* (that manifest themselves as such). Hence, Sieve does not require all input transactions to consensus (i.e., the replicated state machine) to be deterministic. This feature of Sieve is new and has not been implemented by any existing Byzantine fault tolerant consensus protocols.
-
-A protocol achieving the above two goals should not be designed and implemented from scratch, and should reuse existing PBFT implementation, lowering code complexity and simplifying reasoning about a new consensus protocol. To this end, inspired by [6], Sieve is designed using a modular approach, reusing the core PBFT component of `obcpbft`.
-
-Although the details of Sieve will appear elsewhere [7], we briefly outline some design and implementation aspects below.
-
-In a nutshell, Sieve requires replicas to deterministically agree on the output of the execution of a request.  If the request was deterministic in the first place, all correct replicas will have obtained the same output, and they can agree on this very result. However, if a request happens to produce divergent outputs at correct replicas, Sieve may  detect this divergent condition, and the replicas will agree to discard the result of the request, thereby retaining determinism.
-
-Notice that, as discussed further below, Sieve allows false negatives, i.e., execution of *non-deterministic* requests that execute with the same result at a sufficient number of replicas. However, Sieve allows no false positives and any discarded request is certainly non-deterministic.
-
-The Sieve protocol uses core PBFT to agree on whether to accept or discard a request.  Execution of requests to Sieve is coordinated by a *leader*, which maps to the current PBFT primary (leveraging `innerCPI.viewchange` notification from core PBFT) .  Upon a new request, the leader will instruct all replicas to tentatively execute the request.  Every replica then reports the tentative result (i.e. application state) back to the leader.  The leader collects these *verify* reports in a *verify-set*, which unambiguously determines whether the request should be accepted or discarded.  This verify-set is then passed through the total order of core PBFT.
-
-When core PBFT executes this verify-set, all correct replicas will act in the same way.  If the verify-set proves that execution diverged between correct replicas, the request is considered non-deterministic, and the replicas will roll back the tentative execution and restore the original application state.  If all correct replicas obtained the same result for the tentative execution, the replicas accept the execution and commit the tentative application state.
-
-Under adverse conditions, a request that diverged between correct replicas may appear like a deterministic request (we speak of *false negative* in Sieve detection of non-determinstic requests).  Nevertheless, Sieve requires at least one correct replica to obtain a certain outcome state in order for that state to be committed. Correct replicas that possibly observe diverging execution will discard their result and synchronize their state to match the agreed-upon execution.
-
 
 ## 6. Application Programming Interface
 
@@ -2537,7 +2395,7 @@ The fabric API design covers the categories below, though the implementation is 
 *  Storage - External store for files or documents
 *  Event Stream - Sub/pub events on the blockchain
 
-## 6.1 REST Service
+### 6.1 REST Service
 The REST service can be enabled (via configuration) on either validating or non-validating peers, but it is recommended to only enable the REST service on non-validating peers on production networks.
 
 ```
@@ -2548,11 +2406,11 @@ This function reads the `rest.address` value in the `core.yaml` configuration fi
 
 It is assumed that the REST service receives requests from applications which have already authenticated the end user.
 
-## 6.2 REST API
+### 6.2 REST API
 
 You can work with the REST API through any tool of your choice. For example, the curl command line utility or a browser based client such as the Firefox Rest Client or Chrome Postman. You can likewise trigger REST requests directly through [Swagger](http://swagger.io/). To obtain the REST API Swagger description, click [here](https://github.com/hyperledger/fabric/blob/master/core/rest/rest_api.json). The currently available APIs are summarized in the following section.
 
-### 6.2.1 REST Endpoints
+#### 6.2.1 REST Endpoints
 
 * [Block](#6211-block-api)
   * GET /chain/blocks/{block-id}
@@ -2571,7 +2429,7 @@ You can work with the REST API through any tool of your choice. For example, the
 * [Transactions](#6216-transactions-api)
   * GET /transactions/{UUID}
 
-#### 6.2.1.1 Block API
+##### 6.2.1.1 Block API
 
 * **GET /chain/blocks/{block-id}**
 
@@ -2610,7 +2468,7 @@ Block Retrieval Response:
 }
 ```
 
-#### 6.2.1.2 Blockchain API
+##### 6.2.1.2 Blockchain API
 
 * **GET /chain**
 
@@ -2644,7 +2502,7 @@ Blockchain Retrieval Response:
 }
 ```
 
-#### 6.2.1.3 Chaincode API
+##### 6.2.1.3 Chaincode API
 
 * **POST /chaincode**
 
@@ -2662,7 +2520,7 @@ POST host:port/chaincode
   "params": {
     "type": "GOLANG",
     "chaincodeID":{
-        "path":"github.com/hyperledger/fabic/examples/chaincode/go/chaincode_example02"
+        "path":"github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02"
     },
     "ctorMsg": {
         "function":"init",
@@ -2697,7 +2555,7 @@ POST host:port/chaincode
   "params": {
     "type": "GOLANG",
     "chaincodeID":{
-        "path":"github.com/hyperledger/fabic/examples/chaincode/go/chaincode_example02"
+        "path":"github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02"
     },
     "ctorMsg": {
         "function":"init",
@@ -2827,7 +2685,7 @@ Query Request with security enabled:
 }
 ```
 
-#### 6.2.1.4 Network API
+##### 6.2.1.4 Network API
 
 Use the Network API to retrieve information about the network of peer nodes comprising the blockchain fabric.
 
@@ -2852,7 +2710,7 @@ Network Response:
             "ID": {
                 "name": "vp1"
             },
-            "address": "172.17.0.4:30303",
+            "address": "172.17.0.4:7051",
             "type": 1,
             "pkiID": "rUA+vX2jVCXev6JsXDNgNBMX03IV9mHRPWo6h6SI0KLMypBJLd+JoGGlqFgi+eq/"
         },
@@ -2860,7 +2718,7 @@ Network Response:
             "ID": {
                 "name": "vp3"
             },
-            "address": "172.17.0.5:30303",
+            "address": "172.17.0.5:7051",
             "type": 1,
             "pkiID": "OBduaZJ72gmM+B9wp3aErQlofE0ulQfXfTHh377ruJjOpsUn0MyvsJELUTHpAbHI"
         },
@@ -2868,7 +2726,7 @@ Network Response:
             "ID": {
                 "name": "vp2"
             },
-            "address": "172.17.0.6:30303",
+            "address": "172.17.0.6:7051",
             "type": 1,
             "pkiID": "GhtP0Y+o/XVmRNXGF6pcm9KLNTfCZp+XahTBqVRmaIumJZnBpom4ACayVbg4Q/Eb"
         }
@@ -2876,7 +2734,7 @@ Network Response:
 }
 ```
 
-#### 6.2.1.5 Registrar API (member services)
+##### 6.2.1.5 Registrar API (member services)
 
 * **POST /registrar**
 * **GET /registrar/{enrollmentID}**
@@ -3003,7 +2861,7 @@ Transaction Certificate Retrieval Response:
 }
 ```
 
-#### 6.2.1.6 Transactions API
+##### 6.2.1.6 Transactions API
 
 * **GET /transactions/{UUID}**
 
@@ -3030,11 +2888,11 @@ Transaction Retrieval Response:
 }
 ```
 
-## 6.3 CLI
+### 6.3 CLI
 
 The CLI includes a subset of the available APIs to enable developers to quickly test and debug chaincodes or query for status of transactions. CLI is implemented in Golang and operable on multiple OS platforms. The currently available CLI commands are summarized in the following section.
 
-### 6.3.1 CLI Commands
+#### 6.3.1 CLI Commands
 
 To see what CLI commands are currently available in the implementation, execute the following:
 
@@ -3075,7 +2933,7 @@ Not all of the above commands are fully implemented in the current release. The 
 
 Note, that any configuration settings for the peer node listed in the `core.yaml` configuration file, which is the  configuration file for the `peer` process, may be modified on the command line with an environment variable. For example, to set the `peer.id` or the `peer.addressAutoDetect` settings, one may pass the `CORE_PEER_ID=vp1` and `CORE_PEER_ADDRESSAUTODETECT=true` on the command line.
 
-#### 6.3.1.1 node start
+##### 6.3.1.1 node start
 
 The CLI `node start` command will execute the peer process in either the development or production mode. The development mode is meant for running a single peer node locally, together with a local chaincode deployment. This allows a chaincode developer to modify and debug their code without standing up a complete network. An example for starting the peer in development mode follows:
 
@@ -3089,7 +2947,7 @@ To start the peer process in production mode, modify the above command as follow
 peer node start
 ```
 
-#### 6.3.1.2 network login
+##### 6.3.1.2 network login
 
 The CLI `network login` command will login a user, that is already registered with the CA, through the CLI. To login through the CLI, issue the following command, where `username` is the enrollment ID of a registered user.
 
@@ -3120,7 +2978,7 @@ You can also pass a password for the user with `-p` parameter. An example is bel
 peer network login jim -p 123456
 ```
 
-#### 6.3.1.3 chaincode deploy
+##### 6.3.1.3 chaincode deploy
 
 The CLI `deploy` command creates the docker image for the chaincode and subsequently deploys the package to the validating peer. An example is below.
 
@@ -3136,7 +2994,7 @@ peer chaincode deploy -u jim -p github.com/hyperledger/fabric/examples/chaincode
 
 **Note:** If your GOPATH environment variable contains more than one element, the chaincode must be found in the first one or deployment will fail.
 
-#### 6.3.1.4 chaincode invoke
+##### 6.3.1.4 chaincode invoke
 
 The CLI `invoke` command executes a specified function within the target chaincode. An example is below.
 
@@ -3150,7 +3008,7 @@ With security enabled, the command must be modified to pass an enrollment id of 
 peer chaincode invoke -u jim -n <name_value_returned_from_deploy_command> -c '{"Function": "invoke", "Args": ["a", "b", "10"]}'
 ```
 
-#### 6.3.1.5 chaincode query
+##### 6.3.1.5 chaincode query
 
 The CLI `query` command triggers a specified query method within the target chaincode. The response that is returned depends on the chaincode implementation. An example is below.
 
@@ -3168,6 +3026,7 @@ peer chaincode query -u jim -l golang -n <name_value_returned_from_deploy_comman
 ## 7. Application Model
 
 ### 7.1 Composition of an Application
+
 <table>
 <col>
 <col>
@@ -3181,7 +3040,7 @@ An application follows a MVC-B architecture – Model, View, Control, BlockChain
   <li>VIEW LOGIC – Mobile or Web UI interacting with control logic.</li>
   <li>CONTROL LOGIC – Coordinates between UI, Data Model and APIs to drive transitions and chain-code.</li>
   <li>DATA MODEL – Application Data Model – manages off-chain data, including Documents and large files.</li>
-  <li>BLOCKCHAIN  LOGIC – Blockchain logic are extensions of the Controller Logic and Data Model, into the Blockchain realm.    Controller logic is enhanced by chaincode, and the data model is enhanced with transactions on the blockchain.</li>
+  <li>BLOCKCHAIN  LOGIC – Blockchain logic are extensions of the Controller Logic and Data Model, into the Blockchain realm. Controller logic is enhanced by chaincode, and the data model is enhanced with transactions on the blockchain.</li>
 </ul>
 <p>
 For example, a Bluemix PaaS application using Node.js might have a Web front-end user interface or a native mobile app with backend model on Cloudant data service. The control logic may interact with 1 or more chaincodes to process transactions on the blockchain.
@@ -3190,17 +3049,31 @@ For example, a Bluemix PaaS application using Node.js might have a Web front-end
 </tr>
 </table>
 
-### 7.2 7.2 Sample Application
+### 7.2 Sample Application
 
 
 ## 8. Future Directions
+
 ### 8.1 Enterprise Integration
+
 ### 8.2 Performance and Scalability
+
 ### 8.3 Additional Consensus Plugins
+
 ### 8.4 Additional Languages
 
+### 9.1 Authors
+The following authors have written sections of this document:  Binh Q Nguyen, Elli Androulaki, Angelo De Caro, Sheehan Anderson, Manish Sethi, Thorsten Kramp, Alessandro Sorniotti, Marko Vukolic, Florian Simon Schubert, Jason K Yellick, Konstantinos Christidis, Srinivasan Muralidharan, Anna D Derbakova, Dulce Ponceleon, David Kravitz, Diego Masini.
 
-## 9. References
+### 9.2 Reviewers
+The following reviewers have contributed to this document:  Frank Lu, John Wolpert, Bishop Brock, Nitin Gaur, Sharon Weed, Konrad Pabjan.
+
+### 9.3 Acknowledgements
+The following contributors have provided invaluable technical input to this specification:
+Gennaro Cuomo, Joseph A Latone, Christian Cachin
+
+## 10. References
+
 - [1] Miguel Castro, Barbara Liskov: Practical Byzantine fault tolerance and proactive recovery. ACM Trans. Comput. Syst. 20(4): 398-461 (2002)
 
 - [2] Christian Cachin, Rachid Guerraoui, Luís E. T. Rodrigues: Introduction to Reliable and Secure Distributed Programming (2. ed.). Springer 2011, ISBN 978-3-642-15259-7, pp. I-XIX, 1-367

@@ -17,9 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -28,7 +25,10 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric/core/crypto"
+	"github.com/hyperledger/fabric/flogging"
 	"github.com/hyperledger/fabric/membersrvc/ca"
+	"github.com/hyperledger/fabric/metadata"
+	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -36,7 +36,10 @@ import (
 
 const envPrefix = "MEMBERSRVC_CA"
 
+var logger = logging.MustGetLogger("server")
+
 func main() {
+
 	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
@@ -52,75 +55,60 @@ func main() {
 	}
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Fatal error when reading %s config file: %s\n", "membersrvc", err))
+		logger.Panicf("Fatal error when reading %s config file: %s", "membersrvc", err)
 	}
 
-	var iotrace, ioinfo, iowarning, ioerror, iopanic io.Writer
-	if viper.GetInt("logging.trace") == 1 {
-		iotrace = os.Stdout
-	} else {
-		iotrace = ioutil.Discard
-	}
-	if viper.GetInt("logging.info") == 1 {
-		ioinfo = os.Stdout
-	} else {
-		ioinfo = ioutil.Discard
-	}
-	if viper.GetInt("logging.warning") == 1 {
-		iowarning = os.Stdout
-	} else {
-		iowarning = ioutil.Discard
-	}
-	if viper.GetInt("logging.error") == 1 {
-		ioerror = os.Stderr
-	} else {
-		ioerror = ioutil.Discard
-	}
-	if viper.GetInt("logging.panic") == 1 {
-		iopanic = os.Stdout
-	} else {
-		iopanic = ioutil.Discard
-	}
+	flogging.LoggingInit("server")
 
 	// Init the crypto layer
 	if err := crypto.Init(); err != nil {
-		panic(fmt.Errorf("Failed initializing the crypto layer [%s]", err))
+		logger.Panicf("Failed initializing the crypto layer [%s]", err)
 	}
 
-	ca.LogInit(iotrace, ioinfo, iowarning, ioerror, iopanic)
-	ca.Info.Println("CA Server (" + viper.GetString("server.version") + ")")
+	// cache configure
+	ca.CacheConfiguration()
+
+	logger.Infof("CA Server (" + metadata.Version + ")")
 
 	aca := ca.NewACA()
-	defer aca.Close()
+	defer aca.Stop()
 
-	eca := ca.NewECA()
-	defer eca.Close()
+	eca := ca.NewECA(aca)
+	defer eca.Stop()
 
 	tca := ca.NewTCA(eca)
-	defer tca.Close()
+	defer tca.Stop()
 
 	tlsca := ca.NewTLSCA(eca)
-	defer tlsca.Close()
+	defer tlsca.Stop()
 
 	runtime.GOMAXPROCS(viper.GetInt("server.gomaxprocs"))
 
 	var opts []grpc.ServerOption
-	if viper.GetString("server.tls.certfile") != "" {
-		creds, err := credentials.NewServerTLSFromFile(viper.GetString("server.tls.certfile"), viper.GetString("server.tls.keyfile"))
+
+	if viper.GetBool("security.tls_enabled") {
+		logger.Debug("TLS was enabled [security.tls_enabled == true]")
+		creds, err := credentials.NewServerTLSFromFile(viper.GetString("server.tls.cert.file"), viper.GetString("server.tls.key.file"))
 		if err != nil {
-			panic(err)
+			logger.Panic(err)
 		}
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
+	} else {
+		logger.Debug("TLS was not enabled [security.tls_enabled == false]")
 	}
+
 	srv := grpc.NewServer(opts...)
 
-	aca.Start(srv)
+	if viper.GetBool("aca.enabled") {
+		logger.Debug("ACA was enabled [aca.enabled == true]")
+		aca.Start(srv)
+	}
 	eca.Start(srv)
 	tca.Start(srv)
 	tlsca.Start(srv)
 
 	if sock, err := net.Listen("tcp", viper.GetString("server.port")); err != nil {
-		ca.Error.Println("Fail to start CA Server: ", err)
+		logger.Errorf("Fail to start CA Server: %s", err)
 		os.Exit(1)
 	} else {
 		srv.Serve(sock)

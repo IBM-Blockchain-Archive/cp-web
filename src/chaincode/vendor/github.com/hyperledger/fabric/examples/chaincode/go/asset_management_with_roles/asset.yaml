@@ -12,12 +12,14 @@ server:
         cadir: ".membersrvc"
 
         # port the CA services are listening on
-        port: ":50051"
+        port: ":7054"
 
         # TLS certificate and key file paths
         tls:
-#              certfile: "/var/hyperledger/production/.ca/tlsca.cert"
-#              keyfile: "/var/hyperledger/production/.ca/tlsca.priv"
+              cert:
+#                    file: "/var/hyperledger/production/.ca/tlsca.cert"
+              key:
+#                    file: "/var/hyperledger/production/.ca/tlsca.priv"
 
 security:
     # Can be 256 or 384
@@ -48,7 +50,7 @@ aca:
         attribute-entry-2: admin;bank_a;role;assigner;2015-01-01T00:00:00-03:00;;
         attribute-entry-3: alice;bank_a;account;12345-56789;2016-01-01T00:00:00-03:00;;
         attribute-entry-4: bob;bank_a;account;23456-67890;2015-02-02T00:00:00-03:00;;
-    address: localhost:50051
+    address: localhost:7054
     server-name: acap
     enabled: true
 
@@ -71,9 +73,9 @@ eca:
                   - institution_a
         users:
                 # <EnrollmentID>: <role (1:client, 2: peer, 4: validator, 8: auditor)> <EnrollmentPWD> <Affiliation> <Affiliation_Role>
-                alice: 1 NPKYL39uKbkj bank_a	00001
-                bob: 1 DRJ23pEQl16a bank_a	00002
-                admin: 1 6avZQLwcUe9b bank_a	00003
+                alice: 1 NPKYL39uKbkj bank_a
+                bob: 1 DRJ23pEQl16a bank_a
+                admin: 1 6avZQLwcUe9b bank_a
 
                 vp: 4 f3489fy98ghf
 
@@ -86,7 +88,7 @@ eca:
 cli:
 
     # The address that the cli process will use for callbacks from chaincodes
-    address: 0.0.0.0:30304
+    address: 0.0.0.0:7052
 
 
 
@@ -103,7 +105,7 @@ rest:
     enabled: true
 
     # The address that the REST service will listen on for incoming requests.
-    address: 0.0.0.0:5000
+    address: 0.0.0.0:7050
 
 
 ###############################################################################
@@ -226,13 +228,13 @@ peer:
     validator:
         enabled: true
 
-        # Consensus plugin to use. The value is the name of the plugin, e.g. obcpbft, noops
+        # Consensus plugin to use. The value is the name of the plugin, e.g. pbft, noops
         # if the given value is not recognized, we will default to noops
         consensus: noops
 
         events:
             # The address that the Event service will be enabled on the validator
-            address: 0.0.0.0:31315
+            address: 0.0.0.0:7053
 
             # total number of events that could be buffered without blocking the
             # validator sends
@@ -243,7 +245,7 @@ peer:
             # if 0, if buffer full, will block and guarantee the event will be sent out
             # if > 0, if buffer full, blocks till timeout
             timeout: 10
-        
+
 
     # TLS Settings for p2p communications
     tls:
@@ -258,11 +260,11 @@ peer:
     # PKI member services properties
     pki:
         eca:
-            paddr: localhost:50051
+            paddr: localhost:7054
         tca:
-            paddr: localhost:50051
+            paddr: localhost:7054
         tlsca:
-            paddr: localhost:50051
+            paddr: localhost:7054
         tls:
             enabled: false
             rootcert:
@@ -394,21 +396,6 @@ chaincode:
 ledger:
 
   blockchain:
-
-    # Define the genesis block
-    genesisBlock:
-
-      # Deploy chaincodes into the genesis block
-      # chaincode:
-      #     path: github.com/hyperledger/fabric/core/example/chaincode/chaincode_example01
-      #     type: GOLANG
-      #     constructor:
-      #       func: init
-      #       args:
-      #         - alice
-      #         - "4"
-      #         - bob
-      #         - "10"
 
     # Setting the deploy-system-chaincode property to false will prevent the
     # deploying of system chaincode at genesis time.

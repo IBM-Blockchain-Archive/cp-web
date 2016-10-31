@@ -22,11 +22,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google/protobuf"
-
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/hyperledger/fabric/core/ledger"
 	pb "github.com/hyperledger/fabric/protos"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -75,7 +75,7 @@ func NewOpenchainServerWithPeerInfo(peerServer PeerInfo) (*ServerOpenchain, erro
 
 // GetBlockchainInfo returns information about the blockchain ledger such as
 // height, current block hash, and previous block hash.
-func (s *ServerOpenchain) GetBlockchainInfo(ctx context.Context, e *google_protobuf.Empty) (*pb.BlockchainInfo, error) {
+func (s *ServerOpenchain) GetBlockchainInfo(ctx context.Context, e *empty.Empty) (*pb.BlockchainInfo, error) {
 	blockchainInfo, err := s.ledger.GetBlockchainInfo()
 	if blockchainInfo.Height == 0 {
 		return nil, fmt.Errorf("No blocks in blockchain.")
@@ -106,7 +106,13 @@ func (s *ServerOpenchain) GetBlockByNumber(ctx context.Context, num *pb.BlockNum
 			deploymentSpec := &pb.ChaincodeDeploymentSpec{}
 			err := proto.Unmarshal(transaction.Payload, deploymentSpec)
 			if err != nil {
-				return nil, err
+				if !viper.GetBool("security.privacy") {
+					return nil, err
+				}
+				//if privacy is enabled, payload is encrypted and unmarshal will
+				//likely fail... given we were going to just set the CodePackage
+				//to nil anyway, just recover and continue
+				deploymentSpec = &pb.ChaincodeDeploymentSpec{}
 			}
 			deploymentSpec.CodePackage = nil
 			deploymentSpecBytes, err := proto.Marshal(deploymentSpec)
@@ -122,7 +128,7 @@ func (s *ServerOpenchain) GetBlockByNumber(ctx context.Context, num *pb.BlockNum
 
 // GetBlockCount returns the current number of blocks in the blockchain data
 // structure.
-func (s *ServerOpenchain) GetBlockCount(ctx context.Context, e *google_protobuf.Empty) (*pb.BlockCount, error) {
+func (s *ServerOpenchain) GetBlockCount(ctx context.Context, e *empty.Empty) (*pb.BlockCount, error) {
 	// Total number of blocks in the blockchain.
 	size := s.ledger.GetBlockchainSize()
 
@@ -142,9 +148,9 @@ func (s *ServerOpenchain) GetState(ctx context.Context, chaincodeID, key string)
 	return s.ledger.GetState(chaincodeID, key, true)
 }
 
-// GetTransactionByUUID returns a transaction matching the specified UUID
-func (s *ServerOpenchain) GetTransactionByUUID(ctx context.Context, txUUID string) (*pb.Transaction, error) {
-	transaction, err := s.ledger.GetTransactionByUUID(txUUID)
+// GetTransactionByID returns a transaction matching the specified ID
+func (s *ServerOpenchain) GetTransactionByID(ctx context.Context, txID string) (*pb.Transaction, error) {
+	transaction, err := s.ledger.GetTransactionByID(txID)
 	if err != nil {
 		switch err {
 		case ledger.ErrResourceNotFound:
@@ -157,12 +163,12 @@ func (s *ServerOpenchain) GetTransactionByUUID(ctx context.Context, txUUID strin
 }
 
 // GetPeers returns a list of all peer nodes currently connected to the target peer.
-func (s *ServerOpenchain) GetPeers(ctx context.Context, e *google_protobuf.Empty) (*pb.PeersMessage, error) {
+func (s *ServerOpenchain) GetPeers(ctx context.Context, e *empty.Empty) (*pb.PeersMessage, error) {
 	return s.peerInfo.GetPeers()
 }
 
 // GetPeerEndpoint returns PeerEndpoint info of target peer.
-func (s *ServerOpenchain) GetPeerEndpoint(ctx context.Context, e *google_protobuf.Empty) (*pb.PeersMessage, error) {
+func (s *ServerOpenchain) GetPeerEndpoint(ctx context.Context, e *empty.Empty) (*pb.PeersMessage, error) {
 	peers := []*pb.PeerEndpoint{}
 	peerEndpoint, err := s.peerInfo.GetPeerEndpoint()
 	if err != nil {

@@ -19,7 +19,6 @@ package ca
 import (
 	"io/ioutil"
 	"net"
-	"os"
 	"testing"
 	"time"
 
@@ -32,7 +31,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/x509"
-	"google/protobuf"
 	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
@@ -41,6 +39,8 @@ import (
 	membersrvc "github.com/hyperledger/fabric/membersrvc/protos"
 
 	_ "fmt"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 var (
@@ -63,13 +63,12 @@ func TestTLS(t *testing.T) {
 }
 
 func startTLSCA(t *testing.T) {
-	LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, os.Stdout)
-
-	ecaS = NewECA()
+	CacheConfiguration() // Cache configuration
+	ecaS = NewECA(nil)
 	tlscaS = NewTLSCA(ecaS)
 
 	var opts []grpc.ServerOption
-	creds, err := credentials.NewServerTLSFromFile(viper.GetString("server.tls.certfile"), viper.GetString("server.tls.keyfile"))
+	creds, err := credentials.NewServerTLSFromFile(viper.GetString("server.tls.cert.file"), viper.GetString("server.tls.key.file"))
 	if err != nil {
 		t.Logf("Failed creating credentials for TLS-CA service: %s", err)
 		t.Fail()
@@ -94,7 +93,7 @@ func startTLSCA(t *testing.T) {
 func requestTLSCertificate(t *testing.T) {
 	var opts []grpc.DialOption
 
-	creds, err := credentials.NewClientTLSFromFile(viper.GetString("server.tls.certfile"), "tlsca")
+	creds, err := credentials.NewClientTLSFromFile(viper.GetString("server.tls.cert.file"), "tlsca")
 	if err != nil {
 		t.Logf("Failed creating credentials for TLS-CA client: %s", err)
 		t.Fail()
@@ -124,7 +123,7 @@ func requestTLSCertificate(t *testing.T) {
 
 	pubraw, _ := x509.MarshalPKIXPublicKey(&priv.PublicKey)
 	now := time.Now()
-	timestamp := google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
+	timestamp := timestamp.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
 
 	req := &membersrvc.TLSCertCreateReq{
 		Ts: &timestamp,

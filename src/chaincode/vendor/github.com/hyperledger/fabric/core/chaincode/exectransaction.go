@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/events/producer"
 	pb "github.com/hyperledger/fabric/protos"
 )
 
@@ -85,12 +86,12 @@ func Execute(ctxt context.Context, chain *ChaincodeSupport, t *pb.Transaction) (
 
 		var ccMsg *pb.ChaincodeMessage
 		if t.Type == pb.Transaction_CHAINCODE_INVOKE {
-			ccMsg, err = createTransactionMessage(t.Uuid, cMsg)
+			ccMsg, err = createTransactionMessage(t.Txid, cMsg)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Failed to transaction message(%s)", err)
 			}
 		} else {
-			ccMsg, err = createQueryMessage(t.Uuid, cMsg)
+			ccMsg, err = createQueryMessage(t.Txid, cMsg)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Failed to query message(%s)", err)
 			}
@@ -105,11 +106,11 @@ func Execute(ctxt context.Context, chain *ChaincodeSupport, t *pb.Transaction) (
 		} else if resp == nil {
 			// Rollback transaction
 			markTxFinish(ledger, t, false)
-			return nil, nil, fmt.Errorf("Failed to receive a response for (%s)", t.Uuid)
+			return nil, nil, fmt.Errorf("Failed to receive a response for (%s)", t.Txid)
 		} else {
 			if resp.ChaincodeEvent != nil {
 				resp.ChaincodeEvent.ChaincodeID = chaincode
-				resp.ChaincodeEvent.TxID = t.Uuid
+				resp.ChaincodeEvent.TxID = t.Txid
 			}
 
 			if resp.Type == pb.ChaincodeMessage_COMPLETED || resp.Type == pb.ChaincodeMessage_QUERY_COMPLETED {
@@ -122,7 +123,7 @@ func Execute(ctxt context.Context, chain *ChaincodeSupport, t *pb.Transaction) (
 				return nil, resp.ChaincodeEvent, fmt.Errorf("Transaction or query returned with failure: %s", string(resp.Payload))
 			}
 			markTxFinish(ledger, t, false)
-			return resp.Payload, nil, fmt.Errorf("receive a response for (%s) but in invalid state(%d)", t.Uuid, resp.Type)
+			return resp.Payload, nil, fmt.Errorf("receive a response for (%s) but in invalid state(%d)", t.Txid, resp.Type)
 		}
 
 	} else {
@@ -135,16 +136,23 @@ func Execute(ctxt context.Context, chain *ChaincodeSupport, t *pb.Transaction) (
 //will return an array of errors one for each transaction. If the execution
 //succeeded, array element will be nil. returns []byte of state hash or
 //error
-func ExecuteTransactions(ctxt context.Context, cname ChainName, xacts []*pb.Transaction) (stateHash []byte, ccevents []*pb.ChaincodeEvent, txerrs []error, err error) {
+func ExecuteTransactions(ctxt context.Context, cname ChainName, xacts []*pb.Transaction) (succeededTXs []*pb.Transaction, stateHash []byte, ccevents []*pb.ChaincodeEvent, txerrs []error, err error) {
 	var chain = GetChain(cname)
 	if chain == nil {
 		// TODO: We should never get here, but otherwise a good reminder to better handle
 		panic(fmt.Sprintf("[ExecuteTransactions]Chain %s not found\n", cname))
 	}
+
 	txerrs = make([]error, len(xacts))
 	ccevents = make([]*pb.ChaincodeEvent, len(xacts))
+	var succeededTxs = make([]*pb.Transaction, 0)
 	for i, t := range xacts {
 		_, ccevents[i], txerrs[i] = Execute(ctxt, chain, t)
+		if txerrs[i] == nil {
+			succeededTxs = append(succeededTxs, t)
+		} else {
+			sendTxRejectedEvent(xacts[i], txerrs[i].Error())
+		}
 	}
 
 	var lgr *ledger.Ledger
@@ -152,7 +160,8 @@ func ExecuteTransactions(ctxt context.Context, cname ChainName, xacts []*pb.Tran
 	if err == nil {
 		stateHash, err = lgr.GetTempStateHash()
 	}
-	return stateHash, ccevents, txerrs, err
+
+	return succeededTxs, stateHash, ccevents, txerrs, err
 }
 
 // GetSecureContext returns the security context from the context object or error
@@ -175,9 +184,9 @@ func getTimeout(cID *pb.ChaincodeID) (time.Duration, error) {
 	ledger, err := ledger.GetLedger()
 	if err == nil {
 		chaincodeID := cID.Name
-		txUUID, err := ledger.GetState(chaincodeID, "github.com_openblockchain_obc-peer_chaincode_id", true)
+		txID, err := ledger.GetState(chaincodeID, "github.com_openblockchain_obc-peer_chaincode_id", true)
 		if err == nil {
-			tx, err := ledger.GetTransactionByUUID(string(txUUID))
+			tx, err := ledger.GetTransactionByID(string(txID))
 			if err == nil {
 				chaincodeDeploymentSpec := &pb.ChaincodeDeploymentSpec{}
 				proto.Unmarshal(tx.Payload, chaincodeDeploymentSpec)
@@ -195,12 +204,16 @@ func markTxBegin(ledger *ledger.Ledger, t *pb.Transaction) {
 	if t.Type == pb.Transaction_CHAINCODE_QUERY {
 		return
 	}
-	ledger.TxBegin(t.Uuid)
+	ledger.TxBegin(t.Txid)
 }
 
 func markTxFinish(ledger *ledger.Ledger, t *pb.Transaction, successful bool) {
 	if t.Type == pb.Transaction_CHAINCODE_QUERY {
 		return
 	}
-	ledger.TxFinished(t.Uuid, successful)
+	ledger.TxFinished(t.Txid, successful)
+}
+
+func sendTxRejectedEvent(tx *pb.Transaction, errorMsg string) {
+	producer.Send(producer.CreateRejectionEvent(tx, errorMsg))
 }

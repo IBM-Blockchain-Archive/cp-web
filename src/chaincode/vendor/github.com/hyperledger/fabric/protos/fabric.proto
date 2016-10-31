@@ -42,7 +42,7 @@ message Transaction {
     bytes chaincodeID = 2;
     bytes payload = 3;
     bytes metadata = 4;
-    string uuid = 5;
+    string txid = 5;
     google.protobuf.Timestamp timestamp = 6;
 
     ConfidentialityLevel confidentialityLevel = 7;
@@ -61,13 +61,13 @@ message TransactionBlock {
 
 // TransactionResult contains the return value of a transaction. It does
 // not track potential state changes that were a result of the transaction.
-// uuid - The unique identifier of this transaction.
+// txid - The unique identifier of this transaction.
 // result - The return value of the transaction.
 // errorCode - An error code. 5xx will be logged as a failure in the dashboard.
 // error - An error string for logging an issue.
 // chaincodeEvent - any event emitted by a transaction
 message TransactionResult {
-  string uuid = 1;
+  string txid = 1;
   bytes result = 2;
   uint32 errorCode = 3;
   string error = 4;
@@ -110,10 +110,11 @@ message BlockchainInfo {
 // the block hash when verifying the blockchain.
 // localLedgerCommitTimestamp - The time at which the block was added
 // to the ledger on the local peer.
-// transactionResults - The results of transactions.
+// chaincodeEvent - is an array ChaincodeEvents, one per transaction in the
+// block
 message NonHashData {
     google.protobuf.Timestamp localLedgerCommitTimestamp = 1;
-    repeated TransactionResult transactionResults = 2;
+    repeated ChaincodeEvent chaincodeEvents = 2;
 }
 
 // Interface exported by the server.
@@ -126,13 +127,16 @@ service Peer {
     rpc ProcessTransaction(Transaction) returns (Response) {}
 
 }
+
 message PeerAddress {
     string host = 1;
     int32 port = 2;
 }
+
 message PeerID {
     string name = 1;
 }
+
 message PeerEndpoint {
     PeerID ID = 1;
     string address = 2;
@@ -144,13 +148,20 @@ message PeerEndpoint {
     Type type = 3;
     bytes pkiID = 4;
 }
+
 message PeersMessage {
     repeated PeerEndpoint peers = 1;
 }
+
+message PeersAddresses {
+    repeated string addresses = 1;
+}
+
 message HelloMessage {
   PeerEndpoint peerEndpoint = 1;
   BlockchainInfo blockchainInfo = 2;
 }
+
 message Message {
     enum Type {
         UNDEFINED = 0;
@@ -180,6 +191,7 @@ message Message {
     bytes payload = 3;
     bytes signature = 4;
 }
+
 message Response {
     enum StatusCode {
         UNDEFINED = 0;
@@ -189,6 +201,7 @@ message Response {
     StatusCode status = 1;
     bytes msg = 2;
 }
+
 // BlockState is the payload of Message.SYNC_BLOCK_ADDED. When a VP
 // commits a new block to the ledger, it will notify its connected NVPs of the
 // block and the delta state. The NVP may call the ledger APIs to apply the
@@ -198,6 +211,7 @@ message BlockState {
     Block block = 1;
     bytes stateDelta = 2;
 }
+
 // SyncBlockRange is the payload of Message.SYNC_GET_BLOCKS, where
 // start and end indicate the starting and ending blocks inclusively. The order
 // in which blocks are returned is defined by the start and end values. For
@@ -208,6 +222,7 @@ message SyncBlockRange {
     uint64 start = 2;
     uint64 end = 3;
 }
+
 // SyncBlocks is the payload of Message.SYNC_BLOCKS, where the range
 // indicates the blocks responded to the request SYNC_GET_BLOCKS
 message SyncBlocks {
@@ -220,7 +235,7 @@ message SyncStateSnapshotRequest {
   uint64 correlationId = 1;
 }
 
-// SyncState is the payload of Message.SYNC_SNAPSHOT, which is a response
+// SyncStateSnapshot is the payload of Message.SYNC_SNAPSHOT, which is a response
 // to penchainMessage.SYNC_GET_SNAPSHOT. It contains the snapshot or a chunk of the
 // snapshot on stream, and in which case, the sequence indicate the order
 // starting at 0.  The terminating message will have len(delta) == 0.
@@ -231,7 +246,7 @@ message SyncStateSnapshot {
     SyncStateSnapshotRequest request = 4;
 }
 
-// SyncStateRequest is the payload of Message.SYNC_GET_STATE.
+// SyncStateDeltasRequest is the payload of Message.SYNC_GET_STATE.
 // blockNumber indicates the block number for the delta which is being
 // requested. If no payload is included with SYNC_GET_STATE, it represents
 // a request for a snapshot of the current state.

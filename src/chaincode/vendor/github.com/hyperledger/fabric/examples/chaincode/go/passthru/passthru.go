@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/util"
 )
 
 // PassthruChaincode passes thru invoke and query to another chaincode where
@@ -32,7 +33,7 @@ type PassthruChaincode struct {
 }
 
 //Init func will return error if function has string "error" anywhere
-func (p *PassthruChaincode) Init(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (p *PassthruChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
 	if strings.Index(function, "error") >= 0 {
 		return nil, errors.New(function)
@@ -41,32 +42,25 @@ func (p *PassthruChaincode) Init(stub *shim.ChaincodeStub, function string, args
 }
 
 //helper
-func (p *PassthruChaincode) iq(invoke bool, stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (p *PassthruChaincode) iq(invoke bool, stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	if function == "" {
 		return nil, errors.New("Chaincode ID not provided")
 	}
 	chaincodeID := function
 
-	var f string
-	var cargs []string
-	if len(args) > 0 {
-		f = args[0]
-		cargs = args[1:]
-	}
-
 	if invoke {
-		return stub.InvokeChaincode(chaincodeID, f, cargs)
+		return stub.InvokeChaincode(chaincodeID, util.ToChaincodeArgs(args...))
 	}
-	return stub.QueryChaincode(chaincodeID, f, cargs)
+	return stub.QueryChaincode(chaincodeID, util.ToChaincodeArgs(args...))
 }
 
 // Invoke passes through the invoke call
-func (p *PassthruChaincode) Invoke(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (p *PassthruChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	return p.iq(true, stub, function, args)
 }
 
 // Query passes through the query call
-func (p *PassthruChaincode) Query(stub *shim.ChaincodeStub, function string, args []string) ([]byte, error) {
+func (p *PassthruChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	return p.iq(false, stub, function, args)
 }
 

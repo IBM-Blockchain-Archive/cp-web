@@ -10,7 +10,7 @@
 #       yum install git
 #       mkdir -p $HOME/git/src/github.com/hyperledger
 #       cd $HOME/git/src/github.com/hyperledger
-#       git clone https://github.com/hyperledger/fabric.git
+#       git clone http://gerrit.hyperledger.org/r/fabric
 #       source fabric/devenv/setupRHELonZ.sh
 #       make peer unit-test behave
 
@@ -86,6 +86,21 @@ curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
 python get-pip.py
 pip install --upgrade pip
 pip install behave nose docker-compose
+
+################
+#grpcio package
+
+git clone https://github.com/grpc/grpc.git
+cd grpc
+pip install -rrequirements.txt
+git checkout tags/release-0_13_1
+sed -i -e "s/boringssl.googlesource.com/github.com\/linux-on-ibm-z/" .gitmodules
+git submodule sync
+git submodule update --init
+cd third_party/boringssl
+git checkout s390x-big-endian
+cd ../..
+GRPC_PYTHON_BUILD_WITH_CYTHON=1 pip install .
 
 # updater-server, update-engine, and update-service-common dependencies (for running locally)
 pip install -I flask==0.10.1 python-dateutil==2.2 pytz==2014.3 pyyaml==3.10 couchdb==1.0 flask-cors==2.0.1 requests==2.4.3

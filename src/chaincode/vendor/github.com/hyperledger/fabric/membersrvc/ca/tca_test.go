@@ -21,15 +21,14 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"google/protobuf"
 	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/crypto"
 	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/hyperledger/fabric/membersrvc/protos"
@@ -68,6 +67,7 @@ func TestCreateCertificateSet(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	const expectedTcertSubjectCommonNameValue string = "Transaction Certificate"
 	ncerts := 1
 	for nattributes := -1; nattributes < 1; nattributes++ {
 		certificateSetRequest, err := buildCertificateSetRequest(enrollmentID, priv, ncerts, nattributes)
@@ -102,6 +102,19 @@ func TestCreateCertificateSet(t *testing.T) {
 		tcerts := response.GetCerts()
 		if len(tcerts.Certs) != ncerts {
 			t.Fatal(fmt.Errorf("Invalid tcert size. Expected: %v, Actual: %v", ncerts, len(tcerts.Certs)))
+		}
+
+		for pos, eachTCert := range tcerts.Certs {
+			tcert, err := x509.ParseCertificate(eachTCert.Cert)
+			if err != nil {
+				t.Fatalf("Error: %v\nCould not x509.ParseCertificate %v", err, eachTCert.Cert)
+			}
+
+			t.Logf("Examining TCert[%d]'s Subject: %v", pos, tcert.Subject)
+			if tcert.Subject.CommonName != expectedTcertSubjectCommonNameValue {
+				t.Fatalf("The TCert's Subject.CommonName is '%s' which is different than '%s'", tcert.Subject.CommonName, expectedTcertSubjectCommonNameValue)
+			}
+			t.Logf("Successfully verified that TCert[%d].Subject.CommonName == '%s'", pos, tcert.Subject.CommonName)
 		}
 	}
 }
@@ -141,17 +154,16 @@ func initTCA() (*TCA, error) {
 		return nil, fmt.Errorf("Failed initializing the crypto layer [%v]", err)
 	}
 
-	//initialize logging to avoid panics in the current code
-	LogInit(os.Stdout, os.Stdout, os.Stdout, os.Stderr, os.Stdout)
-
-	eca := NewECA()
-	if eca == nil {
-		return nil, fmt.Errorf("Could not create a new ECA")
-	}
+	CacheConfiguration() // Cache configuration
 
 	aca := NewACA()
 	if aca == nil {
 		return nil, fmt.Errorf("Could not create a new ACA")
+	}
+
+	eca := NewECA(aca)
+	if eca == nil {
+		return nil, fmt.Errorf("Could not create a new ECA")
 	}
 
 	tca := NewTCA(eca)
@@ -164,7 +176,7 @@ func initTCA() (*TCA, error) {
 
 func buildCertificateSetRequest(enrollID string, enrollmentPrivKey *ecdsa.PrivateKey, num, numattrs int) (*protos.TCertCreateSetReq, error) {
 	now := time.Now()
-	timestamp := google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
+	timestamp := timestamp.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
 
 	var attributes []*protos.TCertAttribute
 	if numattrs >= 0 { // else negative means use nil from above

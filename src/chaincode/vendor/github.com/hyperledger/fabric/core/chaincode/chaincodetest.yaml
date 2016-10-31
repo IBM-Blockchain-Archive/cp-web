@@ -67,9 +67,9 @@ eca:
                   - institution_a
         users:
                 # <EnrollmentID>: <role (1:client, 2: peer, 4: validator, 8: auditor)> <EnrollmentPWD> <Affiliation> <Affiliation_Role>
-                lukas: 1 NPKYL39uKbkj institution_a	00001
-                diego: 1 DRJ23pEQl16a institution_a	00002
-                jim: 1 6avZQLwcUe9b institution_a	00003
+                lukas: 1 NPKYL39uKbkj institution_a
+                diego: 1 DRJ23pEQl16a institution_a
+                jim: 1 6avZQLwcUe9b institution_a
 
                 vp: 4 f3489fy98ghf
 
@@ -81,7 +81,7 @@ eca:
 cli:
 
     # The address that the cli process will use for callbacks from chaincodes
-    address: 0.0.0.0:30304
+    address: 0.0.0.0:7052
 
 
 
@@ -98,7 +98,7 @@ rest:
     enabled: true
 
     # The address that the REST service will listen on for incoming requests.
-    address: 0.0.0.0:5000
+    address: 0.0.0.0:7050
 
 
 ###############################################################################
@@ -226,7 +226,7 @@ peer:
 
         events:
             # The address that the Event service will be enabled on the validator
-            address: 0.0.0.0:31315
+            address: 0.0.0.0:7053
 
             # total number of events that could be buffered without blocking the
             # validator sends
@@ -393,6 +393,11 @@ chaincode:
     # the image
     installpath: /opt/gopath/bin/
 
+    #keepalive in seconds. In situations where the communiction goes through a
+    #proxy that does not support keep-alive, this parameter will maintain connection
+    #between peer and chaincode.
+    #A value <= 0 turns keepalive off
+    keepalive: 1
 ###############################################################################
 #
 #    Ledger section - ledger configuration encompases both the blockchain
@@ -402,20 +407,6 @@ chaincode:
 ledger:
 
   blockchain:
-
-    # Define the genesis block
-    genesisBlock:
-
-      # Deploy chaincodes into the genesis block
-      chaincodes:
-
-        #sample_syscc:
-        #  path: github.com/hyperledger/fabric/core/system_chaincode/sample_syscc
-        #  type: GOLANG
-        #  constructor:
-        #    args:
-        #      - greetings
-        #      - hello world
 
     # Setting the deploy-system-chaincode property to false will prevent the
     # deploying of system chaincode at genesis time.

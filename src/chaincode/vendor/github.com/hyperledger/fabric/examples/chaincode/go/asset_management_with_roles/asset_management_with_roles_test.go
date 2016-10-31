@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"encoding/base64"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/hyperledger/fabric/core/container"
 	"github.com/hyperledger/fabric/core/crypto"
 	"github.com/hyperledger/fabric/core/ledger"
+	"github.com/hyperledger/fabric/core/util"
 	"github.com/hyperledger/fabric/membersrvc/ca"
 	pb "github.com/hyperledger/fabric/protos"
 	"github.com/op/go-logging"
@@ -167,6 +167,12 @@ func TestAssetManagement(t *testing.T) {
 	if !reflect.DeepEqual(theOnwerIs, bobAccount) {
 		t.Fatal("Bob is not the owner of Picasso")
 	}
+
+	// Check who is the owner of an asset that doesn't exist
+	_, err = whoIsTheOwner("Klee")
+	if err == nil {
+		t.Fatal("This asset doesn't exist. Querying should fail.")
+	}
 }
 
 func deploy(admCert crypto.CertificateHandler) error {
@@ -174,7 +180,7 @@ func deploy(admCert crypto.CertificateHandler) error {
 	spec := &pb.ChaincodeSpec{
 		Type:                 1,
 		ChaincodeID:          &pb.ChaincodeID{Name: "mycc"},
-		CtorMsg:              &pb.ChaincodeInput{Function: "init", Args: []string{}},
+		CtorMsg:              &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")},
 		Metadata:             []byte("assigner"),
 		ConfidentialityLevel: pb.ConfidentialityLevel_PUBLIC,
 	}
@@ -218,7 +224,7 @@ func assignOwnership(assigner crypto.Client, asset string, newOwnerCert crypto.C
 	}
 
 	newOwner := base64.StdEncoding.EncodeToString(newOwnerCert.GetCertificate())
-	chaincodeInput := &pb.ChaincodeInput{Function: "assign", Args: []string{asset, newOwner}}
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("assign", asset, newOwner)}
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
@@ -264,7 +270,7 @@ func transferOwnership(owner crypto.Client, ownerCert crypto.CertificateHandler,
 	}
 
 	newOwner := base64.StdEncoding.EncodeToString(newOwnerCert.GetCertificate())
-	chaincodeInput := &pb.ChaincodeInput{Function: "transfer", Args: []string{asset, newOwner}}
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("transfer", asset, newOwner)}
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
@@ -298,7 +304,7 @@ func transferOwnership(owner crypto.Client, ownerCert crypto.CertificateHandler,
 }
 
 func whoIsTheOwner(asset string) ([]byte, error) {
-	chaincodeInput := &pb.ChaincodeInput{Function: "query", Args: []string{asset}}
+	chaincodeInput := &pb.ChaincodeInput{Args: util.ToChaincodeArgs("query", asset)}
 
 	// Prepare spec and submit
 	spec := &pb.ChaincodeSpec{
@@ -358,10 +364,9 @@ func setup() {
 }
 
 func initMembershipSrvc() {
-	ca.LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, os.Stdout)
-
+	ca.CacheConfiguration() // Cache configuration
 	aca = ca.NewACA()
-	eca = ca.NewECA()
+	eca = ca.NewECA(aca)
 	tca = ca.NewTCA(eca)
 	tlsca = ca.NewTLSCA(eca)
 

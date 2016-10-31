@@ -17,7 +17,6 @@ limitations under the License.
 package ca
 
 import (
-	"io/ioutil"
 	"net"
 	"os"
 	"testing"
@@ -69,9 +68,9 @@ func setupTestConfig() {
 }
 
 func initPKI() {
-	LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, os.Stdout)
+	CacheConfiguration() // Cache configuration
 	aca = NewACA()
-	eca = NewECA()
+	eca = NewECA(aca)
 	tca = NewTCA(eca)
 }
 
@@ -108,8 +107,8 @@ func cleanupFiles() {
 }
 
 func stopPKI() {
-	aca.Close()
-	eca.Close()
-	tca.Close()
+	aca.Stop()
+	eca.Stop()
+	tca.Stop()
 	server.Stop()
 }

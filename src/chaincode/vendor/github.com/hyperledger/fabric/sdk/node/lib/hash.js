@@ -25,6 +25,7 @@
  * NOTE: This is in pure java script to be compatible with the sjcl.hmac function.
  */
 var sjcl = require('sjcl');
+var sjcl_codec = require('sjcl-codec');
 var jssha = require('jssha');
 var sha3_256 = require('js-sha3').sha3_256;
 var sha3_384 = require('js-sha3').sha3_384;
@@ -60,8 +61,6 @@ hash_sha2_256.prototype = {
 
     finalize: function () {
         var hash = this._hash.finalize();
-        // var hashBits = sjcl.codec.hex.toBits(hash);
-        //debug('finalize hashBits:\n',hashBits)
         this.reset();
         return hash;
 
@@ -144,32 +143,22 @@ hash_sha3_384.prototype = {
     }
 };
 
-function bitsToBytes(arr) {
-    var out = [], bl = sjcl.bitArray.bitLength(arr), i, tmp;
-    for (i = 0; i < bl / 8; i++) {
-        if ((i & 3) === 0) {
-            tmp = arr[i / 4];
-        }
-        out.push(tmp >>> 24);
-        tmp <<= 8;
-    }
-    return out;
+/**
+ * Convert from a bitArray to bytes (using SJCL's codec)
+ * @param {bits} a bitArray to convert from
+ * @return {bytes} the bytes converted from the bitArray
+ */
+bitsToBytes = function (bits) {
+   return sjcl_codec.bytes.fromBits(bits);
 }
 
-/** Convert from an array of bytes to a bitArray. */
-function bytesToBits(bytes) {
-    var out = [], i, tmp = 0;
-    for (i = 0; i < bytes.length; i++) {
-        tmp = tmp << 8 | bytes[i];
-        if ((i & 3) === 3) {
-            out.push(tmp);
-            tmp = 0;
-        }
-    }
-    if (i & 3) {
-        out.push(sjcl.bitArray.partial(8 * (i & 3), tmp));
-    }
-    return out;
+/**
+ * Convert from bytes to a bitArray (using SJCL's codec)
+ * @param {bytes} a bytes to convert from
+ * @return {bitArray} the bitArray converted from bytes
+ */
+bytesToBits = function (bytes) {
+    return sjcl_codec.bytes.toBits(bytes);
 }
 
 exports.hash_sha3_256 = hash_sha3_256;

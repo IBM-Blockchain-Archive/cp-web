@@ -35,19 +35,29 @@ namespace eval ::fabric {}
 # is never retried. We currently do not implememnt retry backoffs - it's
 # pedal-to-the-metal.
 
+# If i_retry is less than 0 on entry, then this is a special flag that the
+# caller is expecting HTTP failures, and does not want diagnostics or error
+# exits. If the HTTP access fails then the call will exit with Tcl error{} and
+# the caller will presumably catch{} the error and do whatever is appropriate.
+
 proc ::fabric::devops {i_peer i_method i_query {i_retry 0}} {
 
-    for {set retry $i_retry} {$retry >= 0} {incr retry -1} {
+    for {set retry [math:::max $i_retry 0]} {$retry >= 0} {incr retry -1} {
 
         if {[catch {
             ::http::geturl http://$i_peer/devops/$i_method -query $i_query
         } token]} {
+            if {$i_retry < 0} {
+                http::cleanup $token
+                error "http::geturl failed"
+            }
             if {$retry > 0} {
                 if {$retry == $i_retry} {
                     warn fabric \
                         "fabric::devops/$i_method $i_peer : " \
                         "Retrying after catastrophic HTTP error"
                 }
+                http::cleanup $token
                 continue
             }
             if {($retry == 0) && ($i_retry != 0)} {
@@ -56,12 +66,17 @@ proc ::fabric::devops {i_peer i_method i_query {i_retry 0}} {
                     "Retry limit ($i_retry) hit after " \
                     "catastrophic HTTP error : Aborting"
             }
+            http::cleanup $token
             errorExit \
                 "fabric::devops/$i_method $i_peer : ::http::geturl failed\n" \
                 $::errorInfo
         }
 
         if {[http::ncode $token] != 200} {
+            if {$i_retry < 0} {
+                http::cleanup $token
+                error "http::ncode != 200"
+            }
             if {$retry > 0} {
                 if {$retry == $i_retry} {
                     warn fabric \
@@ -74,14 +89,13 @@ proc ::fabric::devops {i_peer i_method i_query {i_retry 0}} {
                         "Retry limit ($i_retry) hit after " \
                         "HTTP error return : Aborting"
                 }
+                http::cleanup $token
                 continue
             }
-            err err \
+            err fabric \
                 "FABRIC '$i_method' transaction to $i_peer failed " \
                 "with ncode = '[http::ncode $token]'; Aborting\n"
-            err err "Full dump of HTTP response below:"
-            foreach {k v} [array get $token] {err err "    $k $v"}
-            exit 1
+            httpErrorExit $token
         }
 
         set response [http::data $token]
@@ -102,18 +116,17 @@ proc ::fabric::devops {i_peer i_method i_query {i_retry 0}} {
             }
         }
         }]
-        http::cleanup $token
 
         if {$err} {
-            err err \
+            err fabric \
                 "FABRIC '$i_method' response from $i_peer " \
                 "is malformed/unexpected"
-            err err "Chaincode : $i_chaincode"
-            err err "Full response below:"
-            err err $response
-            exit 1
+            httpErrorExit $token
         }
-        if {$retry != $i_retry} {
+
+        http::cleanup $token
+
+        if {($i_retry >= 0) && ($retry != $i_retry)} {
             note fabric \
                 "fabric::devops/$i_method $i_peer : " \
                 "Success after [expr {$i_retry - $retry}] HTTP retries"
@@ -146,14 +159,13 @@ proc ::fabric::deploy {i_peer i_user i_chaincode i_fn i_args {i_retry 0}} {
                 "path" : "$i_chaincode"
             },
             "ctorMsg" : {
-                "function" : "$i_fn",
                 "args" : [$args]
             },
             "secureContext": "$i_user"
         }
     }
 
-    set args [argify $i_args]
+    set args [argify $i_fn $i_args]
     set query [subst -nocommand $template]
 
     return [devops $i_peer deploy $query $i_retry]
@@ -167,6 +179,8 @@ proc ::fabric::deploy {i_peer i_user i_chaincode i_fn i_args {i_retry 0}} {
 # mode. Here, the i_chaincode is a user-specified name. All of the other
 # arguments are otherwise the same as for deploy{}.
 
+# See ::fabric::devops{} for a discussion of the 'i_retry' parameter.
+
 proc ::fabric::devModeDeploy {i_peer i_user i_chaincode i_fn i_args {i_retry 0}} {
 
     set template {
@@ -176,14 +190,13 @@ proc ::fabric::devModeDeploy {i_peer i_user i_chaincode i_fn i_args {i_retry 0}}
                 "name" : "$i_chaincode"
             },
             "ctorMsg" : {
-                "function" : "$i_fn",
                 "args" : [$args]
             },
             "secureContext": "$i_user"
         }
     }
 
-    set args [argify $i_args]
+    set args [argify $i_fn $i_args]
     set query [subst -nocommand $template]
 
     return [devops $i_peer deploy $query $i_retry]
@@ -212,7 +225,6 @@ proc ::fabric::invoke {i_peer i_user i_chaincodeName i_fn i_args {i_retry 0}} {
                     "name" : "$i_chaincodeName"
                 },
                 "ctorMsg" : {
-                    "function" : "$i_fn",
                     "args" : [$args]
                 },
                 "secureContext": "$i_user"
@@ -220,7 +232,7 @@ proc ::fabric::invoke {i_peer i_user i_chaincodeName i_fn i_args {i_retry 0}} {
         }
     }
 
-    set args [argify $i_args]
+    set args [argify $i_fn $i_args]
     set query [subst -nocommand $template]
 
     return [devops $i_peer invoke $query $i_retry]
@@ -250,7 +262,6 @@ proc ::fabric::query {i_peer i_user i_chaincodeName i_fn i_args {i_retry 0}} {
                     "name" : "$i_chaincodeName"
                 },
                 "ctorMsg" : {
-                    "function" : "$i_fn",
                     "args" : [$args]
                 },
                 "secureContext": "$i_user"
@@ -258,10 +269,68 @@ proc ::fabric::query {i_peer i_user i_chaincodeName i_fn i_args {i_retry 0}} {
         }
     }
 
-    set args [argify $i_args]
+    set args [argify $i_fn $i_args]
     set query [subst -nocommand $template]
 
     return [devops $i_peer query $query $i_retry]
+}
+
+
+############################################################################
+# height i_peer {i_retry 0}
+
+# Call the REST /chain API, returning the block height
+
+proc ::fabric::height {i_peer {i_retry 0}} {
+
+    for {set retry $i_retry} {$retry >= 0} {incr retry -1} {
+
+        if {[catch {http::geturl http://$i_peer/chain} token]} {
+            if {$retry > 0} {
+                if {$retry == $i_retry} {
+                    warn fabric \
+                        "$i_peer /chain: Retrying after catastrophic HTTP error"
+                }
+                http::cleanup $token
+                continue
+            }
+            errorExit \
+                "$i_peer /chain: ::http::geturl failed " \
+                "with $i_retry retries : $token"
+        }
+    
+        if {[http::ncode $token] != 200} {
+            
+            # Failure
+            
+            if {$retry > 0} {
+                if {$retry == $i_retry} {
+                    warn fabric \
+                        "$i_peer /chain: Retrying after HTTP error return"
+                }
+                http::cleanup $token
+                continue
+            }
+            
+            err fabric \
+                "$i_peer /chain; REST API call failed with $i_retry retries"
+            httpErrorExit $token
+        }
+        
+        if {[catch {json::json2dict [http::data $token]} parse]} {
+            err fabric "$i_peer /chain: JSON response does not parse: $parse"
+            httpErrorExit $token
+        }
+
+        if {[catch {dict get $parse height} height]} {
+            err fabric \
+                "$i_peer /chain: HTTP response does not contain a height: " \
+                $height
+            httpErrorExit $token
+        }
+
+        return $height
+    }
 }
 
 
@@ -359,19 +428,21 @@ proc ::fabric::caLogin {i_peer i_user i_secret} {
 
 
 ############################################################################
-# argify i_args
+# argify i_fn i_args
 
-# Convert a Tcl list to a list of quoted arguments with commas to satisfy the
-# JSON format. This needs to be done as a string (rather than as a list),
-# otherwise it will be {} quoted when substituted.
+# Convert old-style fn + args pair into a list of quoted base64 arguments with
+# commas to satisfy the most recent JSON format of the REST API. This needs to
+# be done as a string (rather than as a list), otherwise it will be {} quoted
+# when substituted.
 
-proc ::fabric::argify {i_args} {
+proc ::fabric::argify {i_fn i_args} {
 
-    set args ""
+    set args [concat $i_fn $i_args]
+    set args64 ""
     set comma ""
-    foreach arg $i_args {
-        set args "$args$comma\"$arg\""
+    foreach arg $args {
+        set args64 "$args64$comma\"[binary encode base64 $arg]\""
         set comma ,
     }
-    return $args
+    return $args64
 }

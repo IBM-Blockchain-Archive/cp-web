@@ -18,16 +18,21 @@ The following major support scripts are provided. These scripts are called out
 by other major scripts or test drivers. Scripts are typically documented in a
 *usage* string embedded at the top of the script.
 
+* [busy](busy) is a script that can be used to execute operations on any peer
+  network defined by a **busywork** `network` file. Currently the chaincode
+  `deploy`, `invoke` and `query` operations are supported, as well as HTTP GET
+  operations using the REST API.
+
 * [checkAgreement](checkAgreement) is a script that uses the
   [fabricLogger](fabricLogger) (see below) to check that all of the peers in a
   network agree on the contents of the blockchain.
 
 * [fabricLogger](fabricLogger) is a simple script that converts a blockchain
   into a text file listing of transaction IDs.
-  
+
 * [networkStatus](networkStatus) is a script that reports on the status of
   Hyperledger fabric peer networks created with **busywork** tools, with an
-  option to be used as a background *watchdog* on the health of the network. 
+  option to be used as a background *watchdog* on the health of the network.
 
 * [pprofClient](pprofClient) is a script that takes profiles from the
   profiling server built into the Hyperledger fabric peer.
@@ -37,11 +42,11 @@ by other major scripts or test drivers. Scripts are typically documented in a
   networks that do not rely on Docker-compose, or multiple physical or virtual
   nodes. The concept of a user-mode network is discussed
   [below](#userModeNetwork).
-  
+
 * [wait-for-it](wait-for-it) is a general-purpose script that waits for a
   network service to be available with an optional timeout. **busywork**
   applications use `wait-for-it` to correctly sequence network startup.
-  
+
 
 <a name="userModeNetwork"></a>
 ## User-Mode Networks
@@ -62,22 +67,30 @@ Starting a user-mode network of 10 peers running PBFT batch consensus is as as
 simple as
 
     userModeNetwork 10
-	
+
 Several useful options for setting up the network are also provided. Here is
-an example of setting up a 4-node network with security, PBFT Sieve consensus
+an example of setting up a 4-node network with security, PBFT Batch consensus
 and DEBUG-level logging in the peers
 
-    userModeNetwork -security -sieve -peerLogging debug 4
-	
+    userModeNetwork -security -batch -peerLogging debug 4
+
+Normally the peer services are available on all system network interfaces
+(i.e., interface 0.0.0.0). The `-interface` option can be used to limit
+network services to a single interface, and can also be useful for creating
+networks (and `network` files) that will be accessed by client drivers running
+on remote systems.
+
+    userModeNetwork -interface `hostname` 10
+
 Another advantage of a user-mode network can be that the peer processes are
 executed in the environment of the call of
 [userModeNetwork](userModeNetwork). This makes it very easy to override
 default configuration parameters from the command line or from a script. For
 example
 
-    CORE_SECURITY_TCERT_BATCH_SIZE=1000 userModeNetwork -security -sieve 4
-	
-	
+    CORE_SECURITY_TCERT_BATCH_SIZE=1000 userModeNetwork -security -batch 4
+
+
 <a name="caveats"></a>
 ## User-Mode Caveats
 
@@ -97,7 +110,7 @@ The mechanism used to determine when the **membersrvc** server is up and
 running causes a (harmless) message like the following to appear at the top of
 the log file:
 
-    2016/05/19 08:23:40 grpc: Server.Serve failed to create ServerTransport:  connection error: desc = "transport: write tcp 127.0.0.1:50051->127.0.0.1:49084: write: broken pipe"
+    2016/05/19 08:23:40 grpc: Server.Serve failed to create ServerTransport:  connection error: desc = "transport: write tcp 127.0.0.1:7054->127.0.0.1:49084: write: broken pipe"
 
 
 <a name=busywork-home></a>
@@ -109,9 +122,8 @@ and applications create (if necessary) and use `~/.busywork` as the
 in the **BUSYWORK_HOME** depending on which **busywork** tools are being
 used.
 
-* `chaincodes` This file lists chaincode deployments. Each line contains
-  The chaincode name or ID, the chaincode path, the initialization function
-  and its arguments.
+* `chaincodes` This file lists chaincode deployments. The structure of the
+  file is described [below](#chaincodes).
 
 * `dev-vp*-*` If you excute the `make cclogs` target of the
   [Makefile](Makefile) the chaincode logs will be dumped into these
@@ -120,10 +132,10 @@ used.
 * `fabricLog` This is a text representation of the blockchain created by the
   [fabricLogger](fabricLogger) process that driver scripts invoke to validate
   transaction execution.
-  
+
 * `membersrvc/` This directory contains the **membersrvc** database (`/data` -
   TBD) and the `/stderr` and `/stdout` logs from the **membersrvc** server.
-  
+
 * `network` The network configuration is described [below](#network).
 
 * `pprof.*` If you use the [pprofClient](pprofClient) to collect profiles the
@@ -131,7 +143,7 @@ used.
 
 * `vp[0,...N]/` These directories contain the validating peer databases
   `/data` and their `/stderr` and `/stdout` logs.
-  
+
 * `*.chain` These files are created by the [checkAgreement](checkAgreement)
   script, and represent the blockchains as recorded on the different peers in
   the network.
@@ -145,7 +157,7 @@ used.
   object. This is still a work in progress so some fields may be changed
   and/or added in the future, but this is an example of what one of these
   network descriptions looks like at present.
-  
+
 ```
 {
     "networkMode": "user",
@@ -154,10 +166,10 @@ used.
     "date": "2016/05/27+08:15:45",
     "createdBy": "userModeNetwork",
     "security": "true",
-    "consensus": "sieve",
+    "consensus": "batch",
     "peerProfileServer": "true",
     "membersrvc":
-        { "service": "0.0.0.0:50051",
+        { "service": "0.0.0.0:7054",
           "pid": "93244"
         },
     "peers": [
@@ -197,5 +209,31 @@ used.
           "pid": "93289"
         }
     ]
+}
+```
+
+<a name="chaincodes"></a>
+## *busywork* Chaincode Deployments
+
+**busywork** scripts that deploy chaincodes to a peer network produce a
+  description of the deployments for the benefit of other **busywork**
+  tools. The deployment information is written as `$BUSYWORK_HOME/chaincodes`,
+  and contains a single JSON object. This is still a work in progress so some
+  fields may be changed and/or added in the future, but this is an example of
+  what one of these chaincode deployment descriptions looks like at present.
+```
+{
+    "cc0"     : {
+        "name"     : "a3a4756cd347784d15262a5839838768cd1ef8d6f853893e64651a788c30c409d1a0e645c230c2a3142abed8699f3435ce5a5bacc1282d630866b949f69d6773",
+        "path"     : "github.com/hyperledger/fabric/tools/busywork/counters",
+        "function" : "parms",
+        "args"     : ["-id","cc0"]
+    },
+    "cc1" : {
+        "name"     : "52676ae63ebf205f0c9a2dba111a2ac75afaf62075e43b21e04ccbf29ce2e9661a6eb9963cc29cf2f38e9b12fff0c00fcb9b9e98c0fb342bb5a7eb299c6dc938",
+        "path"     : "github.com/hyperledger/fabric/tools/busywork/counters",
+        "function" : "parms",
+        "args"     : ["-id","cc1"]
+    }
 }
 ```

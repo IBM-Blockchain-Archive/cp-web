@@ -17,6 +17,7 @@ limitations under the License.
 package protos
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
@@ -44,7 +45,7 @@ func NewTransaction(chaincodeID ChaincodeID, uuid string, function string, argum
 	}
 	transaction := new(Transaction)
 	transaction.ChaincodeID = data
-	transaction.Uuid = uuid
+	transaction.Txid = uuid
 	transaction.Timestamp = util.CreateUtcTimestamp()
 	/*
 		// Build the spec
@@ -67,7 +68,7 @@ func NewTransaction(chaincodeID ChaincodeID, uuid string, function string, argum
 func NewChaincodeDeployTransaction(chaincodeDeploymentSpec *ChaincodeDeploymentSpec, uuid string) (*Transaction, error) {
 	transaction := new(Transaction)
 	transaction.Type = Transaction_CHAINCODE_DEPLOY
-	transaction.Uuid = uuid
+	transaction.Txid = uuid
 	transaction.Timestamp = util.CreateUtcTimestamp()
 	cID := chaincodeDeploymentSpec.ChaincodeSpec.GetChaincodeID()
 	if cID != nil {
@@ -90,11 +91,11 @@ func NewChaincodeDeployTransaction(chaincodeDeploymentSpec *ChaincodeDeploymentS
 	return transaction, nil
 }
 
-// NewChaincodeExecute is used to deploy chaincode.
+// NewChaincodeExecute is used to invoke chaincode.
 func NewChaincodeExecute(chaincodeInvocationSpec *ChaincodeInvocationSpec, uuid string, typ Transaction_Type) (*Transaction, error) {
 	transaction := new(Transaction)
 	transaction.Type = typ
-	transaction.Uuid = uuid
+	transaction.Txid = uuid
 	transaction.Timestamp = util.CreateUtcTimestamp()
 	cID := chaincodeInvocationSpec.ChaincodeSpec.GetChaincodeID()
 	if cID != nil {
@@ -110,4 +111,25 @@ func NewChaincodeExecute(chaincodeInvocationSpec *ChaincodeInvocationSpec, uuid 
 	}
 	transaction.Payload = data
 	return transaction, nil
+}
+
+type strArgs struct {
+	Function string
+	Args     []string
+}
+
+// UnmarshalJSON converts the string-based REST/JSON input to
+// the []byte-based current ChaincodeInput structure.
+func (c *ChaincodeInput) UnmarshalJSON(b []byte) error {
+	sa := &strArgs{}
+	err := json.Unmarshal(b, sa)
+	if err != nil {
+		return err
+	}
+	allArgs := sa.Args
+	if sa.Function != "" {
+		allArgs = append([]string{sa.Function}, sa.Args...)
+	}
+	c.Args = util.ToChaincodeArgs(allArgs...)
+	return nil
 }

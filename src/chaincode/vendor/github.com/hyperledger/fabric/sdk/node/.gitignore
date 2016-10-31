@@ -3,3 +3,7 @@ node_modules/*
 /.idea/
 /node.iml
 /typings/
+/doc/
+/lib/*
+!/lib/protos/google
+!/lib/hash.js

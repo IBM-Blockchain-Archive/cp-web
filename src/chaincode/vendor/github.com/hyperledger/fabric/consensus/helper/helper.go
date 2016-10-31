@@ -53,16 +53,16 @@ func NewHelper(mhc peer.MessageHandlerCoordinator) *Helper {
 		coordinator: mhc,
 		secOn:       viper.GetBool("security.enabled"),
 		secHelper:   mhc.GetSecHelper(),
-		valid:       true, // Assume our state is consistent until we are told otherwise, TODO: revisit
+		valid:       true, // Assume our state is consistent until we are told otherwise, actual consensus (pbft) will invalidate this immediately, but noops will not
 	}
 
 	h.executor = executor.NewImpl(h, h, mhc)
-	h.executor.Start()
 	return h
 }
 
 func (h *Helper) setConsenter(c consensus.Consenter) {
 	h.consenter = c
+	h.executor.Start() // The consenter may be expecting a callback from the executor because of state transfer completing, it will miss this if we start the executor too early
 }
 
 // GetNetworkInfo returns the PeerEndpoints of the current validator and the entire validating network
@@ -180,19 +180,20 @@ func (h *Helper) ExecTxs(id interface{}, txs []*pb.Transaction) ([]byte, error) 
 	// cxt := context.WithValue(context.Background(), "security", h.coordinator.GetSecHelper())
 	// TODO return directly once underlying implementation no longer returns []error
 
-	res, ccevents, txerrs, err := chaincode.ExecuteTransactions(context.Background(), chaincode.DefaultChain, txs)
-	h.curBatch = append(h.curBatch, txs...) // TODO, remove after issue 579
+	succeededTxs, res, ccevents, txerrs, err := chaincode.ExecuteTransactions(context.Background(), chaincode.DefaultChain, txs)
 
-	//copy errs to results
+	h.curBatch = append(h.curBatch, succeededTxs...) // TODO, remove after issue 579
+
+	//copy errs to result
 	txresults := make([]*pb.TransactionResult, len(txerrs))
 
 	//process errors for each transaction
 	for i, e := range txerrs {
 		//NOTE- it'll be nice if we can have error values. For now success == 0, error == 1
 		if txerrs[i] != nil {
-			txresults[i] = &pb.TransactionResult{Uuid: txs[i].Uuid, Error: e.Error(), ErrorCode: 1, ChaincodeEvent: ccevents[i]}
+			txresults[i] = &pb.TransactionResult{Txid: txs[i].Txid, Error: e.Error(), ErrorCode: 1, ChaincodeEvent: ccevents[i]}
 		} else {
-			txresults[i] = &pb.TransactionResult{Uuid: txs[i].Uuid, ChaincodeEvent: ccevents[i]}
+			txresults[i] = &pb.TransactionResult{Txid: txs[i].Txid, ChaincodeEvent: ccevents[i]}
 		}
 	}
 	h.curBatchErrs = append(h.curBatchErrs, txresults...) // TODO, remove after issue 579

@@ -99,12 +99,7 @@ func (indexer *blockchainIndexerAsync) start(blockchain *blockchain) error {
 	return nil
 }
 
-func (indexer *blockchainIndexerAsync) createIndexesSync(
-	block *protos.Block, blockNumber uint64, blockHash []byte, writeBatch *gorocksdb.WriteBatch) error {
-	return fmt.Errorf("Method not applicable")
-}
-
-func (indexer *blockchainIndexerAsync) createIndexesAsync(block *protos.Block, blockNumber uint64, blockHash []byte) error {
+func (indexer *blockchainIndexerAsync) createIndexes(block *protos.Block, blockNumber uint64, blockHash []byte, writeBatch *gorocksdb.WriteBatch) error {
 	indexer.blockChan <- blockWrapper{block, blockNumber, blockHash, false}
 	return nil
 }
@@ -136,13 +131,13 @@ func (indexer *blockchainIndexerAsync) fetchBlockNumberByBlockHash(blockHash []b
 	return fetchBlockNumberByBlockHashFromDB(blockHash)
 }
 
-func (indexer *blockchainIndexerAsync) fetchTransactionIndexByUUID(txUUID string) (uint64, uint64, error) {
+func (indexer *blockchainIndexerAsync) fetchTransactionIndexByID(txID string) (uint64, uint64, error) {
 	err := indexer.indexerState.checkError()
 	if err != nil {
 		return 0, 0, err
 	}
 	indexer.indexerState.waitForLastCommittedBlock()
-	return fetchTransactionIndexByUUIDFromDB(txUUID)
+	return fetchTransactionIndexByIDFromDB(txID)
 }
 
 func (indexer *blockchainIndexerAsync) indexPendingBlocks() error {
@@ -210,7 +205,7 @@ func (indexer *blockchainIndexerAsync) stop() {
 // Since, we index blocks asynchronously, there may be a case when
 // a client query arrives before a block has been indexed.
 //
-// Do we really need strict symantics such that an index query results
+// Do we really need strict semantics such that an index query results
 // should include up to block number (or higher) that may have been committed
 // when user query arrives?
 // If a delay of a couple of blocks are allowed, we can get rid of this synchronization stuff

@@ -159,7 +159,31 @@ func (ledger *Ledger) CommitTxBatch(id interface{}, transactions []*protos.Trans
 	writeBatch := gorocksdb.NewWriteBatch()
 	defer writeBatch.Destroy()
 	block := protos.NewBlock(transactions, metadata)
-	block.NonHashData = &protos.NonHashData{TransactionResults: transactionResults}
+
+	ccEvents := []*protos.ChaincodeEvent{}
+
+	if transactionResults != nil {
+		ccEvents = make([]*protos.ChaincodeEvent, len(transactionResults))
+		for i := 0; i < len(transactionResults); i++ {
+			if transactionResults[i].ChaincodeEvent != nil {
+				ccEvents[i] = transactionResults[i].ChaincodeEvent
+			} else {
+				//We need the index so we can map the chaincode
+				//event to the transaction that generated it.
+				//Hence need an entry for cc event even if one
+				//wasn't generated for the transaction. We cannot
+				//use a nil cc event as protobuf does not like
+				//elements of a repeated array to be nil.
+				//
+				//We should discard empty events without chaincode
+				//ID when sending out events.
+				ccEvents[i] = &protos.ChaincodeEvent{}
+			}
+		}
+	}
+
+	//store chaincode events directly in NonHashData. This will likely change in New Consensus where we can move them to Transaction
+	block.NonHashData = &protos.NonHashData{ChaincodeEvents: ccEvents}
 	newBlockNumber, err := ledger.blockchain.addPersistenceChangesForNewBlock(context.TODO(), block, stateHash, writeBatch)
 	if err != nil {
 		ledger.resetForNextTxGroup(false)
@@ -180,10 +204,17 @@ func (ledger *Ledger) CommitTxBatch(id interface{}, transactions []*protos.Trans
 	ledger.blockchain.blockPersistenceStatus(true)
 
 	sendProducerBlockEvent(block)
+
+	//send chaincode events from transaction results
+	sendChaincodeEvents(transactionResults)
+
+	if len(transactionResults) != 0 {
+		ledgerLogger.Debug("There were some erroneous transactions. We need to send a 'TX rejected' message here.")
+	}
 	return nil
 }
 
-// RollbackTxBatch - Descards all the state changes that may have taken place during the execution of
+// RollbackTxBatch - Discards all the state changes that may have taken place during the execution of
 // current transaction-batch
 func (ledger *Ledger) RollbackTxBatch(id interface{}) error {
 	ledgerLogger.Debugf("RollbackTxBatch for id = [%s]", id)
@@ -196,14 +227,14 @@ func (ledger *Ledger) RollbackTxBatch(id interface{}) error {
 }
 
 // TxBegin - Marks the begin of a new transaction in the ongoing batch
-func (ledger *Ledger) TxBegin(txUUID string) {
-	ledger.state.TxBegin(txUUID)
+func (ledger *Ledger) TxBegin(txID string) {
+	ledger.state.TxBegin(txID)
 }
 
 // TxFinished - Marks the finish of the on-going transaction.
 // If txSuccessful is false, the state changes made by the transaction are discarded
-func (ledger *Ledger) TxFinished(txUUID string, txSuccessful bool) {
-	ledger.state.TxFinish(txUUID, txSuccessful)
+func (ledger *Ledger) TxFinished(txID string, txSuccessful bool) {
+	ledger.state.TxFinish(txID, txSuccessful)
 }
 
 /////////////////// world-state related methods /////////////////////////////////////
@@ -247,7 +278,7 @@ func (ledger *Ledger) SetState(chaincodeID string, key string, value []byte) err
 	return ledger.state.Set(chaincodeID, key, value)
 }
 
-// DeleteState tracks the deletion of state for chaincodeID and key. Does not immideatly writes to DB
+// DeleteState tracks the deletion of state for chaincodeID and key. Does not immediately writes to DB
 func (ledger *Ledger) DeleteState(chaincodeID string, key string) error {
 	return ledger.state.Delete(chaincodeID, key)
 }
@@ -271,7 +302,7 @@ func (ledger *Ledger) SetStateMultipleKeys(chaincodeID string, kvs map[string][]
 
 // GetStateSnapshot returns a point-in-time view of the global state for the current block. This
 // should be used when transferring the state from one peer to another peer. You must call
-// stateSnapshot.Release() once you are done with the snapsnot to free up resources.
+// stateSnapshot.Release() once you are done with the snapshot to free up resources.
 func (ledger *Ledger) GetStateSnapshot() (*state.StateSnapshot, error) {
 	dbSnapshot := db.GetDBHandle().GetSnapshot()
 	blockHeight, err := fetchBlockchainSizeFromSnapshot(dbSnapshot)
@@ -375,14 +406,9 @@ func (ledger *Ledger) GetBlockchainSize() uint64 {
 	return ledger.blockchain.getSize()
 }
 
-// GetTransactionByUUID return transaction by it's uuid
-func (ledger *Ledger) GetTransactionByUUID(txUUID string) (*protos.Transaction, error) {
-	return ledger.blockchain.getTransactionByUUID(txUUID)
-}
-
-// GetTransactionByUUID return transaction by it's uuid
-func (ledger *Ledger) GetTransactionResultByUUID(txUUID string) (*protos.TransactionResult, error) {
-	return ledger.blockchain.getTransactionResultByUUID(txUUID)
+// GetTransactionByID return transaction by it's txId
+func (ledger *Ledger) GetTransactionByID(txID string) (*protos.Transaction, error) {
+	return ledger.blockchain.getTransactionByID(txID)
 }
 
 // PutRawBlock puts a raw block on the chain. This function should only be
@@ -396,17 +422,17 @@ func (ledger *Ledger) PutRawBlock(block *protos.Block, blockNumber uint64) error
 	return nil
 }
 
-// VerifyChain will verify the integrety of the blockchain. This is accomplished
+// VerifyChain will verify the integrity of the blockchain. This is accomplished
 // by ensuring that the previous block hash stored in each block matches
 // the actual hash of the previous block in the chain. The return value is the
 // block number of lowest block in the range which can be verified as valid.
 // The first block is assumed to be valid, and an error is only returned if the
 // first block does not exist, or some other sort of irrecoverable ledger error
 // such as the first block failing to hash is encountered.
-// For example, if VerifyChain(0, 99) is called and prevous hash values stored
+// For example, if VerifyChain(0, 99) is called and previous hash values stored
 // in blocks 8, 32, and 42 do not match the actual hashes of respective previous
 // block 42 would be the return value from this function.
-// highBlock is the high block in the chain to include in verofication. If you
+// highBlock is the high block in the chain to include in verification. If you
 // wish to verify the entire chain, use ledger.GetBlockchainSize() - 1.
 // lowBlock is the low block in the chain to include in verification. If
 // you wish to verify the entire chain, use 0 for the genesis block.
@@ -492,18 +518,15 @@ func sendProducerBlockEvent(block *protos.Block) {
 	}
 
 	producer.Send(producer.CreateBlockEvent(block))
-
-	//when we send block event, send chaincode events as well
-	sendChaincodeEvents(block)
 }
 
-//send chaincode events created by transactions in the block
-func sendChaincodeEvents(block *protos.Block) {
-	nonHashData := block.GetNonHashData()
-	if nonHashData != nil {
-		trs := nonHashData.GetTransactionResults()
+//send chaincode events created by transactions
+func sendChaincodeEvents(trs []*protos.TransactionResult) {
+	if trs != nil {
 		for _, tr := range trs {
-			if tr.ChaincodeEvent != nil {
+			//we store empty chaincode events in the protobuf repeated array to make protobuf happy.
+			//when we replay off a block ignore empty events
+			if tr.ChaincodeEvent != nil && tr.ChaincodeEvent.ChaincodeID != "" {
 				producer.Send(producer.CreateChaincodeEvent(tr.ChaincodeEvent))
 			}
 		}

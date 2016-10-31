@@ -19,6 +19,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
@@ -112,7 +113,6 @@ func (*Devops) Build(context context.Context, spec *pb.ChaincodeSpec) (*pb.Chain
 
 		codePackageBytes, err = vm.BuildChaincodeContainer(spec)
 		if err != nil {
-			err = fmt.Errorf("Error getting chaincode package bytes: %s", err)
 			devopsLogger.Error(fmt.Sprintf("%s", err))
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func (d *Devops) Deploy(ctx context.Context, spec *pb.ChaincodeSpec) (*pb.Chainc
 	}
 
 	if devopsLogger.IsEnabledFor(logging.DEBUG) {
-		devopsLogger.Debugf("Sending deploy transaction (%s) to validator", tx.Uuid)
+		devopsLogger.Debugf("Sending deploy transaction (%s) to validator", tx.Txid)
 	}
 	resp := d.coord.ExecuteTransaction(tx)
 	if resp.Status == pb.Response_FAILURE {
@@ -209,7 +209,26 @@ func (d *Devops) invokeOrQuery(ctx context.Context, chaincodeInvocationSpec *pb.
 	}
 
 	// Now create the Transactions message and send to Peer.
-	uuid := util.GenerateUUID()
+	var customIDgenAlg = strings.ToLower(chaincodeInvocationSpec.IdGenerationAlg)
+	var id string
+	var generr error
+	if invoke {
+		if customIDgenAlg != "" {
+			ctorbytes, merr := asn1.Marshal(*chaincodeInvocationSpec.ChaincodeSpec.CtorMsg)
+			if merr != nil {
+				return nil, fmt.Errorf("Error marshalling constructor: %s", merr)
+			}
+			id, generr = util.GenerateIDWithAlg(customIDgenAlg, ctorbytes)
+			if generr != nil {
+				return nil, generr
+			}
+		} else {
+			id = util.GenerateUUID()
+		}
+	} else {
+		id = util.GenerateUUID()
+	}
+	devopsLogger.Infof("Transaction ID: %v", id)
 	var transaction *pb.Transaction
 	var err error
 	var sec crypto.Client
@@ -226,12 +245,12 @@ func (d *Devops) invokeOrQuery(ctx context.Context, chaincodeInvocationSpec *pb.
 		}
 	}
 
-	transaction, err = d.createExecTx(chaincodeInvocationSpec, attributes, uuid, invoke, sec)
+	transaction, err = d.createExecTx(chaincodeInvocationSpec, attributes, id, invoke, sec)
 	if err != nil {
 		return nil, err
 	}
 	if devopsLogger.IsEnabledFor(logging.DEBUG) {
-		devopsLogger.Debugf("Sending invocation transaction (%s) to validator", transaction.Uuid)
+		devopsLogger.Debugf("Sending invocation transaction (%s) to validator", transaction.Txid)
 	}
 	resp := d.coord.ExecuteTransaction(transaction)
 	if resp.Status == pb.Response_FAILURE {
@@ -239,7 +258,7 @@ func (d *Devops) invokeOrQuery(ctx context.Context, chaincodeInvocationSpec *pb.
 	} else {
 		if !invoke && nil != sec && viper.GetBool("security.privacy") {
 			if resp.Msg, err = sec.DecryptQueryResult(transaction, resp.Msg); nil != err {
-				devopsLogger.Debugf("Failed decrypting query transaction result %s", string(resp.Msg[:]))
+				devopsLogger.Errorf("Failed decrypting query transaction result %s", string(resp.Msg[:]))
 				//resp = &pb.Response{Status: pb.Response_FAILURE, Msg: []byte(err.Error())}
 			}
 		}
@@ -436,7 +455,14 @@ func (d *Devops) EXP_ExecuteWithBinding(ctx context.Context, executeWithBinding 
 			return &pb.Response{Status: pb.Response_FAILURE, Msg: []byte(err.Error())}, nil
 		}
 
-		tid := util.GenerateUUID()
+		ctorbytes, merr := asn1.Marshal(*executeWithBinding.ChaincodeInvocationSpec.ChaincodeSpec.CtorMsg)
+		if merr != nil {
+			return nil, fmt.Errorf("Error marshalling constructor: %s", err)
+		}
+		tid, generr := util.GenerateIDWithAlg("", ctorbytes)
+		if generr != nil {
+			return nil, fmt.Errorf("Error: cannot generate TX ID (executing with binding)")
+		}
 
 		tx, err := txHandler.NewChaincodeExecute(executeWithBinding.ChaincodeInvocationSpec, tid)
 		if err != nil {
@@ -450,17 +476,4 @@ func (d *Devops) EXP_ExecuteWithBinding(ctx context.Context, executeWithBinding 
 	}
 	devopsLogger.Warning("Security NOT enabled")
 	return &pb.Response{Status: pb.Response_FAILURE, Msg: []byte("Security NOT enabled")}, nil
-}
-
-// GetTransactionResult request a TransactionResult.  The Response.Msg will contain the TransactionResult if successfully found the transaction in the chain.
-func (d *Devops) GetTransactionResult(ctx context.Context, txRequest *pb.TransactionRequest) (*pb.Response, error) {
-	txResult, err := d.coord.GetTransactionResultByUUID(txRequest.TransactionUuid)
-	if err != nil {
-		return &pb.Response{Status: pb.Response_FAILURE, Msg: []byte(fmt.Sprintf("Error getting transaction Result: %s", err.Error()))}, nil
-	}
-	txResultBytes, err := proto.Marshal(txResult)
-	if err != nil {
-		return &pb.Response{Status: pb.Response_FAILURE, Msg: []byte(fmt.Sprintf("Error getting transaction Result for tx UUID = %s, could not marshal txResult: %s", txRequest.TransactionUuid, err.Error()))}, nil
-	}
-	return &pb.Response{Status: pb.Response_SUCCESS, Msg: txResultBytes}, nil
 }

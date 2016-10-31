@@ -17,7 +17,7 @@ limitations under the License.
 syntax = "proto3";
 
 package protos;
-
+option java_package = "org.hyperledger.protos";
 import "chaincodeevent.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -46,11 +46,10 @@ message ChaincodeID {
 }
 
 // Carries the chaincode function and its arguments.
+// UnmarshalJSON in transaction.go converts the string-based REST/JSON input to
+// the []byte-based current ChaincodeInput structure.
 message ChaincodeInput {
-
-    string function = 1;
-    repeated string args  = 2;
-
+    repeated bytes args  = 1;
 }
 
 // Carries the chaincode specification. This is the actual metadata required for
@@ -62,6 +61,7 @@ message ChaincodeSpec {
         GOLANG = 1;
         NODE = 2;
         CAR = 3;
+        JAVA = 4;
     }
 
     Type type = 1;
@@ -95,8 +95,14 @@ message ChaincodeDeploymentSpec {
 message ChaincodeInvocationSpec {
 
     ChaincodeSpec chaincodeSpec = 1;
-    //ChaincodeInput message = 2;
-
+    // This field can contain a user-specified ID generation algorithm
+    // If supplied, this will be used to generate a ID
+    // If not supplied (left empty), sha256base64 will be used
+    // The algorithm consists of two parts:
+    //  1, a hash function
+    //  2, a decoding used to decode user (string) input to bytes
+    // Currently, SHA256 with BASE64 is supported (e.g. idGenerationAlg='sha256base64')
+    string idGenerationAlg = 2;
 }
 
 // This structure contain transaction data that we send to the chaincode
@@ -136,12 +142,13 @@ message ChaincodeMessage {
         RANGE_QUERY_STATE = 17;
         RANGE_QUERY_STATE_NEXT = 18;
         RANGE_QUERY_STATE_CLOSE = 19;
+        KEEPALIVE = 20;
     }
 
     Type type = 1;
     google.protobuf.Timestamp timestamp = 2;
     bytes payload = 3;
-    string uuid = 4;
+    string txid = 4;
     ChaincodeSecurityContext securityContext = 5;
 
     //event emmited by chaincode. Used only with Init or Invoke.

@@ -29,6 +29,8 @@ import (
 	pb "github.com/hyperledger/fabric/protos"
 )
 
+const DefaultSyncSnapshotTimeout time.Duration = 60 * time.Second
+
 // Handler peer handler implementation.
 type Handler struct {
 	chatMutex                     sync.Mutex
@@ -43,11 +45,13 @@ type Handler struct {
 	snapshotRequestHandler        *syncStateSnapshotRequestHandler
 	syncStateDeltasRequestHandler *syncStateDeltasHandler
 	syncBlocksRequestHandler      *syncBlocksRequestHandler
+	syncSnapshotTimeout           time.Duration
+	lastIgnoredSnapshotCID        *uint64
 }
 
 // NewPeerHandler returns a new Peer handler
 // Is instance of HandlerFactory
-func NewPeerHandler(coord MessageHandlerCoordinator, stream ChatStream, initiatedStream bool, nextHandler MessageHandler) (MessageHandler, error) {
+func NewPeerHandler(coord MessageHandlerCoordinator, stream ChatStream, initiatedStream bool) (MessageHandler, error) {
 
 	d := &Handler{
 		ChatStream:      stream,
@@ -55,6 +59,12 @@ func NewPeerHandler(coord MessageHandlerCoordinator, stream ChatStream, initiate
 		Coordinator:     coord,
 	}
 	d.doneChan = make(chan struct{})
+
+	if dur := viper.GetDuration("peer.sync.state.snapshot.writeTimeout"); dur == 0 {
+		d.syncSnapshotTimeout = DefaultSyncSnapshotTimeout
+	} else {
+		d.syncSnapshotTimeout = dur
+	}
 
 	d.snapshotRequestHandler = newSyncStateSnapshotRequestHandler()
 	d.syncStateDeltasRequestHandler = newSyncStateDeltasHandler()
@@ -185,6 +195,16 @@ func (d *Handler) beforeHello(e *fsm.Event) {
 	} else {
 		// Registered successfully
 		d.registered = true
+		otherPeer := d.ToPeerEndpoint.Address
+		if !d.Coordinator.GetDiscHelper().FindNode(otherPeer) {
+			if ok := d.Coordinator.GetDiscHelper().AddNode(otherPeer); !ok {
+				peerLogger.Warningf("Unable to add peer %v to discovery list", otherPeer)
+			}
+			err = d.Coordinator.StoreDiscoveryList()
+			if err != nil {
+				peerLogger.Error(err)
+			}
+		}
 		go d.start()
 	}
 }
@@ -289,59 +309,6 @@ func (d *Handler) start() error {
 			if err := d.SendMessage(&pb.Message{Type: pb.Message_DISC_GET_PEERS}); err != nil {
 				peerLogger.Errorf("Error sending %s during handler discovery tick: %s", pb.Message_DISC_GET_PEERS, err)
 			}
-			// // TODO: For testing only, remove eventually.  Test the blocks transfer functionality.
-			// syncBlocksChannel, _ := d.RequestBlocks(&pb.SyncBlockRange{Start: 0, End: 0})
-			// go func() {
-			// 	for {
-			// 		// peerLogger.Debug("Sleeping for 1 second...")
-			// 		// time.Sleep(1 * time.Second)
-			// 		// peerLogger.Debug("Waking up and pulling from sync channel")
-			// 		syncBlocks, ok := <-syncBlocksChannel
-			// 		if !ok {
-			// 			// Channel was closed
-			// 			peerLogger.Debug("Channel closed for SyncBlocks")
-			// 			break
-			// 		} else {
-			// 			peerLogger.Debugf("Received SyncBlocks on channel with Range from %d to %d", syncBlocks.Range.Start, syncBlocks.Range.End)
-			// 		}
-			// 	}
-			// }()
-
-			// // TODO: For testing only, remove eventually.  Test the State Snapshot functionality
-			// syncStateSnapshotChannel, _ := d.RequestStateSnapshot()
-			// go func() {
-			// 	for {
-			// 		// peerLogger.Debug("Sleeping for 1 second...")
-			// 		// time.Sleep(1 * time.Second)
-			// 		// peerLogger.Debug("Waking up and pulling from sync channel")
-			// 		syncStateSnapshot, ok := <-syncStateSnapshotChannel
-			// 		if !ok {
-			// 			// Channel was closed
-			// 			peerLogger.Debug("Channel closed for SyncStateSnapshot")
-			// 			break
-			// 		} else {
-			// 			peerLogger.Debugf("Received SyncStateSnapshot on channel with block = %d, correlationId = %d, sequence = %d, len delta = %d", syncStateSnapshot.BlockNumber, syncStateSnapshot.Request.CorrelationId, syncStateSnapshot.Sequence, len(syncStateSnapshot.Delta))
-			// 		}
-			// 	}
-			// }()
-
-			// // TODO: For testing only, remove eventually.  Test the State Deltas functionality
-			// syncStateDeltasChannel, _ := d.RequestStateDeltas(&pb.SyncBlockRange{Start: 0, End: 0})
-			// go func() {
-			// 	for {
-			// 		// peerLogger.Debug("Sleeping for 1 second...")
-			// 		// time.Sleep(1 * time.Second)
-			// 		// peerLogger.Debug("Waking up and pulling from sync channel")
-			// 		syncStateDeltas, ok := <-syncStateDeltasChannel
-			// 		if !ok {
-			// 			// Channel was closed
-			// 			peerLogger.Debug("Channel closed for SyncStateDeltas")
-			// 			break
-			// 		} else {
-			// 			peerLogger.Debugf("Received SyncStateDeltas on channel with syncBlockRange = %d-%d, len delta = %d", syncStateDeltas.Range.Start, syncStateDeltas.Range.End, len(syncStateDeltas.Deltas))
-			// 		}
-			// 	}
-			// }()
 		case <-d.doneChan:
 			peerLogger.Debug("Stopping discovery service")
 			return nil
@@ -537,22 +504,26 @@ func (d *Handler) beforeSyncStateSnapshot(e *fsm.Event) {
 			peerLogger.Errorf("Error sending syncStateSnapshot to channel: %v", x)
 		}
 	}()
-	// Use non-blocking send, will WARN and close channel if missed message.
+	// Use blocking send and timeout, will WARN and close channel if write times out
 	d.snapshotRequestHandler.Lock()
 	defer d.snapshotRequestHandler.Unlock()
+	timer := time.NewTimer(d.syncSnapshotTimeout)
 	// Make sure the correlationID matches
 	if d.snapshotRequestHandler.shouldHandle(syncStateSnapshot.Request.CorrelationId) {
 		select {
 		case d.snapshotRequestHandler.channel <- syncStateSnapshot:
-		default:
+		case <-timer.C:
 			// Was not able to write to the channel, in which case the Snapshot stream is incomplete, and must be discarded, closing the channel
 			// without sending the terminating message which would have had an empty byte slice.
-			peerLogger.Warningf("Did NOT send SyncStateSnapshot message to channel for correlationId = %d, sequence = %d, closing channel as the message has been discarded", syncStateSnapshot.Request.CorrelationId, syncStateSnapshot.Sequence)
+			peerLogger.Warningf("Did NOT send SyncStateSnapshot message to channel for correlationId = %d, sequence = %d because we timed out reading, closing channel as the message has been discarded", syncStateSnapshot.Request.CorrelationId, syncStateSnapshot.Sequence)
 			d.snapshotRequestHandler.reset()
 		}
 	} else {
-		//Ignore the message, does not match the current correlationId
-		peerLogger.Warningf("Ignoring SyncStateSnapshot message with correlationId = %d, sequence = %d, as current correlationId = %d", syncStateSnapshot.Request.CorrelationId, syncStateSnapshot.Sequence, d.snapshotRequestHandler.correlationID)
+		if d.lastIgnoredSnapshotCID == nil || *d.lastIgnoredSnapshotCID < syncStateSnapshot.Request.CorrelationId {
+			peerLogger.Warningf("Ignoring SyncStateSnapshot message with correlationId = %d, sequence = %d, as current correlationId = %d, future messages for this (and older ids) will be suppressed", syncStateSnapshot.Request.CorrelationId, syncStateSnapshot.Sequence, d.snapshotRequestHandler.correlationID)
+			d.lastIgnoredSnapshotCID = &syncStateSnapshot.Request.CorrelationId
+			//Ignore the message, does not match the current correlationId
+		}
 	}
 }
 
@@ -574,8 +545,8 @@ func (d *Handler) sendStateSnapshot(syncStateSnapshotRequest *pb.SyncStateSnapsh
 	for i := 0; snapshot.Next(); i++ {
 		delta := statemgmt.NewStateDelta()
 		k, v := snapshot.GetRawKeyValue()
-		cID, kID := statemgmt.DecodeCompositeKey(k)
-		delta.Set(cID, kID, v, nil)
+		cID, keyID := statemgmt.DecodeCompositeKey(k)
+		delta.Set(cID, keyID, v, nil)
 
 		deltaAsBytes := delta.Marshal()
 		// Encode a SyncStateSnapsot into the payload

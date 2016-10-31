@@ -20,7 +20,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/x509"
-	"google/protobuf"
 	"time"
 
 	membersrvc "github.com/hyperledger/fabric/membersrvc/protos"
@@ -30,6 +29,7 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/hyperledger/fabric/core/crypto/primitives/ecies"
 	"golang.org/x/net/context"
@@ -42,6 +42,10 @@ var (
 )
 
 func (node *nodeImpl) retrieveECACertsChain(userID string) error {
+	if !node.ks.certMissing(node.conf.getECACertsChainFilename()) {
+		return nil
+	}
+
 	// Retrieve ECA certificate and verify it
 	ecaCertRaw, err := node.getECACertificate()
 	if err != nil {
@@ -76,6 +80,10 @@ func (node *nodeImpl) retrieveECACertsChain(userID string) error {
 }
 
 func (node *nodeImpl) retrieveEnrollmentData(enrollID, enrollPWD string) error {
+	if !node.ks.certMissing(node.conf.getEnrollmentCertFilename()) {
+		return nil
+	}
+
 	key, enrollCertRaw, enrollChainKey, err := node.getEnrollmentCertificateFromECA(enrollID, enrollPWD)
 	if err != nil {
 		node.Errorf("Failed getting enrollment certificate [id=%s]: [%s]", enrollID, err)
@@ -104,11 +112,6 @@ func (node *nodeImpl) retrieveEnrollmentData(enrollID, enrollPWD string) error {
 		node.Errorf("Failed storing enrollment certificate [id=%s]: [%s]", enrollID, err)
 		return err
 	}
-
-	// Code for confidentiality 1.1
-	//if err := node.ks.storeKey(node.conf.getEnrollmentChainKeyFilename(), enrollChainKey); err != nil {
-	//	node.error("Failed storing enrollment chain key [id=%s]: [%s]", enrollID, err)
-	//	return err
 
 	// Code for confidentiality 1.2
 	// Store enrollment chain key
@@ -214,16 +217,7 @@ func (node *nodeImpl) loadEnrollmentID() error {
 func (node *nodeImpl) loadEnrollmentChainKey() error {
 	node.Debug("Loading enrollment chain key...")
 
-	// Code for confidentiality 1.1
-	//enrollChainKey, err := node.ks.loadKey(node.conf.getEnrollmentChainKeyFilename())
-	//if err != nil {
-	//	node.error("Failed loading enrollment chain key [%s].", err.Error())
-	//
-	//	return err
-	//}
-	//node.enrollChainKey = enrollChainKey
-
-	// Code for confidentiality 1.1
+	// Code for confidentiality 1.2
 	if node.eType == NodeValidator {
 		// enrollChainKey is a secret key
 		enrollChainKey, err := node.ks.loadPrivateKey(node.conf.getEnrollmentChainKeyFilename())
@@ -362,7 +356,7 @@ func (node *nodeImpl) getEnrollmentCertificateFromECA(id, pw string) (interface{
 	}
 
 	req := &membersrvc.ECertCreateReq{
-		Ts:   &google_protobuf.Timestamp{Seconds: time.Now().Unix(), Nanos: 0},
+		Ts:   &timestamp.Timestamp{Seconds: time.Now().Unix(), Nanos: 0},
 		Id:   &membersrvc.Identity{Id: id},
 		Tok:  &membersrvc.Token{Tok: []byte(pw)},
 		Sign: &membersrvc.PublicKey{Type: membersrvc.CryptoType_ECDSA, Key: signPub},

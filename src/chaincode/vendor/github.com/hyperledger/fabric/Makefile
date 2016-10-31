@@ -36,35 +36,48 @@
 #   - clean - cleans the build area
 #   - dist-clean - superset of 'clean' that also removes persistent state
 
-PROJECT_NAME=hyperledger/fabric
+PROJECT_NAME   = hyperledger/fabric
+BASE_VERSION   = 0.6.2-preview
+IS_RELEASE     = false
+
+ifneq ($(IS_RELEASE),true)
+EXTRA_VERSION ?= snapshot-$(shell git rev-parse --short HEAD)
+PROJECT_VERSION=$(BASE_VERSION)-$(EXTRA_VERSION)
+else
+PROJECT_VERSION=$(BASE_VERSION)
+endif
+
+DOCKER_TAG=$(shell uname -m)-$(PROJECT_VERSION)
+
 PKGNAME = github.com/$(PROJECT_NAME)
+GO_LDFLAGS = -X github.com/hyperledger/fabric/metadata.Version=$(PROJECT_VERSION)
 CGO_FLAGS = CGO_CFLAGS=" " CGO_LDFLAGS="-lrocksdb -lstdc++ -lm -lz -lbz2 -lsnappy"
 UID = $(shell id -u)
+CHAINTOOL_RELEASE=v0.9.1
 
-EXECUTABLES = go docker git
+EXECUTABLES = go docker git curl
 K := $(foreach exec,$(EXECUTABLES),\
 	$(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH: Check dependencies")))
+
+# SUBDIRS are components that have their own Makefiles that we can invoke
+SUBDIRS = gotools sdk/node
+SUBDIRS:=$(strip $(SUBDIRS))
 
 # Make our baseimage depend on any changes to images/base or scripts/provision
 BASEIMAGE_RELEASE = $(shell cat ./images/base/release)
 BASEIMAGE_DEPS    = $(shell git ls-files images/base scripts/provision)
 
-GOTOOLS = golint govendor goimports protoc-gen-go ginkgo gomega
-GOTOOLS_BIN = $(patsubst %,$(GOPATH)/bin/%, $(GOTOOLS))
-
+JAVASHIM_DEPS =  $(shell git ls-files core/chaincode/shim/java)
 PROJECT_FILES = $(shell git ls-files)
-IMAGES = base src ccenv peer membersrvc
-
-# go tool->path mapping
-go.fqp.govendor  := github.com/kardianos/govendor
-go.fqp.golint    := github.com/golang/lint/golint
-go.fqp.goimports := golang.org/x/tools/cmd/goimports
-go.fqp.ginkgo := github.com/onsi/ginkgo/ginkgo
-go.fqp.gomega := github.com/onsi/gomega
+IMAGES = base src ccenv peer membersrvc javaenv
 
 all: peer membersrvc checks
 
 checks: linter unit-test behave
+
+.PHONY: $(SUBDIRS)
+$(SUBDIRS):
+	cd $@ && $(MAKE)
 
 .PHONY: peer
 peer: build/bin/peer
@@ -75,32 +88,28 @@ membersrvc: build/bin/membersrvc
 membersrvc-image: build/image/membersrvc/.dummy
 
 unit-test: peer-image gotools
-	@./scripts/goUnitTests.sh
+	@./scripts/goUnitTests.sh $(DOCKER_TAG) "$(GO_LDFLAGS)"
+
+node-sdk: sdk/node
+
+node-sdk-unit-tests: peer membersrvc
+	cd sdk/node && $(MAKE) unit-tests
+
+unit-tests: unit-test node-sdk-unit-tests
 
 .PHONY: images
 images: $(patsubst %,build/image/%/.dummy, $(IMAGES))
 
-build/behave/.grpc-dummy:
-	sudo pip install -q 'grpcio==0.13.1'
-	mkdir -p build/behave
-	touch build/behave/.grpc-dummy
-
-behave-grpc: build/behave/.grpc-dummy
-	
-
-behave-deps: images peer behave-grpc
+behave-deps: images peer build/bin/block-listener
 behave: behave-deps
 	@echo "Running behave tests"
 	@cd bddtests; behave $(BEHAVE_OPTS)
-
-gotools: $(GOTOOLS_BIN)
 
 linter: gotools
 	@echo "LINT: Running code checks.."
 	@echo "Running go vet"
 	go vet ./consensus/...
 	go vet ./core/...
-	go vet ./discovery/...
 	go vet ./events/...
 	go vet ./examples/...
 	go vet ./membersrvc/...
@@ -108,22 +117,6 @@ linter: gotools
 	go vet ./protos/...
 	@echo "Running goimports"
 	@./scripts/goimports.sh
-
-# Special override for protoc-gen-go since we want to use the version vendored with the project
-gotool.protoc-gen-go:
-	mkdir -p $(GOPATH)/src/github.com/golang/protobuf/
-	cp -r $(GOPATH)/src/github.com/hyperledger/fabric/vendor/github.com/golang/protobuf/ $(GOPATH)/src/github.com/golang/
-	go install github.com/golang/protobuf/protoc-gen-go
-	rm -rf $(GOPATH)/src/github.com/golang/protobuf
-
-# Default rule for gotools uses the name->path map for a generic 'go get' style build
-gotool.%:
-	$(eval TOOL = ${subst gotool.,,${@}})
-	go get ${go.fqp.${TOOL}}
-
-$(GOPATH)/bin/%:
-	$(eval TOOL = ${subst $(GOPATH)/bin/,,${@}})
-	$(MAKE) gotool.$(TOOL)
 
 # We (re)build protoc-gen-go from within docker context so that
 # we may later inject the binary into a different docker environment
@@ -138,9 +131,20 @@ $(GOPATH)/bin/%:
 		-v $(abspath $(@D)):/opt/gopath/bin \
 		hyperledger/fabric-baseimage go install github.com/golang/protobuf/protoc-gen-go
 
-%/bin/chaintool:
+build/bin/chaintool: Makefile
 	@echo "Installing chaintool"
-	@cp devenv/tools/chaintool $@
+	@mkdir -p $(@D)
+	curl -L https://github.com/hyperledger/fabric-chaintool/releases/download/$(CHAINTOOL_RELEASE)/chaintool > $@
+	chmod +x $@
+
+%/bin/chaintool: build/bin/chaintool
+	@mkdir -p $(@D)
+	@cp $^ $@
+
+# JIRA FAB-243 - Mark build/docker/bin artifacts explicitly as secondary
+#                since they are never referred to directly. This prevents
+#                the makefile from deleting them inadvertently.
+.SECONDARY: build/docker/bin/peer build/docker/bin/membersrvc
 
 # We (re)build a package within a docker context but persist the $GOPATH/pkg
 # directory so that subsequent builds are faster
@@ -152,18 +156,26 @@ build/docker/bin/%: build/image/src/.dummy $(PROJECT_FILES)
 		--user=$(UID) \
 		-v $(abspath build/docker/bin):/opt/gopath/bin \
 		-v $(abspath build/docker/pkg):/opt/gopath/pkg \
-		hyperledger/fabric-src go install github.com/hyperledger/fabric/$(TARGET)
+		hyperledger/fabric-src:$(DOCKER_TAG) go install -ldflags "$(GO_LDFLAGS)" github.com/hyperledger/fabric/$(TARGET)
+	@touch $@
 
 build/bin:
 	mkdir -p $@
 
-# Both peer and peer-image depend on ccenv-image
-build/bin/peer: build/image/ccenv/.dummy
-build/image/peer/.dummy: build/image/ccenv/.dummy
+# Both peer and peer-image depend on ccenv-image and javaenv-image (all docker env images it supports)
+build/bin/peer: build/image/ccenv/.dummy build/image/javaenv/.dummy
+build/image/peer/.dummy: build/image/ccenv/.dummy build/image/javaenv/.dummy
+
+build/bin/block-listener:
+	@mkdir -p $(@D)
+	$(CGO_FLAGS) GOBIN=$(abspath $(@D)) go install $(PKGNAME)/examples/events/block-listener
+	@echo "Binary available as $@"
+	@touch $@
 
 build/bin/%: build/image/base/.dummy $(PROJECT_FILES)
 	@mkdir -p $(@D)
-	$(CGO_FLAGS) GOBIN=$(abspath $(@D)) go install $(PKGNAME)/$(@F)
+	@echo "$@"
+	$(CGO_FLAGS) GOBIN=$(abspath $(@D)) go install -ldflags "$(GO_LDFLAGS)" $(PKGNAME)/$(@F)
 	@echo "Binary available as $@"
 	@touch $@
 
@@ -178,16 +190,37 @@ build/image/base/.dummy: $(BASEIMAGE_DEPS)
 build/image/src/.dummy: build/image/base/.dummy $(PROJECT_FILES)
 	@echo "Building docker src-image"
 	@mkdir -p $(@D)
-	@cat images/src/Dockerfile.in > $(@D)/Dockerfile
+	@cat images/src/Dockerfile.in \
+		| sed -e 's/_TAG_/$(DOCKER_TAG)/g' \
+		> $(@D)/Dockerfile
 	@git ls-files | tar -jcT - > $(@D)/gopath.tar.bz2
-	docker build -t $(PROJECT_NAME)-src:latest $(@D)
+	docker build -t $(PROJECT_NAME)-src $(@D)
+	docker tag $(PROJECT_NAME)-src $(PROJECT_NAME)-src:$(DOCKER_TAG)
 	@touch $@
 
 # Special override for ccenv-image (chaincode-environment)
 build/image/ccenv/.dummy: build/image/src/.dummy build/image/ccenv/bin/protoc-gen-go build/image/ccenv/bin/chaintool Makefile
 	@echo "Building docker ccenv-image"
-	@cat images/ccenv/Dockerfile.in > $(@D)/Dockerfile
-	docker build -t $(PROJECT_NAME)-ccenv:latest $(@D)
+	@cat images/ccenv/Dockerfile.in \
+		| sed -e 's/_TAG_/$(DOCKER_TAG)/g' \
+		> $(@D)/Dockerfile
+	docker build -t $(PROJECT_NAME)-ccenv $(@D)
+	docker tag $(PROJECT_NAME)-ccenv $(PROJECT_NAME)-ccenv:$(DOCKER_TAG)
+	@touch $@
+
+# Special override for java-image
+# Following items are packed and sent to docker context while building image
+# 1. Java shim layer source code
+# 2. Proto files used to generate java classes
+# 3. Gradle settings file
+build/image/javaenv/.dummy: Makefile $(JAVASHIM_DEPS)
+	@echo "Building docker javaenv-image"
+	@mkdir -p $(@D)
+	@cat images/javaenv/Dockerfile.in > $(@D)/Dockerfile
+	@git ls-files core/chaincode/shim/java | tar -jcT - > $(@D)/javashimsrc.tar.bz2
+	@git ls-files protos core/chaincode/shim/table.proto settings.gradle  | tar -jcT - > $(@D)/protos.tar.bz2
+	docker build -t $(PROJECT_NAME)-javaenv $(@D)
+	docker tag $(PROJECT_NAME)-javaenv $(PROJECT_NAME)-javaenv:$(DOCKER_TAG)
 	@touch $@
 
 # Default rule for image creation
@@ -195,44 +228,39 @@ build/image/%/.dummy: build/image/src/.dummy build/docker/bin/%
 	$(eval TARGET = ${patsubst build/image/%/.dummy,%,${@}})
 	@echo "Building docker $(TARGET)-image"
 	@mkdir -p $(@D)/bin
-	@cat images/app/Dockerfile.in | sed -e 's/_TARGET_/$(TARGET)/g' > $(@D)/Dockerfile
+	@cat images/app/Dockerfile.in \
+		| sed -e 's/_TAG_/$(DOCKER_TAG)/g' \
+		> $(@D)/Dockerfile
 	cp build/docker/bin/$(TARGET) $(@D)/bin
-	docker build -t $(PROJECT_NAME)-$(TARGET):latest $(@D)
+	docker build -t $(PROJECT_NAME)-$(TARGET) $(@D)
+	docker tag $(PROJECT_NAME)-$(TARGET) $(PROJECT_NAME)-$(TARGET):$(DOCKER_TAG)
 	@touch $@
 
 .PHONY: protos
-protos:
+protos: gotools
 	./devenv/compile_protos.sh
 
 base-image-clean:
 	-docker rmi -f $(PROJECT_NAME)-baseimage
 	-@rm -rf build/image/base ||:
 
+src-image-clean: ccenv-image-clean peer-image-clean membersrvc-image-clean
+
 %-image-clean:
 	$(eval TARGET = ${patsubst %-image-clean,%,${@}})
+	-docker images -q $(PROJECT_NAME)-$(TARGET) | xargs -r docker rmi -f
 	-@rm -rf build/image/$(TARGET) ||:
-	-docker rmi -f $(PROJECT_NAME)-$(TARGET)
 
 images-clean: $(patsubst %,%-image-clean, $(IMAGES))
 
-.PHONY: node-sdk
-node-sdk:
-	cp ./protos/*.proto ./sdk/node/lib/protos
-	cp ./membersrvc/protos/*.proto ./sdk/node/lib/protos
-	cd ./sdk/node && sudo apt-get install npm && npm install && sudo npm install -g typescript && sudo npm install typings --global && typings install
-	cd ./sdk/node && tsc
-	cd ./sdk/node && ./makedoc.sh
+.PHONY: $(SUBDIRS:=-clean)
+$(SUBDIRS:=-clean):
+	cd $(patsubst %-clean,%,$@) && $(MAKE) clean
 
-.PHONY: node-sdk-unit-tests
-node-sdk-unit-tests: node-sdk
-	@./sdk/node/bin/run-unit-tests.sh
-
-node-sdk:
 .PHONY: clean
-clean: images-clean
+clean: images-clean $(filter-out gotools-clean, $(SUBDIRS:=-clean))
 	-@rm -rf build ||:
-	-@rm -f $(GOTOOLS_BIN) ||:
 
 .PHONY: dist-clean
-dist-clean: clean
+dist-clean: clean gotools-clean
 	-@rm -rf /var/hyperledger/* ||:

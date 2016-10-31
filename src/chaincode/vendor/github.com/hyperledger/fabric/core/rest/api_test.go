@@ -22,8 +22,7 @@ import (
 	"os"
 	"testing"
 
-	"google/protobuf"
-
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric/core/util"
 	"github.com/hyperledger/fabric/protos"
@@ -37,12 +36,10 @@ func TestMain(m *testing.M) {
 }
 
 func setupTestConfig() {
-	viper.SetConfigName("core")         // name of config file (without extension)
-	viper.AddConfigPath("./")           // path to look for the config file in
-	viper.AddConfigPath("./..")         // path to look for the config file in
-	viper.AddConfigPath("./../../peer") // path to look for the config file in
-	err := viper.ReadInConfig()         // Find and read the config file
-	if err != nil {                     // Handle errors reading the config file
+	viper.SetConfigName("rest_test") // name of config file (without extension)
+	viper.AddConfigPath(".")         // path to look for the config file in
+	err := viper.ReadInConfig()      // Find and read the config file
+	if err != nil {                  // Handle errors reading the config file
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 }
@@ -52,7 +49,7 @@ type peerInfo struct {
 
 func (p *peerInfo) GetPeers() (*protos.PeersMessage, error) {
 	peers := []*protos.PeerEndpoint{}
-	pe1 := &protos.PeerEndpoint{ID: &protos.PeerID{Name: viper.GetString("peer.id")}, Address: "localhost:30303", Type: protos.PeerEndpoint_VALIDATOR}
+	pe1 := &protos.PeerEndpoint{ID: &protos.PeerID{Name: viper.GetString("peer.id")}, Address: "localhost:7051", Type: protos.PeerEndpoint_VALIDATOR}
 	peers = append(peers, pe1)
 
 	/*
@@ -69,7 +66,7 @@ func (p *peerInfo) GetPeers() (*protos.PeersMessage, error) {
 }
 
 func (p *peerInfo) GetPeerEndpoint() (*protos.PeerEndpoint, error) {
-	pe := &protos.PeerEndpoint{ID: &protos.PeerID{Name: viper.GetString("peer.id")}, Address: "localhost:30303", Type: protos.PeerEndpoint_VALIDATOR}
+	pe := &protos.PeerEndpoint{ID: &protos.PeerID{Name: viper.GetString("peer.id")}, Address: "localhost:7051", Type: protos.PeerEndpoint_VALIDATOR}
 	return pe, nil
 }
 
@@ -84,7 +81,7 @@ func TestServerOpenchain_API_GetBlockchainInfo(t *testing.T) {
 	}
 	// Attempt to retrieve the blockchain info. There are no blocks
 	// in this blockchain, therefore this test should intentionally fail.
-	info, err := server.GetBlockchainInfo(context.Background(), &google_protobuf.Empty{})
+	info, err := server.GetBlockchainInfo(context.Background(), &empty.Empty{})
 	if err != nil {
 		// Success
 		t.Logf("Error retrieving blockchain info: %s", err)
@@ -97,7 +94,7 @@ func TestServerOpenchain_API_GetBlockchainInfo(t *testing.T) {
 	// add 3 blocks to ledger.
 	buildTestLedger1(ledger, t)
 	// Attempt to retrieve the blockchain info.
-	info, err = server.GetBlockchainInfo(context.Background(), &google_protobuf.Empty{})
+	info, err = server.GetBlockchainInfo(context.Background(), &empty.Empty{})
 	if err != nil {
 		t.Logf("Error retrieving blockchain info: %s", err)
 		t.Fail()
@@ -108,7 +105,7 @@ func TestServerOpenchain_API_GetBlockchainInfo(t *testing.T) {
 	// add 5 blocks more.
 	buildTestLedger2(ledger, t)
 	// Attempt to retrieve the blockchain info.
-	info, err = server.GetBlockchainInfo(context.Background(), &google_protobuf.Empty{})
+	info, err = server.GetBlockchainInfo(context.Background(), &empty.Empty{})
 	if err != nil {
 		t.Logf("Error retrieving blockchain info: %s", err)
 		t.Fail()
@@ -194,7 +191,7 @@ func TestServerOpenchain_API_GetBlockCount(t *testing.T) {
 
 	// Retrieve the current number of blocks in the blockchain. There are no blocks
 	// in this blockchain, therefore this test should intentionally fail.
-	count, err := server.GetBlockCount(context.Background(), &google_protobuf.Empty{})
+	count, err := server.GetBlockCount(context.Background(), &empty.Empty{})
 	if err != nil {
 		// Success
 		t.Logf("Error retrieving BlockCount from blockchain: %s", err)
@@ -207,7 +204,7 @@ func TestServerOpenchain_API_GetBlockCount(t *testing.T) {
 	// Add three 3 blocks to ledger.
 	buildTestLedger1(ledger, t)
 	// Retrieve the current number of blocks in the blockchain. Must be 3.
-	count, err = server.GetBlockCount(context.Background(), &google_protobuf.Empty{})
+	count, err = server.GetBlockCount(context.Background(), &empty.Empty{})
 	if err != nil {
 		t.Logf("Error retrieving BlockCount from blockchain: %s", err)
 		t.Fail()
@@ -221,7 +218,7 @@ func TestServerOpenchain_API_GetBlockCount(t *testing.T) {
 	// Add 5 more blocks to ledger.
 	buildTestLedger2(ledger, t)
 	// Retrieve the current number of blocks in the blockchain. Must be 5.
-	count, err = server.GetBlockCount(context.Background(), &google_protobuf.Empty{})
+	count, err = server.GetBlockCount(context.Background(), &empty.Empty{})
 	if err != nil {
 		t.Logf("Error retrieving BlockCount from blockchain: %s", err)
 		t.Fail()
@@ -281,9 +278,9 @@ func buildTestLedger1(ledger1 *ledger.Ledger, t *testing.T) {
 	}
 	// VM runs transaction1a and updates the global state with the result
 	// In this case, the 'Contracts' contract stores 'MyContract1' in its state
-	ledger1.TxBegin(transaction1a.Uuid)
+	ledger1.TxBegin(transaction1a.Txid)
 	ledger1.SetState("MyContract1", "code", []byte("code example"))
-	ledger1.TxFinished(transaction1a.Uuid, true)
+	ledger1.TxFinished(transaction1a.Txid, true)
 	ledger1.CommitTxBatch(1, []*protos.Transaction{transaction1a}, nil, []byte("dummy-proof"))
 	// -----------------------------</Block #1>-----------------------------------
 
@@ -302,10 +299,10 @@ func buildTestLedger1(ledger1 *ledger.Ledger, t *testing.T) {
 	}
 
 	// Run this transction in the VM. The VM updates the state
-	ledger1.TxBegin(transaction2a.Uuid)
+	ledger1.TxBegin(transaction2a.Txid)
 	ledger1.SetState("MyContract", "x", []byte("hello"))
 	ledger1.SetState("MyOtherContract", "y", []byte("goodbuy"))
-	ledger1.TxFinished(transaction2a.Uuid, true)
+	ledger1.TxFinished(transaction2a.Txid, true)
 
 	// Commit txbatch that creates the 2nd block on blockchain
 	ledger1.CommitTxBatch(2, []*protos.Transaction{transaction2a, transaction2b}, nil, []byte("dummy-proof"))
@@ -338,9 +335,9 @@ func buildTestLedger2(ledger *ledger.Ledger, t *testing.T) {
 	}
 	// VM runs transaction1a and updates the global state with the result
 	// In this case, the 'Contracts' contract stores 'MyContract1' in its state
-	ledger.TxBegin(transaction1a.Uuid)
+	ledger.TxBegin(transaction1a.Txid)
 	ledger.SetState("MyContract1", "code", []byte("code example"))
-	ledger.TxFinished(transaction1a.Uuid, true)
+	ledger.TxFinished(transaction1a.Txid, true)
 	ledger.CommitTxBatch(1, []*protos.Transaction{transaction1a}, nil, []byte("dummy-proof"))
 
 	// -----------------------------</Block #1>-----------------------------------
@@ -360,10 +357,10 @@ func buildTestLedger2(ledger *ledger.Ledger, t *testing.T) {
 	}
 
 	// Run this transction in the VM. The VM updates the state
-	ledger.TxBegin(transaction2a.Uuid)
+	ledger.TxBegin(transaction2a.Txid)
 	ledger.SetState("MyContract", "x", []byte("hello"))
 	ledger.SetState("MyOtherContract", "y", []byte("goodbuy"))
-	ledger.TxFinished(transaction2a.Uuid, true)
+	ledger.TxFinished(transaction2a.Txid, true)
 
 	// Commit txbatch that creates the 2nd block on blockchain
 	ledger.CommitTxBatch(2, []*protos.Transaction{transaction2a, transaction2b}, nil, []byte("dummy-proof"))
@@ -387,11 +384,11 @@ func buildTestLedger2(ledger *ledger.Ledger, t *testing.T) {
 		t.Logf("Error creating NewTransaction: %s", err)
 		t.Fail()
 	}
-	ledger.TxBegin(transaction3a.Uuid)
+	ledger.TxBegin(transaction3a.Txid)
 	ledger.SetState("MyContract", "x", []byte("hello"))
 	ledger.SetState("MyOtherContract", "y", []byte("goodbuy"))
 	ledger.SetState("MyImportantContract", "z", []byte("super"))
-	ledger.TxFinished(transaction3a.Uuid, true)
+	ledger.TxFinished(transaction3a.Txid, true)
 	ledger.CommitTxBatch(3, []*protos.Transaction{transaction3a, transaction3b, transaction3c}, nil, []byte("dummy-proof"))
 
 	// -----------------------------</Block #3>-----------------------------------
@@ -424,12 +421,12 @@ func buildTestLedger2(ledger *ledger.Ledger, t *testing.T) {
 	}
 
 	// Run this transction in the VM. The VM updates the state
-	ledger.TxBegin(transaction4a.Uuid)
+	ledger.TxBegin(transaction4a.Txid)
 	ledger.SetState("MyContract", "x", []byte("hello"))
 	ledger.SetState("MyOtherContract", "y", []byte("goodbuy"))
 	ledger.SetState("MyImportantContract", "z", []byte("super"))
 	ledger.SetState("MyMEGAContract", "mega", []byte("MEGA"))
-	ledger.TxFinished(transaction4a.Uuid, true)
+	ledger.TxFinished(transaction4a.Txid, true)
 
 	// Create the 4th block and add it to the chain
 	ledger.CommitTxBatch(4, []*protos.Transaction{transaction4a, transaction4b, transaction4c, transaction4d}, nil, []byte("dummy-proof"))

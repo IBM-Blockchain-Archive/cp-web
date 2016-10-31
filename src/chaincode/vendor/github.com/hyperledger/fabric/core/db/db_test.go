@@ -41,75 +41,69 @@ func TestGetDBPathEmptyPath(t *testing.T) {
 		}
 	}()
 	defer viper.Set("peer.fileSystemPath", originalSetting)
+	Start()
 	GetDBHandle()
 }
 
-func TestCreateDB_DirDoesNotExist(t *testing.T) {
-	err := CreateDB()
-	if err != nil {
-		t.Fatalf("Failed to create DB: %s", err)
-	}
-	deleteTestDB()
+func TestStartDB_DirDoesNotExist(t *testing.T) {
+	deleteTestDBPath()
+
+	defer deleteTestDBPath()
+	defer Stop()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Failed to open DB: %s", r)
+		}
+	}()
+	Start()
 }
 
-func TestCreateDB_NonEmptyDirExists(t *testing.T) {
-	createNonEmptyTestDBPath()
-	err := CreateDB()
-	if err == nil {
-		t.Fatal("Dir alrady exists. DB creation should throw error")
-	}
+func TestStartDB_NonEmptyDirExists(t *testing.T) {
 	deleteTestDBPath()
+	createNonEmptyTestDBPath()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("dbPath is already exists. DB open should throw error")
+		}
+	}()
+	Start()
 }
 
 func TestWriteAndRead(t *testing.T) {
-	createTestDB()
-	defer deleteTestDB()
-	performBasicReadWrite(t)
-}
-
-func TestOpenDB_DirDoesNotExist(t *testing.T) {
 	deleteTestDBPath()
-	defer deleteTestDB()
-	performBasicReadWrite(t)
-}
-
-func TestOpenDB_DirEmpty(t *testing.T) {
-	deleteTestDBPath()
-	createTestDBPath()
-	defer deleteTestDB()
-	performBasicReadWrite(t)
+	Start()
+	defer deleteTestDBPath()
+	defer Stop()
+	performBasicReadWrite(openchainDB, t)
 }
 
 // This test verifies that when a new column family is added to the DB
 // users at an older level of the DB will still be able to open it with new code
 func TestDBColumnUpgrade(t *testing.T) {
 	deleteTestDBPath()
-	createTestDBPath()
-	err := CreateDB()
-	if nil != err {
-		t.Fatalf("Error creating DB")
-	}
-	db, err := openDB()
-	if nil != err {
-		t.Fatalf("Error opening DB")
-	}
-	db.CloseDB()
+	Start()
+	Stop()
 
 	oldcfs := columnfamilies
 	columnfamilies = append([]string{"Testing"}, columnfamilies...)
 	defer func() {
 		columnfamilies = oldcfs
 	}()
-	db, err = openDB()
-	if nil != err {
-		t.Fatalf("Error re-opening DB with upgraded columnFamilies")
-	}
-	db.CloseDB()
+
+	defer deleteTestDBPath()
+	defer Stop()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Error re-opening DB with upgraded columnFamilies")
+		}
+	}()
+	Start()
 }
 
 func TestDeleteState(t *testing.T) {
 	testDBWrapper := NewTestDBWrapper()
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	openchainDB := GetDBHandle()
 	defer testDBWrapper.cleanup()
 	openchainDB.Put(openchainDB.StateCF, []byte("key1"), []byte("value1"))
@@ -134,7 +128,7 @@ func TestDeleteState(t *testing.T) {
 
 func TestDBSnapshot(t *testing.T) {
 	testDBWrapper := NewTestDBWrapper()
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	openchainDB := GetDBHandle()
 	defer testDBWrapper.cleanup()
 
@@ -187,7 +181,7 @@ func TestDBSnapshot(t *testing.T) {
 
 func TestDBIteratorAndSnapshotIterator(t *testing.T) {
 	testDBWrapper := NewTestDBWrapper()
-	testDBWrapper.CreateFreshDB(t)
+	testDBWrapper.CleanDB(t)
 	openchainDB := GetDBHandle()
 	defer testDBWrapper.cleanup()
 
@@ -226,6 +220,7 @@ func TestDBIteratorAndSnapshotIterator(t *testing.T) {
 	testIterator(t, itr, map[string][]byte{"key6": []byte("value6"), "key7": []byte("value7")})
 }
 
+// db helper functions
 func testIterator(t *testing.T, itr *gorocksdb.Iterator, expectedValues map[string][]byte) {
 	itrResults := make(map[string][]byte)
 	itr.SeekToFirst()
@@ -246,29 +241,14 @@ func testIterator(t *testing.T, itr *gorocksdb.Iterator, expectedValues map[stri
 	}
 }
 
-// db helper functions
-func createTestDBPath() {
-	dbPath := viper.GetString("peer.fileSystemPath")
-	os.MkdirAll(dbPath, 0775)
-}
-
 func createNonEmptyTestDBPath() {
 	dbPath := viper.GetString("peer.fileSystemPath")
 	os.MkdirAll(dbPath+"/db/tmpFile", 0775)
 }
 
-func createTestDB() error {
-	return CreateDB()
-}
-
 func deleteTestDBPath() {
 	dbPath := viper.GetString("peer.fileSystemPath")
 	os.RemoveAll(dbPath)
-}
-
-func deleteTestDB() {
-	GetDBHandle().CloseDB()
-	deleteTestDBPath()
 }
 
 func setupTestConfig() {
@@ -280,8 +260,7 @@ func setupTestConfig() {
 	deleteTestDBPath()
 }
 
-func performBasicReadWrite(t *testing.T) {
-	openchainDB := GetDBHandle()
+func performBasicReadWrite(openchainDB *OpenchainDB, t *testing.T) {
 	opt := gorocksdb.NewDefaultWriteOptions()
 	defer opt.Destroy()
 	writeBatch := gorocksdb.NewWriteBatch()

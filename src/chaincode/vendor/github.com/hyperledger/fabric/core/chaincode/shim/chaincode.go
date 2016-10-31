@@ -28,9 +28,8 @@ import (
 	"strconv"
 	"strings"
 
-	gp "google/protobuf"
-
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/chaincode/shim/crypto/attr"
 	"github.com/hyperledger/fabric/core/chaincode/shim/crypto/ecdsa"
 	"github.com/hyperledger/fabric/core/comm"
@@ -47,28 +46,13 @@ var chaincodeLogger = logging.MustGetLogger("shim")
 // Handler to shim that handles all control logic.
 var handler *Handler
 
-// Chaincode interface must be implemented by all chaincodes. The fabric runs
-// the transactions by calling these functions as specified.
-type Chaincode interface {
-	// Init is called during Deploy transaction after the container has been
-	// established, allowing the chaincode to initialize its internal data
-	Init(stub *ChaincodeStub, function string, args []string) ([]byte, error)
-
-	// Invoke is called for every Invoke transactions. The chaincode may change
-	// its state variables
-	Invoke(stub *ChaincodeStub, function string, args []string) ([]byte, error)
-
-	// Query is called for Query transactions. The chaincode may only read
-	// (but not modify) its state variables and return the result
-	Query(stub *ChaincodeStub, function string, args []string) ([]byte, error)
-}
-
 // ChaincodeStub is an object passed to chaincode for shim side handling of
 // APIs.
 type ChaincodeStub struct {
-	UUID            string
+	TxID            string
 	securityContext *pb.ChaincodeSecurityContext
 	chaincodeEvent  *pb.ChaincodeEvent
+	args            [][]byte
 }
 
 // Peer address derived from command line or env var
@@ -113,6 +97,9 @@ func Start(cc Chaincode) error {
 	}
 
 	chaincodename := viper.GetString("chaincode.id.name")
+	if chaincodename == "" {
+		return fmt.Errorf("Error chaincode id not provided")
+	}
 	err = chatWithPeer(chaincodename, stream, cc)
 
 	return err
@@ -208,14 +195,14 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 					chaincodeLogger.Debug("Received nil message, ending chaincode stream")
 					return
 				}
-				chaincodeLogger.Debugf("[%s]Received message %s from shim", shortuuid(in.Uuid), in.Type.String())
+				chaincodeLogger.Debugf("[%s]Received message %s from shim", shorttxid(in.Txid), in.Type.String())
 				recv = true
 			case nsInfo = <-handler.nextState:
 				in = nsInfo.msg
 				if in == nil {
 					panic("nil msg")
 				}
-				chaincodeLogger.Debugf("[%s]Move state message %s", shortuuid(in.Uuid), in.Type.String())
+				chaincodeLogger.Debugf("[%s]Move state message %s", shorttxid(in.Txid), in.Type.String())
 			}
 
 			// Call FSM.handleMessage()
@@ -224,8 +211,14 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 				err = fmt.Errorf("Error handling message: %s", err)
 				return
 			}
-			if nsInfo != nil && nsInfo.sendToCC {
-				chaincodeLogger.Debugf("[%s]send state message %s", shortuuid(in.Uuid), in.Type.String())
+
+			//keepalive messages are PONGs to the fabric's PINGs
+			if (nsInfo != nil && nsInfo.sendToCC) || (in.Type == pb.ChaincodeMessage_KEEPALIVE) {
+				if in.Type == pb.ChaincodeMessage_KEEPALIVE {
+					chaincodeLogger.Debug("Sending KEEPALIVE response")
+				} else {
+					chaincodeLogger.Debugf("[%s]send state message %s", shorttxid(in.Txid), in.Type.String())
+				}
 				if err = handler.serialSend(in); err != nil {
 					err = fmt.Errorf("Error sending %s: %s", in.Type.String(), err)
 					return
@@ -238,9 +231,23 @@ func chatWithPeer(chaincodename string, stream PeerChaincodeStream, cc Chaincode
 }
 
 // -- init stub ---
-func (stub *ChaincodeStub) init(uuid string, secContext *pb.ChaincodeSecurityContext) {
-	stub.UUID = uuid
+// ChaincodeInvocation functionality
+
+func (stub *ChaincodeStub) init(txid string, secContext *pb.ChaincodeSecurityContext) {
+	stub.TxID = txid
 	stub.securityContext = secContext
+	stub.args = [][]byte{}
+	newCI := pb.ChaincodeInput{}
+	err := proto.Unmarshal(secContext.Payload, &newCI)
+	if err == nil {
+		stub.args = newCI.Args
+	} else {
+		panic("Arguments cannot be unmarshalled.")
+	}
+}
+
+func (stub *ChaincodeStub) GetTxID() string {
+	return stub.TxID
 }
 
 // --------- Security functions ----------
@@ -251,32 +258,32 @@ func (stub *ChaincodeStub) init(uuid string, secContext *pb.ChaincodeSecurityCon
 // InvokeChaincode locally calls the specified chaincode `Invoke` using the
 // same transaction context; that is, chaincode calling chaincode doesn't
 // create a new transaction message.
-func (stub *ChaincodeStub) InvokeChaincode(chaincodeName string, function string, args []string) ([]byte, error) {
-	return handler.handleInvokeChaincode(chaincodeName, function, args, stub.UUID)
+func (stub *ChaincodeStub) InvokeChaincode(chaincodeName string, args [][]byte) ([]byte, error) {
+	return handler.handleInvokeChaincode(chaincodeName, args, stub.TxID)
 }
 
 // QueryChaincode locally calls the specified chaincode `Query` using the
 // same transaction context; that is, chaincode calling chaincode doesn't
 // create a new transaction message.
-func (stub *ChaincodeStub) QueryChaincode(chaincodeName string, function string, args []string) ([]byte, error) {
-	return handler.handleQueryChaincode(chaincodeName, function, args, stub.UUID)
+func (stub *ChaincodeStub) QueryChaincode(chaincodeName string, args [][]byte) ([]byte, error) {
+	return handler.handleQueryChaincode(chaincodeName, args, stub.TxID)
 }
 
 // --------- State functions ----------
 
 // GetState returns the byte array value specified by the `key`.
 func (stub *ChaincodeStub) GetState(key string) ([]byte, error) {
-	return handler.handleGetState(key, stub.UUID)
+	return handler.handleGetState(key, stub.TxID)
 }
 
 // PutState writes the specified `value` and `key` into the ledger.
 func (stub *ChaincodeStub) PutState(key string, value []byte) error {
-	return handler.handlePutState(key, value, stub.UUID)
+	return handler.handlePutState(key, value, stub.TxID)
 }
 
 // DelState removes the specified `key` and its value from the ledger.
 func (stub *ChaincodeStub) DelState(key string) error {
-	return handler.handleDelState(key, stub.UUID)
+	return handler.handleDelState(key, stub.TxID)
 }
 
 //ReadCertAttribute is used to read an specific attribute from the transaction certificate, *attributeName* is passed as input parameter to this function.
@@ -326,12 +333,12 @@ type StateRangeQueryIterator struct {
 // an iterator will be returned that can be used to iterate over all keys
 // between the startKey and endKey, inclusive. The order in which keys are
 // returned by the iterator is random.
-func (stub *ChaincodeStub) RangeQueryState(startKey, endKey string) (*StateRangeQueryIterator, error) {
-	response, err := handler.handleRangeQueryState(startKey, endKey, stub.UUID)
+func (stub *ChaincodeStub) RangeQueryState(startKey, endKey string) (StateRangeQueryIteratorInterface, error) {
+	response, err := handler.handleRangeQueryState(startKey, endKey, stub.TxID)
 	if err != nil {
 		return nil, err
 	}
-	return &StateRangeQueryIterator{handler, stub.UUID, response, 0}, nil
+	return &StateRangeQueryIterator{handler, stub.TxID, response, 0}, nil
 }
 
 // HasNext returns true if the range query iterator contains additional keys
@@ -372,6 +379,19 @@ func (iter *StateRangeQueryIterator) Next() (string, []byte, error) {
 func (iter *StateRangeQueryIterator) Close() error {
 	_, err := iter.handler.handleRangeQueryStateClose(iter.response.ID, iter.uuid)
 	return err
+}
+
+func (stub *ChaincodeStub) GetArgs() [][]byte {
+	return stub.args
+}
+
+func (stub *ChaincodeStub) GetStringArgs() []string {
+	args := stub.GetArgs()
+	strargs := make([]string, 0, len(args))
+	for _, barg := range args {
+		strargs = append(strargs, string(barg))
+	}
+	return strargs
 }
 
 // TABLE FUNCTIONALITY
@@ -643,7 +663,7 @@ func (stub *ChaincodeStub) GetPayload() ([]byte, error) {
 // GetTxTimestamp returns transaction created timestamp, which is currently
 // taken from the peer receiving the transaction. Note that this timestamp
 // may not be the same with the other peers' time.
-func (stub *ChaincodeStub) GetTxTimestamp() (*gp.Timestamp, error) {
+func (stub *ChaincodeStub) GetTxTimestamp() (*timestamp.Timestamp, error) {
 	return stub.securityContext.TxTimestamp, nil
 }
 
@@ -712,7 +732,7 @@ func buildKeyString(tableName string, keys []Column) (string, error) {
 		case *Column_Int64:
 			keyString = strconv.FormatInt(key.GetInt64(), 10)
 		case *Column_Uint32:
-			keyString = strconv.FormatUint(uint64(key.GetInt32()), 10)
+			keyString = strconv.FormatUint(uint64(key.GetUint32()), 10)
 		case *Column_Uint64:
 			keyString = strconv.FormatUint(key.GetUint64(), 10)
 		case *Column_Bytes:
@@ -773,7 +793,7 @@ func getKeyAndVerifyRow(table Table, row Row) ([]Column, error) {
 	return keys, nil
 }
 
-func (stub *ChaincodeStub) isRowPrsent(tableName string, key []Column) (bool, error) {
+func (stub *ChaincodeStub) isRowPresent(tableName string, key []Column) (bool, error) {
 	keyString, err := buildKeyString(tableName, key)
 	if err != nil {
 		return false, err
@@ -792,7 +812,7 @@ func (stub *ChaincodeStub) isRowPrsent(tableName string, key []Column) (bool, er
 // Returns -
 // true and no error if the row is successfully inserted.
 // false and no error if a row already exists for the given key.
-// flase and a TableNotFoundError if the specified table name does not exist.
+// false and a TableNotFoundError if the specified table name does not exist.
 // false and an error if there is an unexpected error condition.
 func (stub *ChaincodeStub) insertRowInternal(tableName string, row Row, update bool) (bool, error) {
 
@@ -806,7 +826,7 @@ func (stub *ChaincodeStub) insertRowInternal(tableName string, row Row, update b
 		return false, err
 	}
 
-	present, err := stub.isRowPrsent(tableName, key)
+	present, err := stub.isRowPresent(tableName, key)
 	if err != nil {
 		return false, err
 	}
@@ -832,6 +852,7 @@ func (stub *ChaincodeStub) insertRowInternal(tableName string, row Row, update b
 }
 
 // ------------- ChaincodeEvent API ----------------------
+
 // SetEvent saves the event to be sent when a transaction is made part of a block
 func (stub *ChaincodeStub) SetEvent(name string, payload []byte) error {
 	stub.chaincodeEvent = &pb.ChaincodeEvent{EventName: name, Payload: payload}
@@ -840,10 +861,33 @@ func (stub *ChaincodeStub) SetEvent(name string, payload []byte) error {
 
 // ------------- Logging Control and Chaincode Loggers ---------------
 
-// These facilities allow a Go language chaincode to control the logging level
-// of its shim and to create its own consistent logging objects, without any
-// knowledge of the underlying implementation or any other package
-// requirements.
+// As independent programs, Go language chaincodes can use any logging
+// methodology they choose, from simple fmt.Printf() to os.Stdout, to
+// decorated logs created by the author's favorite logging package. The
+// chaincode "shim" interface, however, is defined by the Hyperledger fabric
+// and implements its own logging methodology. This methodology currently
+// includes severity-based logging control and a standard way of decorating
+// the logs.
+//
+// The facilities defined here allow a Go language chaincode to control the
+// logging level of its shim, and to create its own logs formatted
+// consistently with, and temporally interleaved with the shim logs without
+// any knowledge of the underlying implementation of the shim, and without any
+// other package requirements. The lack of package requirements is especially
+// important because even if the chaincode happened to explicitly use the same
+// logging package as the shim, unless the chaincode is physically included as
+// part of the hyperledger fabric source code tree it could actually end up
+// using a distinct binary instance of the logging package, with different
+// formats and severity levels than the binary package used by the shim.
+//
+// Another approach that might have been taken, and could potentially be taken
+// in the future, would be for the chaincode to supply a logging object for
+// the shim to use, rather than the other way around as implemented
+// here. There would be some complexities associated with that approach, so
+// for the moment we have chosen the simpler implementation below. The shim
+// provides one or more abstract logging objects for the chaincode to use via
+// the NewLogger() API, and allows the chaincode to control the severity level
+// of shim logs using the SetLoggingLevel() API.
 
 // LoggingLevel is an enumerated type of severity levels that control
 // chaincode logging.
@@ -889,10 +933,10 @@ type ChaincodeLogger struct {
 }
 
 // NewLogger allows a Go language chaincode to create one or more logging
-// objects whose logs will be consistent with, and interleaved with, logs
-// created by the shim interface. The logs created by this object can be
-// distinguished from shim logs by the name provided, which will aoppear in the
-// logs.
+// objects whose logs will be formatted consistently with, and temporally
+// interleaved with the logs created by the shim interface. The logs created
+// by this object can be distinguished from shim logs by the name provided,
+// which will appear in the logs.
 func NewLogger(name string) *ChaincodeLogger {
 	return &ChaincodeLogger{logging.MustGetLogger(name)}
 }
@@ -908,6 +952,41 @@ func (c *ChaincodeLogger) SetLevel(level LoggingLevel) {
 // given logging level.
 func (c *ChaincodeLogger) IsEnabledFor(level LoggingLevel) bool {
 	return c.logger.IsEnabledFor(logging.Level(level))
+}
+
+// Debug logs will only appear if the ChaincodeLogger LoggingLevel is set to
+// LogDebug.
+func (c *ChaincodeLogger) Debug(args ...interface{}) {
+	c.logger.Debug(args...)
+}
+
+// Info logs will appear if the ChaincodeLogger LoggingLevel is set to
+// LogInfo or LogDebug.
+func (c *ChaincodeLogger) Info(args ...interface{}) {
+	c.logger.Info(args...)
+}
+
+// Notice logs will appear if the ChaincodeLogger LoggingLevel is set to
+// LogNotice, LogInfo or LogDebug.
+func (c *ChaincodeLogger) Notice(args ...interface{}) {
+	c.logger.Notice(args...)
+}
+
+// Warning logs will appear if the ChaincodeLogger LoggingLevel is set to
+// LogWarning, LogNotice, LogInfo or LogDebug.
+func (c *ChaincodeLogger) Warning(args ...interface{}) {
+	c.logger.Warning(args...)
+}
+
+// Error logs will appear if the ChaincodeLogger LoggingLevel is set to
+// LogError, LogWarning, LogNotice, LogInfo or LogDebug.
+func (c *ChaincodeLogger) Error(args ...interface{}) {
+	c.logger.Error(args...)
+}
+
+// Critical logs always appear; They can not be disabled.
+func (c *ChaincodeLogger) Critical(args ...interface{}) {
+	c.logger.Critical(args...)
 }
 
 // Debugf logs will only appear if the ChaincodeLogger LoggingLevel is set to
