@@ -35,9 +35,6 @@ var fs = require("fs");
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
 
-// For logging
-var TAG = "app.js:";
-
 ////////  Pathing and Module Setup  ////////
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -61,16 +58,13 @@ app.use(cors());
 
 ///////////  Configure Webserver  ///////////
 app.use(function (req, res, next) {
-    var keys;
     console.log('------------------------------------------ incoming request ------------------------------------------');
     req.bag = {};											//create my object for my stuff
-    req.session.count = eval(req.session.count) + 1;
+    req.session.count = req.session.count + 1;
     req.bag.session = req.session;
 
     var url_parts = require('url').parse(req.url, true);
     req.parameters = url_parts.query;
-    keys = Object.keys(req.parameters);
-    keys = Object.keys(req.body);
     next();
 });
 
@@ -113,32 +107,15 @@ console.log('- Tracking Deployment');
 require("cf-deployment-tracker-client").track();
 
 // ============================================================================================================================
-// ============================================================================================================================
-// ============================================================================================================================
-// ============================================================================================================================
-// ============================================================================================================================
-// ============================================================================================================================
-
-// ============================================================================================================================
-// 														Warning
-// ============================================================================================================================
-
-// ============================================================================================================================
-// 														Entering
-// ============================================================================================================================
-
-// ============================================================================================================================
-// 														Test Area
+//
 // ============================================================================================================================
 var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
 var user_manager = require('./utils/users');
-var testChaincodeID = "cp";
 var hfc = require('hfc');
 var chaincodeName = 'cp_chaincode';
 var chain = hfc.newChain(chaincodeName);
-var WebAppAdmin;
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
@@ -155,7 +132,6 @@ chain.setECDSAModeForGRPC(true);
 var peerURLs = [];
 var caURL = null;
 var users = null;
-var registrar = null; //user used to register other users and deploy chaincode
 var peerHosts = [];
 
 //hard-coded the peers and CA addresses.
@@ -292,14 +268,12 @@ function configure_network() {
     });
 }
 
-var gccID = {};
 function deploy(WebAppAdmin) {
     console.log("Deploying commercial paper chaincode as: WebAppAdmin");
     var deployRequest = {
         fcn: "init",
         args: ['a', '100'],
         chaincodePath: "chain_code/",
-        //certificatePath: "/certs/blockchain-cert.pem"
         certificatePath: "/certs/peer/cert.pem"  // Bluemix cert path has changed
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
@@ -331,7 +305,6 @@ function cb_deployed(e, d) {
     }
     else {
         console.log('------------------------------------------ Websocket Up ------------------------------------------');
-        var gws = {};														//save it here for chaincode investigator
         wss = new ws.Server({server: server});												//start the websocket now
         wss.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
@@ -369,17 +342,16 @@ function cb_deployed(e, d) {
                 if (resp && resp.height) {
                     wss.broadcast({msg: 'reset'});
                 }
-            };
+            }
             function failure(statusCode, headers, msg) {
                 console.log('chainstats failure :(');
                 console.log('status code: ' + statusCode);
                 console.log('headers: ' + headers);
                 console.log('message: ' + msg);
-            };
+            }
 
-            var goodJSON = false;
             var request = https.request(options, function (resp) {
-                var str = '', temp, chunks = 0;
+                var str = '', chunks = 0;
                 resp.setEncoding('utf8');
                 resp.on('data', function (chunk) {                                                            //merge chunks of request
                     str += chunk;
