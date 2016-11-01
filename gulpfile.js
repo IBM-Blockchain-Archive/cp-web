@@ -1,13 +1,9 @@
-/* global templatizer */
 ///// Gulp Dependencies /////
 var gulp = require('gulp'),
 	sass = require('gulp-sass'),
 	concat = require('gulp-concat'),
-	minifyCss = require('gulp-minify-css'),
+	cleanCSS = require('gulp-clean-css'),
 	rename = require("gulp-rename"),
-	watch = require('gulp-watch'),
-	sourcemaps = require('gulp-sourcemaps'),
-	uglify = require('gulp-uglify'),
 	spawn = require('child_process').spawn,
 	node;
 
@@ -18,7 +14,7 @@ gulp.task('build-sass', function () {
 		.pipe(gulp.dest('./src/scss/temp'))						//build them here first
 		.pipe(concat('main.css'))							//concat them all
 		.pipe(gulp.dest('./public/css'))
-		.pipe(minifyCss())										//minify
+		.pipe(cleanCSS())										//minify
 		.pipe(rename("main.min.css"))
 		.pipe(gulp.dest('./public/css'));						//dump it here
 });
@@ -29,13 +25,9 @@ gulp.task('server', function() {
 	node = spawn('node', ['app.js'], {stdio: 'inherit'});		//command, file, options
 });
 
-
 ////// Watch Tasks //////
 gulp.task('watch-sass', ['build-sass'], function () {
 	gulp.watch('./src/scss/*.scss', ['build-sass']);
-});
-gulp.task('watch-jade', ['build-jade'], function () {
-	gulp.watch('./views/**/*.js', ['build-jade']);
 });
 gulp.task('watch-server', ['server'], function () {
 	gulp.watch('./routes/**/*.js', ['server']);

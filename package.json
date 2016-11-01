@@ -15,11 +15,14 @@
     "cors": "^2.8.1",
     "express": "^4.14.0",
     "express-session": "^1.14.2",
+    "gulp-concat": "^2.6.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.2.0",
     "hfc": "0.5.4",
-    "morgan": "1.1.1",
+    "morgan": "^1.7.0",
     "pug": "^2.0.0-beta6",
-    "serve-static": "1.9.2",
-    "ws": "1.0.1"
+    "serve-static": "^1.11.1",
+    "ws": "^1.1.1"
   },
   "engines": {
     "node": "^6.9.1",
@@ -31,11 +34,11 @@
   },
   "devDependencies": {
     "gulp": "^3.9.1",
-    "gulp-concat": "*",
-    "gulp-minify-css": "1.2.1",
-    "gulp-rename": "*",
+    "gulp-clean-css": "^2.0.13",
+    "gulp-concat": "^2.6.0",
+    "gulp-rename": "^1.2.2",
     "gulp-sass": "^2.0.4",
-    "gulp-sourcemaps": "*",
+    "gulp-sourcemaps": "^2.2.0",
     "gulp-util": "^3.0.6",
     "gulp-watch": "^4.3.4"
   },
