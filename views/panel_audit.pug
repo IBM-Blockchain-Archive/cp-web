@@ -1,0 +1,44 @@
+//
+	Created by davery on 3/3/2016.
+#auditPanel(hidden).panel
+	h1 Auditing Center
+	hr
+
+	br
+	#auditModal.modalDialog
+			div
+				.modal-header
+					h2 Filter Trades
+					hr
+				.modal-content
+					form#auditFilter
+						label(for="audit_issuer") ISSUER
+						input#audit_issuer.audit-filter(type="text" name="issuer")
+						br
+						label(for="audit_owner") OWNER
+						input#audit_owner.audit-filter(type="text" name="owner")
+						br
+						label(for="audit_ticker") TICKER
+						input#audit_ticker.audit-filter(type="text" name="ticker")
+						br
+						a.filter-button(href="#close" title="Close") Close
+						
+	#auditableTrades
+		br
+		a.filter-button(href="#auditModal") Filter Trades
+		br
+		br
+		table#auditTable.tablesorter
+			thead
+				tr
+					TH: a.sort-selector(sort="date") DATE
+						span.fa.fa-arrow-up.sort-indicator
+					th: a.sort-selector(sort="cusip") CUSIP
+					th: a.sort-selector(sort="ticker") TICKER
+					th: a.sort-selector(sort="par") PAR
+					th: a.sort-selector(sort="quantity") QTY
+					th: a.sort-selector(sort="discount") DISCOUNT
+					th: a.sort-selector(sort="maturity") MATURITY
+					th: a.sort-selector(sort="issuer") ISSUER
+					th: a.sort-selector(sort="owner") OWNER
+			tbody#auditBody

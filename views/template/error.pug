@@ -1,7 +1,7 @@
-extends ./layout.jade
+extends layout.pug
 	
 	
-// --------------- Header -------------- //
+//- --------------- Header -------------- //
 block custom_header
 	script(type='text/javascript').
 		$(document).ready(function(){
@@ -9,12 +9,12 @@ block custom_header
 		});
 		
 		
-// --------------- Navigation Bar  -------------- //
+//- --------------- Navigation Bar  -------------- //
 block navpanel
 	#logo R3?
 	
 	
-// --------------- Main Stuff  -------------- //
+//- --------------- Main Stuff  -------------- //
 block content
 	#contentPanel
 		

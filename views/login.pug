@@ -1,7 +1,7 @@
-extends ./template/layout.jade
+extends template/layout
 	
 	
-// --------------- Header -------------- //
+//- --------------- Header -------------- //
 block custom_header
 	script(src='/js/part2.js')
 	script(src='/js/blockchain.js')
@@ -11,12 +11,12 @@ block custom_header
 		});
 		
 		
-// --------------- Navigation Bar  -------------- //
+//- --------------- Navigation Bar  -------------- //
 block navpanel
-	include ./template/nav_part2.jade
+	include template/nav_part2
 	
 	
-// --------------- Main Stuff  -------------- //
+//- --------------- Main Stuff  -------------- //
 block content
 	#contentPanel
 		#loginContainer

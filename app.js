@@ -37,8 +37,8 @@ var port = setup.SERVER.PORT;
 
 ////////  Pathing and Module Setup  ////////
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-app.engine('.html', require('jade').__express);
+app.set('view engine', 'pug');
+app.engine('.html', require('pug').__express);
 app.use(compression());
 app.use(morgan('dev'));
 app.use(bodyParser.json());
@@ -97,7 +97,6 @@ var server = http.createServer(app).listen(port, function () {
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 process.env.NODE_ENV = 'production';
 server.timeout = 240000;
-// Ta-da.
 console.log('------------------------------------------ Server Up - ' + host + ':' + port + ' ------------------------------------------');
 if (process.env.PRODUCTION) console.log('Running using Production settings');
 else console.log('Running using Developer settings');
