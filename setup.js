@@ -16,6 +16,7 @@
  * Contributors:
  *   David Huffman - Initial implementation
  *******************************************************************************/
+var TAG = 'SETUP.JS: ';
 
 var vcap_app = {application_uris: ['']};
 var ext_uri = '';
@@ -31,6 +32,7 @@ if (process.env.VCAP_APPLICATION) {
 ///////////////////////////////////    1. Bluemix Production    ////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 if (process.env.VCAP_APP_HOST && process.env.PRODUCTION) {
+    console.log(TAG + 'This app is running in production Bluemix.');
     exports.SERVER = {
         HOST: process.env.VCAP_APP_HOST,
         PORT: process.env.VCAP_APP_PORT,
@@ -43,6 +45,7 @@ if (process.env.VCAP_APP_HOST && process.env.PRODUCTION) {
 ///////////////////////////////////    2. Bluemix Development    ///////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 else if (process.env.VCAP_APP_HOST) {
+    console.log(TAG + 'This app is running in dev Bluemix.');
     exports.SERVER = {
         HOST: process.env.VCAP_APP_HOST,
         PORT: process.env.VCAP_APP_PORT,
@@ -55,6 +58,7 @@ else if (process.env.VCAP_APP_HOST) {
 /////////////////////////////////     3. Localhost - Development    ////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 else {
+    console.log(TAG + 'Assuming this app is running on localhost.');
     exports.SERVER = {
         HOST: 'localhost',
         PORT: 3000,
