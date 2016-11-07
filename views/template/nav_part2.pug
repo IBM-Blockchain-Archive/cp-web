@@ -1,26 +1,19 @@
 #logo COMMERCIAL PAPER
 
 #linkWraps
-	// there is JS code that will show the corresponding panel to the clicked navigation div.
-	// ie: clicking <div class="nav">HOME</div> will show panel #homePanel
-	// this code is in layout.jade
-	//.nav#homeLink HOME
-	.nav#createLink CREATE
-	.nav#tradeLink TRADE
-	.nav#auditLink AUDIT
-	
+    // there is JS code that will show the corresponding panel to the clicked navigation div.
+    // ie: clicking <div class="nav">HOME</div> will show panel #homePanel
+    // this code is in layout.jade
+    //.nav#homeLink HOME
+    .nav#createLink CREATE
+    .nav#tradeLink TRADE
+    .nav#auditLink AUDIT
+
 #whoAmI
-	span.fa.fa-user#userIcon
-	span#userField LOGIN
-	span &nbsp;
-	span.fa.fa-angle-down
-	
-	#userSelect
-		.userLine(name="#{bag.setup.USER1}")
-			span #{bag.setup.USER1.toUpperCase()} &nbsp;&nbsp;
-		.userLine(name="#{bag.setup.USER2}")
-			span #{bag.setup.USER2.toUpperCase()}&nbsp;&nbsp;
-			
-			
+    span.fa.fa-user#userIcon
+    span#userField LOGIN
+    span &nbsp;
+    span.fa.fa-angle-down
+
 form#loginWrap
-	a(href="/logout") Logout
+    a(href="/logout") Logout
