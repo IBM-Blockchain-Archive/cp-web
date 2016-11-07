@@ -1,6 +1,4 @@
-"use strict";
-/* global process */
-/* global __dirname */
+'use strict';
 /*******************************************************************************
  * Copyright (c) 2015 IBM Corp.
  *
@@ -10,12 +8,9 @@
  *   David Huffman - Initial implementation
  *   Dale Avery
  *******************************************************************************/
-/////////////////////////////////////////
-///////////// Setup Node.js /////////////
-/////////////////////////////////////////
-
-process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder
-
+// =====================================================================================================================
+// 														Node.js Setup
+// =====================================================================================================================
 var express = require('express');
 var session = require('express-session');
 var compression = require('compression');
@@ -26,84 +21,96 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var http = require('http');
 var https = require('https');
-var app = express();
 var setup = require('./setup');
-var cors = require("cors");
-var fs = require("fs");
+var cors = require('cors');
+var fs = require('fs');
 
-//// Set Server Parameters ////
-var host = setup.SERVER.HOST;
-var port = setup.SERVER.PORT;
-
-////////  Pathing and Module Setup  ////////
+// =====================================================================================================================
+// 														Express Setup
+// =====================================================================================================================
+// Create the Express app that will process incoming requests to our web server.
+console.log('Configuring Express app');
+var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.engine('.html', require('pug').__express);
 app.use(compression());
 app.use(morgan('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded());
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
-app.use('/cc/summary', serve_static(path.join(__dirname, 'cc_summaries')));												//for chaincode investigator
-app.use(serve_static(path.join(__dirname, 'public'), {maxAge: '1d', setHeaders: setCustomCC}));							//1 day cache
-app.use(session({secret: 'Somethignsomething1234!test', resave: true, saveUninitialized: true}));
+
+// Create a static folder to serve up the CSS and JS for the demo.  These images shouldn't change very often, so we
+// can set longer cache limits for them.
+app.use(serve_static(path.join(__dirname, 'public'), {maxAge: '1d', setHeaders: setCustomCC})); // 1 day cache
 function setCustomCC(res, path) {
-    if (serve_static.mime.lookup(path) === 'image/jpeg') res.setHeader('Cache-Control', 'public, max-age=2592000');		//30 days cache
+    // 30 days cache
+    if (serve_static.mime.lookup(path) === 'image/jpeg') res.setHeader('Cache-Control', 'public, max-age=2592000');
     else if (serve_static.mime.lookup(path) === 'image/png') res.setHeader('Cache-Control', 'public, max-age=2592000');
     else if (serve_static.mime.lookup(path) === 'image/x-icon') res.setHeader('Cache-Control', 'public, max-age=2592000');
 }
-// Enable CORS preflight across the board.
+
+// Use a session to track how many requests we receive from a client (See below)
+app.use(session({secret: 'Somethignsomething1234!test', resave: true, saveUninitialized: true}));
+
+// Enable CORS preflight across the board so browser will let the app make REST requests
 app.options('*', cors());
 app.use(cors());
 
-///////////  Configure Webserver  ///////////
+// Attach useful things to the request
 app.use(function (req, res, next) {
-    console.log('------------------------------------------ incoming request ------------------------------------------');
-    req.bag = {};											//create my object for my stuff
+    console.log('----------------------------------------- incoming request -----------------------------------------');
+    // Create a bag for passing information back to the client
+    req.bag = {};
     req.session.count = req.session.count + 1;
     req.bag.session = req.session;
 
+    // TODO is anything using this?
     var url_parts = require('url').parse(req.url, true);
     req.parameters = url_parts.query;
     next();
 });
 
-//// Router ////
+// This router will serve up our pages and API calls.
 var router = require('./routes/site_router');
 app.use('/', router);
 
-////////////////////////////////////////////
-////////////// Error Handling //////////////
-////////////////////////////////////////////
+// If the request is not process by this point, their are 2 possibilities:
+// 1. We don't have a route for handling the request
 app.use(function (req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
+
+// 2. Something else went wrong
 app.use(function (err, req, res, next) {		// = development error handler, print stack trace
-    console.log("Error Handler -", req.url);
+    console.log('Error Handler -', req.url);
     var errorCode = err.status || 500;
     res.status(errorCode);
     req.bag.error = {msg: err.stack, status: errorCode};
-    if (req.bag.error.status == 404) req.bag.error.msg = "Sorry, I cannot locate that file";
+    if (req.bag.error.status == 404) req.bag.error.msg = 'Sorry, I cannot locate that file';
     res.render('template/error', {bag: req.bag});
 });
 
-// ============================================================================================================================
+// =====================================================================================================================
 // 														Launch Webserver
-// ============================================================================================================================
+// =====================================================================================================================
+// Start the web server using our express app to handle requests
+var host = setup.SERVER.HOST;
+var port = setup.SERVER.PORT;
+console.log('Staring http server on: ' + host + ':' + port);
 var server = http.createServer(app).listen(port, function () {
+    console.log('Server Up - ' + host + ':' + port);
 });
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-process.env.NODE_ENV = 'production';
-server.timeout = 240000;
-console.log('------------------------------------------ Server Up - ' + host + ':' + port + ' ------------------------------------------');
-if (process.env.PRODUCTION) console.log('Running using Production settings');
-else console.log('Running using Developer settings');
 
-// Track the application deployments
-console.log('- Tracking Deployment');
-require("cf-deployment-tracker-client").track();
+// Some setting that we've found make our life easier
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+server.timeout = 240000;
+
+// Track application bluemix deployments.  All we're tracking is number of deployments.
+console.log('---- Tracking Deployment');
+require('cf-deployment-tracker-client').track();
 
 // ============================================================================================================================
 //
@@ -146,12 +153,12 @@ try {
 
     var peers = manual.peers;
     for (var i in peers) {
-        peerURLs.push("grpcs://" + peers[i].discovery_host + ":" + peers[i].discovery_port);
-        peerHosts.push("" + peers[i].discovery_host);
+        peerURLs.push('grpcs://' + peers[i].discovery_host + ':' + peers[i].discovery_port);
+        peerHosts.push('' + peers[i].discovery_host);
     }
     var ca = manual.ca;
     for (var i in ca) {
-        caURL = "grpcs://" + ca[i].url;
+        caURL = 'grpcs://' + ca[i].url;
     }
     console.log('loading hardcoded peers');
     users = null;																			//users are only found if security is on
@@ -182,14 +189,14 @@ if (process.env.VCAP_SERVICES) {
                 peerURLs = [];
                 peerHosts = [];
                 for (var j in peers) {
-                    peerURLs.push("grpcs://" + peers[j].discovery_host + ":" + peers[j].discovery_port);
-                    peerHosts.push("" + peers[j].discovery_host);
+                    peerURLs.push('grpcs://' + peers[j].discovery_host + ':' + peers[j].discovery_port);
+                    peerHosts.push('' + peers[j].discovery_host);
                 }
                 if (servicesObject[i][0].credentials.ca) {
                     console.log('overwritting ca, loading from a vcap service: ', i);
                     ca = servicesObject[i][0].credentials.ca;
                     for (var z in ca) {
-                        caURL = "grpcs://" + ca[z].discovery_host + ":" + ca[z].discovery_port;
+                        caURL = 'grpcs://' + ca[z].discovery_host + ':' + ca[z].discovery_port;
                     }
                     if (servicesObject[i][0].credentials.users) {
                         console.log('overwritting users, loading from a vcap service: ', i);
@@ -205,13 +212,13 @@ if (process.env.VCAP_SERVICES) {
     }
 }
 
-var pwd = "";
+var pwd = '';
 for (var z in users) {
-    if (users[z].enrollId == "WebAppAdmin") {
+    if (users[z].enrollId == 'WebAppAdmin') {
         pwd = users[z].enrollSecret;
     }
 }
-console.log("calling network config");
+console.log('calling network config');
 configure_network();
 // ==================================
 // configure ibm-blockchain-js sdk
@@ -221,42 +228,42 @@ function configure_network() {
     var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
 
     if (fs.existsSync('us.blockchain.ibm.com.cert')) {
-        console.log("Setting membership service url:", caURL);
+        console.log('Setting membership service url:', caURL);
         chain.setMemberServicesUrl(caURL, {pem: pem});
     }
     else {
-        console.log("Failed to get the certificate....");
+        console.log('Failed to get the certificate....');
     }
 
-    console.log("Peer urls:", peerURLs);
+    console.log('Peer urls:', peerURLs);
     for (var i in peerURLs) {
         chain.addPeer(peerURLs[i], {pem: pem});
     }
 
-    chain.getMember("WebAppAdmin", function (err, WebAppAdmin) {
+    chain.getMember('WebAppAdmin', function (err, WebAppAdmin) {
         if (err) {
-            console.log("Failed to get WebAppAdmin member " + " ---> " + err);
+            console.log('Failed to get WebAppAdmin member ' + ' ---> ' + err);
         } else {
-            console.log("Successfully got WebAppAdmin member" + " ---> " /*+ JSON.stringify(crypto)*/);
+            console.log('Successfully got WebAppAdmin member' + ' ---> ' /*+ JSON.stringify(crypto)*/);
 
             // Enroll the WebAppAdmin member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
-            console.log("Enrolling: WebAppAdmin", pwd);
+            console.log('Enrolling: WebAppAdmin', pwd);
             WebAppAdmin.enroll(pwd, function (err, crypto) {
                 if (err) {
-                    console.log("Failed to enroll WebAppAdmin member");
+                    console.log('Failed to enroll WebAppAdmin member');
                     //t.end(err);
                 } else {
-                    console.log("Successfully enrolled WebAppAdmin member" + " ---> " /*+ JSON.stringify(crypto)*/);
+                    console.log('Successfully enrolled WebAppAdmin member' + ' ---> ' /*+ JSON.stringify(crypto)*/);
 
                     // Confirm that the WebAppAdmin token has been created in the key value store
-                    path = chain.getKeyValStore().dir + "/member." + WebAppAdmin.getName();
+                    path = chain.getKeyValStore().dir + '/member.' + WebAppAdmin.getName();
 
                     fs.exists(path, function (exists) {
                         if (exists) {
-                            console.log("Successfully stored client token for" + " ---> " + WebAppAdmin.getName());
+                            console.log('Successfully stored client token for' + ' ---> ' + WebAppAdmin.getName());
                         } else {
-                            console.log("Failed to store client token for " + WebAppAdmin.getName() + " ---> " + err);
+                            console.log('Failed to store client token for ' + WebAppAdmin.getName() + ' ---> ' + err);
                         }
                     });
                 }
@@ -268,28 +275,29 @@ function configure_network() {
 }
 
 function deploy(WebAppAdmin) {
-    console.log("Deploying commercial paper chaincode as: WebAppAdmin");
+    console.log('Deploying commercial paper chaincode as: WebAppAdmin');
+    process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder
     var deployRequest = {
-        fcn: "init",
+        fcn: 'init',
         args: ['a', '100'],
-        chaincodePath: "chain_code/",
-        certificatePath: "/certs/peer/cert.pem"  // Bluemix cert path has changed
+        chaincodePath: 'chain_code/',
+        certificatePath: '/certs/peer/cert.pem'  // Bluemix cert path has changed
     };
     var deployTx = WebAppAdmin.deploy(deployRequest);
 
     deployTx.on('submitted', function (results) {
-        console.log("Successfully submitted chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
+        console.log('Successfully submitted chaincode deploy transaction' + ' ---> ' + 'function: ' + deployRequest.fcn + ', args: ' + deployRequest.args + ' : ' + results.chaincodeID);
     });
 
     deployTx.on('complete', function (results) {
-        console.log("Successfully completed chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + results.chaincodeID);
+        console.log('Successfully completed chaincode deploy transaction' + ' ---> ' + 'function: ' + deployRequest.fcn + ', args: ' + deployRequest.args + ' : ' + results.chaincodeID);
         part2.setup(results.chaincodeID, chain, peers);
         user_manager.setup(results.chaincodeID, chain, cb_deployed);
     });
 
     deployTx.on('error', function (err) {
         // Invoke transaction submission failed
-        console.log("Failed to submit chaincode deploy transaction" + " ---> " + "function: " + deployRequest.fcn + ", args: " + deployRequest.args + " : " + JSON.stringify(err));
+        console.log('Failed to submit chaincode deploy transaction' + ' ---> ' + 'function: ' + deployRequest.fcn + ', args: ' + deployRequest.args + ' : ' + JSON.stringify(err));
     });
 }
 
