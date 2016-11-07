@@ -316,7 +316,8 @@ function cb_deployed(e, d) {
             });
         });
 
-        wss.broadcast = function broadcast(data) {											//send to all connections
+        // This makes it easier to contact our clients
+        wss.broadcast = function broadcast(data) {
             wss.clients.forEach(function each(client) {
                 try {
                     data.v = '2';
@@ -327,7 +328,8 @@ function cb_deployed(e, d) {
                 }
             });
         };
-        //clients will need to know if blockheight changes 
+
+        // Monitor chain's blockheight and pass it along to clients.
         setInterval(function () {
             var options = {
                 host: peers[0].api_host,
@@ -342,11 +344,13 @@ function cb_deployed(e, d) {
                     wss.broadcast({msg: 'reset'});
                 }
             }
+
             function failure(statusCode, headers, msg) {
-                console.log('chainstats failure :(');
-                console.log('status code: ' + statusCode);
-                console.log('headers: ' + headers);
-                console.log('message: ' + msg);
+                // Don't broadcast failures to clients, just log them
+                console.error('chainstats failure: (' +
+                    'status code: ' + statusCode +
+                    '\n  headers: ' + headers +
+                    '\n  message: ' + msg + ')');
             }
 
             var request = https.request(options, function (resp) {
@@ -366,7 +370,7 @@ function cb_deployed(e, d) {
                 });
             });
 
-            request.on('error', function (e) {                                                                //handle error event
+            request.on('error', function (e) {
                 failure(500, null, e);
             });
 
