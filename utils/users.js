@@ -21,6 +21,30 @@ var fs = require('fs');
 // Use a tag to make logs easier to find
 var TAG = 'user_manager:';
 
+function isConfigured() {
+    return chaincodeID && chain;
+}
+
+/**
+ * Whoever configures the hfc chain object needs to send it here in order for this user manager to function.
+ * @param ccID The chaincode ID where 'new company' invokes should be sent.
+ * @param ch The object representing our chain.
+ * @param cb A callback of the form: function(error)
+ */
+module.exports.setup = function (ccID, ch, cb) {
+    if (ch && ccID) {
+        console.log(TAG, 'user manager properly configured');
+        chaincodeID = ccID;
+        chain = ch;
+        cb(null);
+    } else {
+        console.error(TAG, 'user manager was not given proper configuration');
+        var err = new Error('User manager requires both a chain object and ' +
+            'a chaincode object before it can function.');
+        cb(err);
+    }
+};
+
 /**
  * Mimics a login process by attempting to register a given id and secret against
  * the first peer in the network. 'Successfully registered' and 'already logged in'
@@ -29,20 +53,27 @@ var TAG = 'user_manager:';
  * @param secret The secret that was given to this user when registered against the CA.
  * @param cb A callback of the form: function(err)
  */
-module.exports.login = function(id, secret, cb) {
+module.exports.login = function (id, secret, cb) {
+    console.log(TAG, 'login called');
+
+    if (!isConfigured()) {
+        cb(new Error('Cannot enroll a user before setup() is called.'));
+        return;
+    }
+
     chain.getMember(id, function (err, usr) {
         if (err) {
             console.log(TAG, 'Failed to get' + id + 'member ' + ' ---> ' + err);
-            if(cb) cb(err);
+            if (cb) cb(err);
         } else {
-            console.log(TAG, 'Successfully got ' + id + ' member' /*+ ' ---> ' + JSON.stringify(crypto)*/);
+            console.log(TAG, 'Successfully got ' + id + ' member');
 
             // Enroll the user member with the certificate authority using
             // the one time password hard coded inside the membersrvc.yaml.
             usr.enroll(secret, function (err, crypto) {
                 if (err) {
                     console.log('Failed to enroll' + id + 'member ' + ' ---> ' + err);
-                    if(cb) cb(err);
+                    if (cb) cb(err);
                 } else {
                     console.log('Successfully enrolled' + id + 'member' /*+ ' ---> ' + JSON.stringify(crypto)*/);
 
@@ -65,12 +96,12 @@ module.exports.login = function(id, secret, cb) {
                     invokeTx.on('submitted', function (results) {
                         // Invoke transaction submitted successfully
                         console.log(util.format('Successfully submitted chaincode invoke transaction: request=%j, response=%j', Request, results));
-                        if(cb) cb(null);
+                        if (cb) cb(null);
                     });
                     invokeTx.on('error', function (err) {
                         // Invoke transaction submission failed
                         console.log(util.format('Failed to submit chaincode invoke transaction: request=%j, error=%j', Request, err));
-                        if(cb) cb(err);
+                        if (cb) cb(err);
                     });
                 }
             });
@@ -80,58 +111,39 @@ module.exports.login = function(id, secret, cb) {
 
 /**
  * Registers a new user in the membership service for the blockchain network.
- * @param username The name of the user we want to register.
+ * @param enrollID The name of the user we want to register.
  * @param cb A callback of the form: function(error, user_credentials)
  */
-module.exports.registerUser = function (username, cb) {
-    chain.getMember(username, function (err, usr) {
+module.exports.registerUser = function (enrollID, cb) {
+    console.log(TAG, 'registerUser() called');
+
+    if (!isConfigured()) {
+        cb(new Error('Cannot register a user before setup() is called.'));
+        return;
+    }
+
+    chain.getMember(enrollID, function (err, usr) {
         if (!usr.isRegistered()) {
-            console.log(TAG, 'registering user..........');
+            console.log(TAG, 'Sending registration request for:', enrollID);
             var registrationRequest = {
-                enrollmentID: username,
+                enrollmentID: enrollID,
                 account: 'group1',
                 affiliation: '00001'
             };
-            usr.register(registrationRequest, function (err, enrollsecret) {
+            usr.register(registrationRequest, function (err, enrollSecret) {
                 if (err) {
                     cb(err);
                 } else {
                     var cred = {
-                        id: username,
-                        secret: enrollsecret
+                        id: enrollID,
+                        secret: enrollSecret
                     };
-                    module.exports.login(cred.id, cred.secret, function (err) {
-                        if (err != null) {
-                            cb(err);
-                        } else {
-                            cb(null, cred);
-                        }
-                    });
-
+                    console.log(TAG, 'Registration request completed successfully!');
+                    cb(null, cred);
                 }
             });
         } else {
             cb(new Error('Cannot register an existing user'));
         }
     });
-};
-
-/**
- * Whoever configures the hfc chain object needs to send it here in order for this user manager to function.
- * @param ccID The chaincode ID where 'new company' invokes should be sent.
- * @param ch The object representing our chain.
- * @param cb A callback of the form: function(error)
- */
-module.exports.setup = function (ccID, ch, cb) {
-    if (ch && ccID) {
-        console.log(TAG, 'user manager properly configured');
-        chaincodeID = ccID;
-        chain = ch;
-        cb(null);
-    } else {
-        console.error(TAG, 'user manager was not given proper configuration');
-        var err = new Error('User manager requires both a chain object and ' +
-            'a chaincode object before it can function.');
-        cb(err);
-    }
 };
