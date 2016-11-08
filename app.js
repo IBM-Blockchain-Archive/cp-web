@@ -9,7 +9,7 @@
  *   Dale Avery
  *******************************************************************************/
 // =====================================================================================================================
-// 														Node.js Setup
+// 												Node.js Setup
 // =====================================================================================================================
 var express = require('express');
 var session = require('express-session');
@@ -26,7 +26,7 @@ var cors = require('cors');
 var fs = require('fs');
 
 // =====================================================================================================================
-// 														Express Setup
+// 												Express Setup
 // =====================================================================================================================
 // Create the Express app that will process incoming requests to our web server.
 console.log('Configuring Express app');
@@ -94,7 +94,7 @@ app.use(function (err, req, res, next) {		// = development error handler, print 
 });
 
 // =====================================================================================================================
-// 														Launch Webserver
+// 												Launch Webserver
 // =====================================================================================================================
 // Start the web server using our express app to handle requests
 var host = setup.SERVER.HOST;
@@ -112,9 +112,9 @@ server.timeout = 240000;
 console.log('---- Tracking Deployment');
 require('cf-deployment-tracker-client').track();
 
-// ============================================================================================================================
-//
-// ============================================================================================================================
+// =====================================================================================================================
+// 												Blockchain Setup
+// =====================================================================================================================
 var part2 = require('./utils/ws_part2');
 var ws = require('ws');
 var wss = {};
@@ -304,11 +304,11 @@ function deploy(WebAppAdmin) {
 // ============================================================================================================================
 // 												WebSocket Communication Madness
 // ============================================================================================================================
-function cb_deployed(e, d) {
-    if (e != null) {
+function cb_deployed(error, d) {
+    if (error != null) {
         //look at tutorial_part1.md in the trouble shooting section for help
-        console.log('! looks like the final configuration failed, holding off on the starting the socket\n', e);
-        if (!process.error) process.error = {type: 'deploy', msg: e.details};
+        console.log('! looks like the final configuration failed, holding off on the starting the socket\n', error);
+        if (!process.error) process.error = {type: 'deploy', msg: error.message};
     }
     else {
         console.log('------------------------------------------ Websocket Up ------------------------------------------');
