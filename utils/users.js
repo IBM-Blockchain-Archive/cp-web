@@ -15,6 +15,7 @@
  *
  * Created by davery on 3/16/2016.
  *******************************************************************************/
+
 var chain;
 
 // Use a tag to make logs easier to find
@@ -22,12 +23,11 @@ var TAG = 'user_manager:';
 
 /**
  * Whoever configures the hfc chain object needs to send it here in order for this user manager to function.
- * @param ccID The chaincode ID where 'new company' invokes should be sent.
  * @param ch The object representing our chain.
  * @param cb A callback of the form: function(error)
  */
-module.exports.setup = function (ccID, ch, cb) {
-    if (ch && ccID) {
+module.exports.setup = function (ch, cb) {
+    if (ch) {
         console.log(TAG, 'user manager properly configured');
         chain = ch;
         cb(null);
@@ -39,18 +39,18 @@ module.exports.setup = function (ccID, ch, cb) {
 };
 
 /**
- * Mimics a login process by attempting to register a given id and secret against
+ * Mimics a enrollUser process by attempting to register a given id and secret against
  * the first peer in the network. 'Successfully registered' and 'already logged in'
  * are considered successes.  Everything else is a failure.
  * @param enrollID The user to log in.
  * @param enrollSecret The secret that was given to this user when registered against the CA.
  * @param cb A callback of the form: function(err)
  */
-module.exports.login = function (enrollID, enrollSecret, cb) {
-    console.log(TAG, 'login() called');
+module.exports.enrollUser = function (enrollID, enrollSecret, cb) {
+    console.log(TAG, 'enrollUser() called');
 
     if (!chain) {
-        cb(new Error('Cannot enroll a user before setup() is called.'));
+        cb(new Error('Cannot enrollUser a user before setup() is called.'));
         return;
     }
 
@@ -61,9 +61,9 @@ module.exports.login = function (enrollID, enrollSecret, cb) {
         } else {
             console.log(TAG, 'Successfully got member:', + enrollID);
 
-            usr.enroll(enrollSecret, function (enrollError, crypto) {
+            usr.enrollUser(enrollSecret, function (enrollError, crypto) {
                 if (enrollError) {
-                    console.log('enroll() failed for \"' + enrollID + '\":', enrollError.message);
+                    console.log('enrollUser() failed for \"' + enrollID + '\":', enrollError.message);
                     if (cb) cb(enrollError);
                 } else {
                     console.log('Successfully enrolled \"' + enrollID + '\"');
