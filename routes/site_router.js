@@ -95,7 +95,7 @@ function register(req, res) {
         role = 3;
     }
 
-    user_reg.registerUser(req.body.username, role, function (err, creds) {
+    user_reg.registerUser(req.body.username, function (err, creds) {
 		//console.log('! do i make it here?');
         if (err) {
             req.session.reg_error_msg = "Failed to register user:" + err.message;
