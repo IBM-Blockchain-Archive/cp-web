@@ -1,101 +1,118 @@
+'use strict';
+/*******************************************************************************
+ * Copyright (c) 2015 IBM Corp.
+ *
+ * All rights reserved.
+ *
+ * Communication between the CP browser code and this server is sent over web
+ * sockets. This file has the code for processing and responding to message sent
+ * to the web socket server.
+ *
+ * Contributors:
+ *   David Huffman - Initial implementation
+ *   Dale Avery
+ *******************************************************************************/
 // ==================================
 // Part 2 - incoming messages, look for type
 // ==================================
 var chaincode = {};
 var chain = {};
 var async = require('async');
-var http = require('http');
 var https = require('https');
 var util = require('util');
 var peers = null;
 
-function setup(ccID, c, peerHosts) {
+module.exports.setup = function setup(ccID, c, peerHosts) {
     chaincode = ccID;
     chain = c;
     peers = peerHosts;
 };
 
-module.exports.setup = setup;
+/**
+ * A handler for incoming web socket messages.
+ * @param socket A socket that we can respond through.
+ * @param data An object containing the incoming message data.
+ */
+module.exports.process_msg = function (socket, data) {
 
-module.exports.process_msg = function (ws, data) {
-
-    // Must have a user to invoke chaincode
+    // Clients must specify the identity to use on their network.  Needs to be someone
+    // that this server has enrolled and has the enrollment cert for.
     if (!data.user || data.user === '') {
-        sendMsg({ type: "error", error: "user not provided in message" });
+        sendMsg({type: 'error', error: 'user not provided in message'});
         return;
     }
 
     chain.getMember(data.user, function (err, usr) {
         var id = data.user;
         if (err) {
-            console.log("Failed to get" + id + "member " + " ---> " + err);
+            console.log('Failed to get' + id + 'member ' + ' ---> ' + err);
         } else {
-            var Request = {
+            var invokeRequestOptions = {
                 chaincodeID: chaincode
             };
             if (data.type == 'create') {
                 if (data.paper && data.paper.ticker) {
                     console.log('!', data.paper);
-                    Request.fcn = 'issueCommercialPaper';
-                    Request.args = [JSON.stringify(data.paper)];
+                    invokeRequestOptions.fcn = 'issueCommercialPaper';
+                    invokeRequestOptions.args = [JSON.stringify(data.paper)];
 
-                    var invokeTx = usr.invoke(Request);
+                    var invokeTx = usr.invoke(invokeRequestOptions);
 
                     // Print the invoke results
                     invokeTx.on('completed', function (results) {
                         // Invoke transaction submitted successfully
-                        console.log(util.format("Successfully completed chaincode invoke transaction: request=%j, response=%j", Request, results));
+                        console.log(util.format('Successfully completed chaincode invoke transaction: request=%j, response=%j', invokeRequestOptions, results));
                         cb_invoked(null, results);
                     });
                     invokeTx.on('submitted', function (results) {
                         // Invoke transaction submitted successfully
-                        console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
+                        console.log(util.format('Successfully submitted chaincode invoke transaction: request=%j, response=%j', invokeRequestOptions, results));
                         cb_invoked(null, results);
                     });
                     invokeTx.on('error', function (err) {
                         // Invoke transaction submission failed
-                        console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
+                        console.log(util.format('Failed to submit chaincode invoke transaction: request=%j, error=%j', invokeRequestOptions, err));
                         cb_invoked(err, null);
                     });
                 }
             }
             else if (data.type == 'get_papers') {
-                Request.fcn = 'query';
-                Request.args = ['GetAllCPs', data.user];
+                invokeRequestOptions.fcn = 'query';
+                invokeRequestOptions.args = ['GetAllCPs', data.user];
 
-                var queryTx = usr.query(Request);
+                var queryTx = usr.query(invokeRequestOptions);
 
                 // Print the query results
                 queryTx.on('complete', function (results) {
                     // Query completed successfully
-                    console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
+                    console.log(util.format('Successfully queried existing chaincode state: request=%j, response=%j, value=%s', invokeRequestOptions, results, results.result.toString()));
                     cb_got_papers(null, results.result.toString());
                 });
                 queryTx.on('error', function (err) {
                     // Query failed
                     cb_got_papers(err, null);
-                    console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
+                    console.log(util.format('Failed to query existing chaincode state: request=%j, error=%j', invokeRequestOptions, err));
                 });
             }
             else if (data.type == 'transfer_paper') {
                 console.log('transfering msg', data.transfer);
-                Request.fcn = 'transferPaper';
-                Request.args = [JSON.stringify(data.transfer)];
+                invokeRequestOptions.fcn = 'transferPaper';
+                invokeRequestOptions.args = [JSON.stringify(data.transfer)];
 
-                var invokeTx = usr.invoke(Request);
+                var invokeTx = usr.invoke(invokeRequestOptions);
 
                 // Print the invoke results
                 invokeTx.on('submitted', function (results) {
                     // Invoke transaction submitted successfully
-                    console.log(util.format("Successfully submitted chaincode invoke transaction: request=%j, response=%j", Request, results));
+                    console.log(util.format('Successfully submitted chaincode invoke transaction: request=%j, response=%j', invokeRequestOptions, results));
                 });
                 invokeTx.on('complete', function (results) {
                     // Invoke transaction submitted successfully
-                    console.log(util.format("Successfully completed chaincode invoke transaction: request=%j, response=%j", Request, results));
+                    console.log(util.format('Successfully completed chaincode invoke transaction: request=%j, response=%j', invokeRequestOptions, results));
                 });
                 invokeTx.on('error', function (err) {
                     // Invoke transaction submission failed
-                    console.log(util.format("Failed to submit chaincode invoke transaction: request=%j, error=%j", Request, err));
+                    console.log(util.format('Failed to submit chaincode invoke transaction: request=%j, error=%j', invokeRequestOptions, err));
                 });
             }
             else if (data.type == 'chainstats') {
@@ -108,16 +125,16 @@ module.exports.process_msg = function (ws, data) {
 
                 function success(statusCode, headers, resp) {
                     cb_chainstats(null, JSON.parse(resp));
-                };
+                }
+
                 function failure(statusCode, headers, msg) {
                     console.log('status code: ' + statusCode);
                     console.log('headers: ' + headers);
                     console.log('message: ' + msg);
-                };
+                }
 
-                var goodJSON = false;
                 var request = https.request(options, function (resp) {
-                    var str = '', temp, chunks = 0;
+                    var str = '', chunks = 0;
 
                     resp.setEncoding('utf8');
                     resp.on('data', function (chunk) {															//merge chunks of request
@@ -146,21 +163,21 @@ module.exports.process_msg = function (ws, data) {
                 request.end();
             }
             else if (data.type == 'get_company') {
-                Request.fcn = 'query';
-                Request.args = ['GetCompany', data.company];
+                invokeRequestOptions.fcn = 'query';
+                invokeRequestOptions.args = ['GetCompany', data.company];
 
-                var queryTx = usr.query(Request);
+                var queryTx = usr.query(invokeRequestOptions);
 
                 // Print the query results
                 queryTx.on('complete', function (results) {
                     // Query completed successfully
-                    console.log(util.format("Successfully queried existing chaincode state: request=%j, response=%j, value=%s", Request, results, results.result.toString()));
+                    console.log(util.format('Successfully queried existing chaincode state: request=%j, response=%j, value=%s', invokeRequestOptions, results, results.result.toString()));
                     cb_got_company(null, results.result.toString());
                 });
                 queryTx.on('error', function (err) {
                     // Query failed
                     cb_got_company(err, null);
-                    console.log(util.format("Failed to query existing chaincode state: request=%j, error=%j", Request, err));
+                    console.log(util.format('Failed to query existing chaincode state: request=%j, error=%j', invokeRequestOptions, err));
                 });
             }
 
@@ -170,7 +187,7 @@ module.exports.process_msg = function (ws, data) {
                 }
                 else {
                     console.log('papers', papers);
-                    sendMsg({ msg: 'papers', papers: papers });
+                    sendMsg({msg: 'papers', papers: papers});
                 }
             }
 
@@ -180,7 +197,7 @@ module.exports.process_msg = function (ws, data) {
                 }
                 else {
                     console.log('company', company);
-                    sendMsg({ msg: 'company', company: company });
+                    sendMsg({msg: 'company', company: company});
                 }
             }
 
@@ -213,9 +230,9 @@ module.exports.process_msg = function (ws, data) {
                         function success(statusCode, headers, stats) {
                             stats = JSON.parse(stats);
                             stats.height = key;
-                            sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
+                            sendMsg({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
                             cb(null);
-                        };
+                        }
 
                         function failure(statusCode, headers, msg) {
                             console.log('chainstats block ' + key + ' failure :(');
@@ -223,11 +240,10 @@ module.exports.process_msg = function (ws, data) {
                             console.log('headers: ' + headers);
                             console.log('message: ' + msg);
                             cb(null);
-                        };
+                        }
 
-                        var goodJSON = false;
                         var request = https.request(options, function (resp) {
-                            var str = '', temp, chunks = 0;
+                            var str = '', chunks = 0;
                             resp.setEncoding('utf8');
                             resp.on('data', function (chunk) {															//merge chunks of request
                                 str += chunk;
@@ -261,7 +277,7 @@ module.exports.process_msg = function (ws, data) {
             //call back for getting a block's stats, lets send the chain/block stats
             function cb_blockstats(e, stats) {
                 if (chain_stats.height) stats.height = chain_stats.height - 1;
-                sendMsg({ msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats });
+                sendMsg({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
             }
 
             //call back for getting open trades, lets send the trades
@@ -269,20 +285,24 @@ module.exports.process_msg = function (ws, data) {
                 if (e != null) console.log('error:', e);
                 else {
                     if (trades && trades.open_trades) {
-                        sendMsg({ msg: 'open_trades', open_trades: trades.open_trades });
+                        sendMsg({msg: 'open_trades', open_trades: trades.open_trades});
                     }
                 }
             }
         }
     });
-    //send a message, socket might be closed...
+
+    /**
+     * Send a response back to the client.
+     * @param json The content of the response.
+     */
     function sendMsg(json) {
-        if (ws) {
+        if (socket) {
             try {
-                ws.send(JSON.stringify(json));
+                socket.send(JSON.stringify(json));
             }
-            catch (e) {
-                console.log('error ws', e);
+            catch (error) {
+                console.error('Error sending response to client:', error.message);
             }
         }
     }
