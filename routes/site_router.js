@@ -73,7 +73,7 @@ module.exports.setup_helpers = function(configured_chaincode_ops) {
 };
 
 function check_login(res, req) {
-    if (!req.session.username || req.session.username == '') {
+    if (!req.session.username || req.session.username === '') {
         console.log(TAG, '! not logged in, redirecting to enrollUser');
         res.redirect('/login');
     }
@@ -133,26 +133,29 @@ function login(req, res) {
             // TODO Need to create the user account in here somewhere.
             chaincode_ops.createCompany(req.body.username, function(err) {
                 if(err) {
-                    console.lo
+                    console.error(TAG, 'failed to initialize user account:', err.message);
+                    // TODO set an error and return to the login screen
+                    res.redirect('/login');
+                    return;
                 }
-            })
 
-            // Determine the user's role and enrollUser by adding the user info to the session.
-            if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
-                req.session.role = 'auditor';
-            } else {
-                req.session.role = 'user';
-            }
-            req.session.username = req.body.username;
-            req.session.name = req.body.username;
-            req.session.error_msg = null;
+                // Determine the user's role and enrollUser by adding the user info to the session.
+                if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
+                    req.session.role = 'auditor';
+                } else {
+                    req.session.role = 'user';
+                }
+                req.session.username = req.body.username;
+                req.session.name = req.body.username;
+                req.session.error_msg = null;
 
-            // Redirect to the appropriate UI based on role
-            if (req.session.role.toLowerCase() === 'auditor'.toLowerCase()) {
-                res.redirect('/audit');
-            } else {
-                res.redirect('/trade');
-            }
+                // Redirect to the appropriate UI based on role
+                if (req.session.role.toLowerCase() === 'auditor'.toLowerCase()) {
+                    res.redirect('/audit');
+                } else {
+                    res.redirect('/trade');
+                }
+            });
         }
     });
 }
