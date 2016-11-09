@@ -25,38 +25,33 @@ var TAG = "router:";
 // ============================================================================================================================
 // Home
 // ============================================================================================================================
-router.route("/").get(function (req, res) {
-    check_login(res, req);
+router.get("/", isAuthenticated, function (req, res) {
     res.render('part2', {title: 'Commercial Paper Demo', bag: {setup: setup, e: process.error, session: req.session}});
 });
 
-router.route("/home").get(function (req, res) {
-    check_login(res, req);
+router.get("/home", isAuthenticated, function (req, res) {
     res.redirect("/trade");
 });
-router.route("/create").get(function (req, res) {
-    check_login(res, req);
+router.get("/create", isAuthenticated, function (req, res) {
     res.render('part2', {title: 'Commercial Paper Demo', bag: {setup: setup, e: process.error, session: req.session}});
 });
-router.route("/trade").get(function (req, res) {
-    check_login(res, req);
+router.get("/trade", isAuthenticated, function (req, res) {
     res.render('part2', {title: 'Commercial Paper Demo', bag: {setup: setup, e: process.error, session: req.session}});
 });
-router.route("/audit").get(function (req, res) {
-    check_login(res, req);
+router.get("/audit", isAuthenticated, function (req, res) {
     res.render('part2', {title: 'Commercial Paper Demo', bag: {setup: setup, e: process.error, session: req.session}});
 });
 
-router.route("/login").get(function (req, res) {
-    res.render('login', {title: 'Login/Register', bag: {setup: setup, e: process.error, session: req.session}});
+router.get("/login", function (req, res) {
+    res.render('login', {title: 'Enroll/Register', bag: {setup: setup, e: process.error, session: req.session}});
 });
 
-router.route("/logout").get(function (req, res) {
+router.get("/logout", function (req, res) {
     req.session.destroy();
     res.redirect("/login");
 });
 
-router.route("/:page").post(function (req, res) {
+router.post("/:page", function (req, res) {
     if (req.body.password) {
         login(req, res);
     } else {
@@ -72,11 +67,14 @@ module.exports.setup_helpers = function(configured_chaincode_ops) {
     chaincode_ops = configured_chaincode_ops;
 };
 
-function check_login(res, req) {
+function isAuthenticated(req, res, next) {
     if (!req.session.username || req.session.username === '') {
-        console.log(TAG, '! not logged in, redirecting to enrollUser');
-        res.redirect('/login');
+        console.log(TAG, '! not logged in, redirecting to login');
+        return res.redirect('/login');
     }
+
+    console.log(TAG, 'user is logged in');
+    next();
 }
 
 /**
@@ -112,34 +110,33 @@ function register(req, res) {
 }
 
 /**
- * Handles form posts for enrollUser requests.
- * @param req The request containing the enrollUser form data.
+ * Handles form posts for enrollment requests.
+ * @param req The request containing the enroll form data.
  * @param res The response.
  */
 function login(req, res) {
-    console.log('site_router.js enrollUser() - fired');
+    console.log('site_router.js login() - fired');
     req.session.error_msg = 'Invalid username or password';
     req.session.reg_error_msg = null;
 
-    // Registering the user against a peer can serve as a enrollUser checker, for now
-    console.log(TAG, "attempting enrollUser for:", req.body.username);
+    // Registering the user against a peer can serve as a login checker, for now
+    console.log(TAG, "attempting login for:", req.body.username);
     user_manager.enrollUser(req.body.username, req.body.password, function (err) {
         if (err) {
-            console.error(TAG, "User enrollUser failed:", err.message);
-            res.redirect('/login');
+            console.error(TAG, "User enrollment failed:", err.message);
+            return res.redirect('/login');
         } else {
-            console.log(TAG, "User enrollUser successful:", req.body.username);
+            console.log(TAG, "User enrollment successful:", req.body.username);
 
-            // TODO Need to create the user account in here somewhere.
+            // Go ahead and create an 'account' for this ID in the chaincode
             chaincode_ops.createCompany(req.body.username, function(err) {
                 if(err) {
                     console.error(TAG, 'failed to initialize user account:', err.message);
                     // TODO set an error and return to the login screen
-                    res.redirect('/login');
-                    return;
+                    return res.redirect('/login');
                 }
 
-                // Determine the user's role and enrollUser by adding the user info to the session.
+                // Determine the user's role and login by adding the user info to the session.
                 if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
                     req.session.role = 'auditor';
                 } else {
