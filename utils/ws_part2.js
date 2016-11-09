@@ -23,6 +23,8 @@ var util = require('util');
 var peers = null;
 
 module.exports.setup = function setup(ccID, c, peerHosts) {
+    if(!(ccID && c && peerHosts))
+        throw new Error('Web socket handler given incomplete configuration');
     chaincode = ccID;
     chain = c;
     peers = peerHosts;
