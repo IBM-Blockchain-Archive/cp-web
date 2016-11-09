@@ -8,6 +8,9 @@
  *   David Huffman - Initial implementation
  *   Dale Avery
  *******************************************************************************/
+// For logging
+var TAG = 'app.js:';
+
 // =====================================================================================================================
 // 												Node.js Setup
 // =====================================================================================================================
@@ -113,35 +116,17 @@ console.log('---- Tracking Deployment');
 require('cf-deployment-tracker-client').track();
 
 // =====================================================================================================================
-// 												Blockchain Setup
+// 												Network credentials
 // =====================================================================================================================
-var part2 = require('./utils/ws_part2');
-var ws = require('ws');
-var wss = {};
-var user_manager = require('./utils/users');
-var hfc = require('hfc');
-var chaincodeName = 'cp_chaincode';
-var chain = hfc.newChain(chaincodeName);
+// Credentials are first loaded from a file, then overwritten with whatever is found in VCAP
 
-// Configure the KeyValStore which is used to store sensitive keys
-// as so it is important to secure this storage.
-var keyValStoreDir = __dirname + '/keyValStore';
-console.log('Creating keyValStore in', keyValStoreDir);
-chain.setKeyValStore(hfc.newFileKeyValStore(__dirname + '/keyValStore'));
-chain.setDeployWaitTime(100);
-chain.setECDSAModeForGRPC(true);
-
-// ==================================
-// load peers manually or from VCAP, VCAP will overwrite hardcoded list!
-// ==================================
-
+// The network credentials that we will need
 var peerURLs = [];
 var caURL = null;
 var users = null;
 var peerHosts = [];
 
-//hard-coded the peers and CA addresses.
-//added for reading configs from file
+// Load credentials from a file
 try {
     console.log('Attempting to read hardcoded network credentials...');
     var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
@@ -212,98 +197,50 @@ if (process.env.VCAP_SERVICES) {
     }
 }
 
-var pwd = '';
-for (var z in users) {
-    if (users[z].enrollId == 'WebAppAdmin') {
-        pwd = users[z].enrollSecret;
-    }
-}
-console.log('calling network config');
-configure_network();
-// ==================================
-// configure ibm-blockchain-js sdk
-// ==================================
+// =====================================================================================================================
+// 												Blockchain Setup
+// =====================================================================================================================
 
-function configure_network() {
-    var pem = fs.readFileSync('us.blockchain.ibm.com.cert');
+// Things that require the network to be set up
+var user_manager = require('./utils/users');
+var chaincode_ops = require('./utils/chaincode_ops');
+var part2 = require('./utils/ws_part2');
 
-    if (fs.existsSync('us.blockchain.ibm.com.cert')) {
-        console.log('Setting membership service url:', caURL);
-        chain.setMemberServicesUrl(caURL, {pem: pem});
-    }
-    else {
-        console.log('Failed to get the certificate....');
-    }
+// Keep the keyValStore in the project directory
+var keyValStoreDir = __dirname + '/keyValStore';
 
-    console.log('Peer urls:', peerURLs);
-    for (var i in peerURLs) {
-        chain.addPeer(peerURLs[i], {pem: pem});
-    }
+// Connecting to TLS enabled peers requires a certificate
+var certificate = fs.readFileSync('us.blockchain.ibm.com.cert'); // TODO should download using service credentials
 
-    chain.getMember('WebAppAdmin', function (err, WebAppAdmin) {
-        if (err) {
-            console.log('Failed to get WebAppAdmin member ' + ' ---> ' + err);
-        } else {
-            console.log('Successfully got WebAppAdmin member' + ' ---> ' /*+ JSON.stringify(crypto)*/);
+// Deploying chaincode requires us to know a path to a certificate on the peers :(
+var certificate_path = '/certs/peer/cert.pem'; // TODO this should be available in the service credentials
 
-            // Enroll the WebAppAdmin member with the certificate authority using
-            // the one time password hard coded inside the membersrvc.yaml.
-            console.log('Enrolling: WebAppAdmin', pwd);
-            WebAppAdmin.enroll(pwd, function (err, crypto) {
-                if (err) {
-                    console.log('Failed to enroll WebAppAdmin member');
-                    //t.end(err);
-                } else {
-                    console.log('Successfully enrolled WebAppAdmin member' + ' ---> ' /*+ JSON.stringify(crypto)*/);
+// Create a hfc chain object and deploy our chaincode
+var chain_setup = require('./utils/chain_setup');
+chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, certificate_path,
+    function (error, chain, chaincodeID) {
+        // TODO setup chaincode_ops, user_manager, and part2
+        user_manager.setup(chain);
 
-                    // Confirm that the WebAppAdmin token has been created in the key value store
-                    path = chain.getKeyValStore().dir + '/member.' + WebAppAdmin.getName();
+        // Operation involving chaincode in this app should use this object.
+        var cpChaincode = new chaincode_ops.CPChaincode(chain, chaincodeID);
 
-                    fs.exists(path, function (exists) {
-                        if (exists) {
-                            console.log('Successfully stored client token for' + ' ---> ' + WebAppAdmin.getName());
-                        } else {
-                            console.log('Failed to store client token for ' + WebAppAdmin.getName() + ' ---> ' + err);
-                        }
-                    });
-                }
-                chain.setRegistrar(WebAppAdmin);
-                deploy(WebAppAdmin);
-            });
-        }
-    });
-}
+        // TODO web socket handler should use a CPChaincode object
+        part2.setup(chaincodeID, chain, peers);
 
-function deploy(WebAppAdmin) {
-    console.log('Deploying commercial paper chaincode as: WebAppAdmin');
-    process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder
-    var deployRequest = {
-        fcn: 'init',
-        args: ['a', '100'],
-        chaincodePath: 'chain_code/',
-        certificatePath: '/certs/peer/cert.pem'  // Bluemix cert path has changed
-    };
-    var deployTx = WebAppAdmin.deploy(deployRequest);
+        // Router needs some of this too
+        router.setup_helpers(cpChaincode);
 
-    deployTx.on('submitted', function (results) {
-        console.log('Successfully submitted chaincode deploy transaction' + ' ---> ' + 'function: ' + deployRequest.fcn + ', args: ' + deployRequest.args + ' : ' + results.chaincodeID);
+        // Now that the chain is ready, start the web socket server so clients can use the demo.
+        cb_deployed();
     });
 
-    deployTx.on('complete', function (results) {
-        console.log('Successfully completed chaincode deploy transaction' + ' ---> ' + 'function: ' + deployRequest.fcn + ', args: ' + deployRequest.args + ' : ' + results.chaincodeID);
-        part2.setup(results.chaincodeID, chain, peers);
-        user_manager.setup(results.chaincodeID, chain, cb_deployed);
-    });
+// =====================================================================================================================
+// 											WebSocket Communication Madness
+// =====================================================================================================================
+var ws = require('ws');
+var wss = {};
 
-    deployTx.on('error', function (err) {
-        // Invoke transaction submission failed
-        console.log('Failed to submit chaincode deploy transaction' + ' ---> ' + 'function: ' + deployRequest.fcn + ', args: ' + deployRequest.args + ' : ' + JSON.stringify(err));
-    });
-}
-
-// ============================================================================================================================
-// 												WebSocket Communication Madness
-// ============================================================================================================================
 function cb_deployed(error, d) {
     if (error != null) {
         //look at tutorial_part1.md in the trouble shooting section for help
