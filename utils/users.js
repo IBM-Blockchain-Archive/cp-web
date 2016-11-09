@@ -52,15 +52,15 @@ module.exports.enrollUser = function (enrollID, enrollSecret, cb) {
             console.log(TAG, 'getMember() failed for \"' + enrollID + '\":', getError.message);
             if (cb) cb(getError);
         } else {
-            console.log(TAG, 'Successfully got member:', +enrollID);
+            console.log(TAG, 'Successfully got member:', enrollID);
 
             usr.enrollUser(enrollSecret, function (enrollError, crypto) {
                 if (enrollError) {
-                    console.log('enrollUser() failed for \"' + enrollID + '\":', enrollError.message);
+                    console.error(TAG, 'enrollUser() failed for \"', enrollID, '\":', enrollError.message);
                     if (cb) cb(enrollError);
                 } else {
-                    console.log('Successfully enrolled \"' + enrollID + '\"');
-                    if (cb) cb(null);
+                    console.log(TAG, 'Successfully enrolled \"', enrollID, '\"');
+                    if (cb) cb();
                 }
             });
         }
