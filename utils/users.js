@@ -23,13 +23,13 @@ var TAG = 'user_manager:';
 
 /**
  * Whoever configures the hfc chain object needs to send it here in order for this user manager to function.
- * @param ch The object representing our chain.
+ * @param myChain The object representing our chain.
  * @param cb A callback of the form: function(error)
  */
-module.exports.setup = function (ch, cb) {
-    if (ch) {
+module.exports.setup = function (myChain, cb) {
+    if (myChain) {
         console.log(TAG, 'user manager properly configured');
-        chain = ch;
+        chain = myChain;
         cb(null);
     } else {
         console.error(TAG, 'user manager was not given proper configuration');
