@@ -1,11 +1,9 @@
-/* global __dirname */
-"use strict";
-/* global process */
+'use strict';
 /*******************************************************************************
  * Copyright (c) 2015 IBM Corp.
  *
  * All rights reserved.
- * 
+ *
  * Handles the site routing and also handles the calls for user registration
  * and logging in.
  *
@@ -15,14 +13,11 @@
  *******************************************************************************/
 var express = require('express');
 var router = express.Router();
-var fs = require("fs");
 var setup = require('../setup.js');
-var path = require('path');
-var util = require('util');
 
 // Load our modules.
-var rest = require("../utils/rest.js");
-var user_reg = require('../utils/users');
+var user_manager = require('../utils/users');
+var chaincode_ops;
 
 // Use tags to make logs easier to find
 var TAG = "router:";
@@ -71,9 +66,15 @@ router.route("/:page").post(function (req, res) {
 
 module.exports = router;
 
+module.exports.setup_helpers = function(configured_chaincode_ops) {
+    if(!configured_chaincode_ops)
+        throw new Error('Router needs a chaincode helper in order to function');
+    chaincode_ops = configured_chaincode_ops;
+};
+
 function check_login(res, req) {
     if (!req.session.username || req.session.username == '') {
-        console.log(TAG, '! not logged in, redirecting to login');
+        console.log(TAG, '! not logged in, redirecting to enrollUser');
         res.redirect('/login');
     }
 }
@@ -84,7 +85,7 @@ function check_login(res, req) {
  * @param res The response.
  */
 function register(req, res) {
-	console.log('site_router.js register() - fired');
+    console.log('site_router.js register() - fired');
     req.session.reg_error_msg = "Registration failed";
     req.session.error_msg = null;
 
@@ -95,8 +96,8 @@ function register(req, res) {
         role = 3;
     }
 
-    user_reg.registerUser(req.body.username, function (err, creds) {
-		//console.log('! do i make it here?');
+    user_manager.registerUser(req.body.username, function (err, creds) {
+        //console.log('! do i make it here?');
         if (err) {
             req.session.reg_error_msg = "Failed to register user:" + err.message;
             req.session.registration = null;
@@ -111,25 +112,32 @@ function register(req, res) {
 }
 
 /**
- * Handles form posts for login requests.
- * @param req The request containing the login form data.
+ * Handles form posts for enrollUser requests.
+ * @param req The request containing the enrollUser form data.
  * @param res The response.
  */
 function login(req, res) {
-	console.log('site_router.js login() - fired');
+    console.log('site_router.js enrollUser() - fired');
     req.session.error_msg = 'Invalid username or password';
     req.session.reg_error_msg = null;
 
-    // Registering the user against a peer can serve as a login checker, for now
-    console.log(TAG, "attempting login for:", req.body.username);
-    user_reg.login(req.body.username, req.body.password, function (err) {
+    // Registering the user against a peer can serve as a enrollUser checker, for now
+    console.log(TAG, "attempting enrollUser for:", req.body.username);
+    user_manager.enrollUser(req.body.username, req.body.password, function (err) {
         if (err) {
-            console.error(TAG, "User login failed:", err.message);
+            console.error(TAG, "User enrollUser failed:", err.message);
             res.redirect('/login');
         } else {
-            console.log(TAG, "User login successful:", req.body.username);
+            console.log(TAG, "User enrollUser successful:", req.body.username);
 
-            // Determine the user's role and login by adding the user info to the session.
+            // TODO Need to create the user account in here somewhere.
+            chaincode_ops.createCompany(req.body.username, function(err) {
+                if(err) {
+                    console.lo
+                }
+            })
+
+            // Determine the user's role and enrollUser by adding the user info to the session.
             if (req.body.username.toLowerCase().indexOf('auditor') > -1) {
                 req.session.role = 'auditor';
             } else {
