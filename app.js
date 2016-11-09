@@ -215,10 +215,19 @@ var certificate = fs.readFileSync('us.blockchain.ibm.com.cert'); // TODO should 
 // Deploying chaincode requires us to know a path to a certificate on the peers :(
 var certificate_path = '/certs/peer/cert.pem'; // TODO this should be available in the service credentials
 
+// Search for chaincode under <project_dir>/src/
+process.env.GOPATH = __dirname;
+
 // Create a hfc chain object and deploy our chaincode
 var chain_setup = require('./utils/chain_setup');
 chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, certificate_path,
     function (error, chain, chaincodeID) {
+
+        if(error) {
+            console.log(TAG, 'Chain setup failed:', error);
+            throw error;
+        }
+
         // TODO setup chaincode_ops, user_manager, and part2
         user_manager.setup(chain);
 

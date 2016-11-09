@@ -20,6 +20,18 @@ module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, ce
     chain.setDeployWaitTime(80);
     chain.setECDSAModeForGRPC(true);
 
+
+    // This list of suites is used by GRPC to establish secure connections.  GRPC is the protocol used by the SDK
+    // to connect to the fabric.
+    process.env['GRPC_SSL_CIPHER_SUITES'] = 'ECDHE-RSA-AES128-GCM-SHA256:' +
+        'ECDHE-RSA-AES128-SHA256:' +
+        'ECDHE-RSA-AES256-SHA384:' +
+        'ECDHE-RSA-AES256-GCM-SHA384:' +
+        'ECDHE-ECDSA-AES128-GCM-SHA256:' +
+        'ECDHE-ECDSA-AES128-SHA256:' +
+        'ECDHE-ECDSA-AES256-SHA384:' +
+        'ECDHE-ECDSA-AES256-GCM-SHA384';
+
     // We need the WebAppAdmin user in order to register new users.
     var registrarID = 'WebAppAdmin';
     var registrarCredentials;
@@ -69,6 +81,7 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
     console.log(TAG, 'Setting membership service url:', caURL);
     if (certificate) {
         console.log(TAG, 'Using certificate for membership service connection');
+        console.log(TAG, 'certificate being used:', certificate);
         chain.setMemberServicesUrl(caURL, {pem: certificate});
     }
     else {
@@ -79,10 +92,13 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
     if (certificate) console.log(TAG, 'using certificate for peer connections');
     for (var i in peerURLs) {
         if (certificate)
-            chain.setMemberServicesUrl(peerURLs[i], {pem: certificate});
+            chain.addPeer(peerURLs[i], {pem: certificate});
         else
-            chain.setMemberServicesUrl(peerURLs[i]);
+            chain.addPeer(peerURLs[i]);
     }
+
+    console.log(TAG, 'Debug: Membership service:', chain.getMemberServices());
+    console.log(TAG, 'Debug: Peers:', chain.getPeers());
 
     console.log(TAG, 'Getting registrar:', registrarCredentials.enrollId);
     chain.getMember(registrarCredentials.enrollId, function (err, WebAppAdmin) {
@@ -91,7 +107,7 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
             cb(err);
         } else {
             console.log(TAG, 'successfully got registrar. Enrolling with secret:', registrarCredentials.enrollSecret);
-            WebAppAdmin.enrollUser(registrarCredentials.enrollSecret, function (err, crypto) {
+            WebAppAdmin.enroll(registrarCredentials.enrollSecret, function (err, crypto) {
                 if (err) {
                     console.error(TAG, 'failed to enroll registrar:', err.message);
                     return cb(err);
@@ -115,7 +131,6 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
 function deploy(enrolledUser, chaincode_path, cert_path, cb) {
     console.log(TAG, 'Deploying commercial paper chaincode as:', enrolledUser.name);
 
-    process.env.GOPATH = __dirname;   //set the gopath to current dir and place chaincode inside src folder TODO move this?
     var deployRequest = {
         fcn: 'init',
         args: ['a', '100'],
@@ -135,7 +150,7 @@ function deploy(enrolledUser, chaincode_path, cert_path, cb) {
     });
 
     deployTx.on('error', function (err) {
-        console.error(TAG, 'Failed to deploy chaincode:', err.message);
+        console.error(TAG, 'Failed to deploy chaincode:', err);
         cb(err);
     });
 }

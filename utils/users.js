@@ -29,6 +29,7 @@ module.exports.setup = function (myChain) {
     console.log(TAG, 'setup() called');
     if (!myChain)
         throw new Error('User manager requires a chain object');
+    chain = myChain;
 };
 
 /**
@@ -54,9 +55,9 @@ module.exports.enrollUser = function (enrollID, enrollSecret, cb) {
         } else {
             console.log(TAG, 'Successfully got member:', enrollID);
 
-            usr.enrollUser(enrollSecret, function (enrollError, crypto) {
+            usr.enroll(enrollSecret, function (enrollError, crypto) {
                 if (enrollError) {
-                    console.error(TAG, 'enrollUser() failed for \"', enrollID, '\":', enrollError.message);
+                    console.error(TAG, 'enroll() failed for \"', enrollID, '\":', enrollError.message);
                     if (cb) cb(enrollError);
                 } else {
                     console.log(TAG, 'Successfully enrolled \"', enrollID, '\"');

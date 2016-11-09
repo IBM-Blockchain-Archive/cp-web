@@ -24,6 +24,7 @@ function CPChaincode(chain, chaincodeID) {
 }
 
 CPChaincode.prototype.createCompany = function (enrollID, cb) {
+    var _this = this;
 
     // Submit the invoke transaction as the given user.
     this.chain.getMember(enrollID, function (getMemberError, usr) {
@@ -35,7 +36,7 @@ CPChaincode.prototype.createCompany = function (enrollID, cb) {
 
             // Accounts will be named after the enrolled users
             var Request = {
-                chaincodeID: this.chaincodeID,
+                chaincodeID: _this.chaincodeID,
                 fcn: 'createAccount',
                 args: [enrollID]
             };
