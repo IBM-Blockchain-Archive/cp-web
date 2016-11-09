@@ -24,18 +24,11 @@ var TAG = 'user_manager:';
 /**
  * Whoever configures the hfc chain object needs to send it here in order for this user manager to function.
  * @param myChain The object representing our chain.
- * @param cb A callback of the form: function(error)
  */
-module.exports.setup = function (myChain, cb) {
-    if (myChain) {
-        console.log(TAG, 'user manager properly configured');
-        chain = myChain;
-        cb(null);
-    } else {
-        console.error(TAG, 'user manager was not given proper configuration');
-        var err = new Error('User manager requires a chain object.');
-        cb(err);
-    }
+module.exports.setup = function (myChain) {
+    console.log(TAG, 'setup() called');
+    if (!myChain)
+        throw new Error('User manager requires a chain object');
 };
 
 /**
@@ -59,7 +52,7 @@ module.exports.enrollUser = function (enrollID, enrollSecret, cb) {
             console.log(TAG, 'getMember() failed for \"' + enrollID + '\":', getError.message);
             if (cb) cb(getError);
         } else {
-            console.log(TAG, 'Successfully got member:', + enrollID);
+            console.log(TAG, 'Successfully got member:', +enrollID);
 
             usr.enrollUser(enrollSecret, function (enrollError, crypto) {
                 if (enrollError) {
@@ -67,7 +60,7 @@ module.exports.enrollUser = function (enrollID, enrollSecret, cb) {
                     if (cb) cb(enrollError);
                 } else {
                     console.log('Successfully enrolled \"' + enrollID + '\"');
-                    if(cb) cb(null);
+                    if (cb) cb(null);
                 }
             });
         }
