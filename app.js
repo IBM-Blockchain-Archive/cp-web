@@ -32,7 +32,7 @@ var fs = require('fs');
 // 												Express Setup
 // =====================================================================================================================
 // Create the Express app that will process incoming requests to our web server.
-console.log('Configuring Express app');
+console.log(TAG, 'Configuring Express app');
 var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
@@ -88,7 +88,7 @@ app.use(function (req, res, next) {
 
 // 2. Something else went wrong
 app.use(function (err, req, res, next) {		// = development error handler, print stack trace
-    console.log('Error Handler -', req.url);
+    console.log(TAG, 'Error Handler -', req.url);
     var errorCode = err.status || 500;
     res.status(errorCode);
     req.bag.error = {msg: err.stack, status: errorCode};
@@ -102,9 +102,9 @@ app.use(function (err, req, res, next) {		// = development error handler, print 
 // Start the web server using our express app to handle requests
 var host = setup.SERVER.HOST;
 var port = setup.SERVER.PORT;
-console.log('Staring http server on: ' + host + ':' + port);
+console.log(TAG, 'Staring http server on: ' + host + ':' + port);
 var server = http.createServer(app).listen(port, function () {
-    console.log('Server Up - ' + host + ':' + port);
+    console.log(TAG, 'Server Up - ' + host + ':' + port);
 });
 
 // Some setting that we've found make our life easier
@@ -112,7 +112,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 server.timeout = 240000;
 
 // Track application bluemix deployments.  All we're tracking is number of deployments.
-console.log('---- Tracking Deployment');
+console.log(TAG, '---- Tracking Deployment');
 require('cf-deployment-tracker-client').track();
 
 // =====================================================================================================================
@@ -128,7 +128,7 @@ var peerHosts = [];
 
 // Load credentials from a file
 try {
-    console.log('Attempting to read hardcoded network credentials...');
+    console.log(TAG, 'Attempting to read hardcoded network credentials...');
     var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
 
     // Sometimes the credentials from Bluemix are wrapped, sometimes not.
@@ -145,13 +145,13 @@ try {
     for (var i in ca) {
         caURL = 'grpcs://' + ca[i].url;
     }
-    console.log('loading hardcoded peers');
+    console.log(TAG, 'loading hardcoded peers');
     users = null;																			//users are only found if security is on
     if (manual.users) users = manual.users;
-    console.log('loading hardcoded users');
+    console.log(TAG, 'loading hardcoded users');
 }
 catch (e) {
-    console.log('Error - could not find hardcoded peers/users, this is okay if running in bluemix');
+    console.log(TAG, 'Error - could not find hardcoded peers/users, this is okay if running in bluemix');
 }
 
 if (process.env.VCAP_SERVICES) {
@@ -160,7 +160,7 @@ if (process.env.VCAP_SERVICES) {
     for (var i in servicesObject) {
         if (i.indexOf('ibm-blockchain') >= 0) {											//looks close enough
             if (servicesObject[i][0].credentials.error) {
-                console.log('!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
+                console.log(TAG, '!\n!\n! Error from Bluemix: \n', servicesObject[i][0].credentials.error, '!\n!\n');
                 peers = null;
                 users = null;
                 process.error = {
@@ -200,6 +200,7 @@ if (process.env.VCAP_SERVICES) {
 // =====================================================================================================================
 // 												Blockchain Setup
 // =====================================================================================================================
+console.log(TAG, 'configuring the chain object and its dependencies');
 
 // Things that require the network to be set up
 var user_manager = require('./utils/users');
@@ -228,20 +229,18 @@ chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, cert
             throw error;
         }
 
-        // TODO setup chaincode_ops, user_manager, and part2
+        // Setup anyone who needs the chain object or the chaincode
         user_manager.setup(chain);
 
         // Operation involving chaincode in this app should use this object.
         var cpChaincode = new chaincode_ops.CPChaincode(chain, chaincodeID);
 
         // TODO web socket handler should use a CPChaincode object
-        part2.setup(chaincodeID, chain, peers);
-
-        // Router needs some of this too
+        part2.setup(chaincodeID, chain, peers, cpChaincode);
         router.setup_helpers(cpChaincode);
 
         // Now that the chain is ready, start the web socket server so clients can use the demo.
-        cb_deployed();
+        start_websocket_server();
     });
 
 // =====================================================================================================================
@@ -250,7 +249,7 @@ chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, cert
 var ws = require('ws');
 var wss = {};
 
-function cb_deployed(error, d) {
+function start_websocket_server(error, d) {
     if (error != null) {
         //look at tutorial_part1.md in the trouble shooting section for help
         console.log('! looks like the final configuration failed, holding off on the starting the socket\n', error);

@@ -12,6 +12,9 @@
  *   David Huffman - Initial implementation
  *   Dale Avery
  *******************************************************************************/
+
+var TAG = 'web_socket:';
+
 // ==================================
 // Part 2 - incoming messages, look for type
 // ==================================
@@ -21,13 +24,15 @@ var async = require('async');
 var https = require('https');
 var util = require('util');
 var peers = null;
+var chaincodeHelper;
 
-module.exports.setup = function setup(ccID, c, peerHosts) {
-    if(!(ccID && c && peerHosts))
+module.exports.setup = function setup(ccID, c, peerHosts, chaincode_helper) {
+    if(!(ccID && c && peerHosts && chaincode_helper))
         throw new Error('Web socket handler given incomplete configuration');
     chaincode = ccID;
     chain = c;
     peers = peerHosts;
+    chaincodeHelper = chaincode_helper;
 };
 
 /**
@@ -46,55 +51,24 @@ module.exports.process_msg = function (socket, data) {
 
     chain.getMember(data.user, function (err, usr) {
         var id = data.user;
+        var invokeRequestOptions = {
+            chaincodeID: chaincode
+        };
         if (err) {
-            console.log('Failed to get' + id + 'member ' + ' ---> ' + err);
+            console.log('Failed to get member:', id + ':', err);
         } else {
-            var invokeRequestOptions = {
-                chaincodeID: chaincode
-            };
+
             if (data.type == 'create') {
                 if (data.paper && data.paper.ticker) {
                     console.log('!', data.paper);
-                    invokeRequestOptions.fcn = 'issueCommercialPaper';
-                    invokeRequestOptions.args = [JSON.stringify(data.paper)];
-
-                    var invokeTx = usr.invoke(invokeRequestOptions);
-
-                    // Print the invoke results
-                    invokeTx.on('completed', function (results) {
-                        // Invoke transaction submitted successfully
-                        console.log(util.format('Successfully completed chaincode invoke transaction: request=%j, response=%j', invokeRequestOptions, results));
-                        cb_invoked(null, results);
-                    });
-                    invokeTx.on('submitted', function (results) {
-                        // Invoke transaction submitted successfully
-                        console.log(util.format('Successfully submitted chaincode invoke transaction: request=%j, response=%j', invokeRequestOptions, results));
-                        cb_invoked(null, results);
-                    });
-                    invokeTx.on('error', function (err) {
-                        // Invoke transaction submission failed
-                        console.log(util.format('Failed to submit chaincode invoke transaction: request=%j, error=%j', invokeRequestOptions, err));
-                        cb_invoked(err, null);
-                    });
+                    chaincodeHelper.createPaper(data.user, data.paper, cb_invoked);
                 }
             }
             else if (data.type == 'get_papers') {
-                invokeRequestOptions.fcn = 'query';
-                invokeRequestOptions.args = ['GetAllCPs', data.user];
 
-                var queryTx = usr.query(invokeRequestOptions);
+                console.log(TAG, 'getting papers');
+                chaincodeHelper.getPapers(data.user, cb_got_papers);
 
-                // Print the query results
-                queryTx.on('complete', function (results) {
-                    // Query completed successfully
-                    console.log(util.format('Successfully queried existing chaincode state: request=%j, response=%j, value=%s', invokeRequestOptions, results, results.result.toString()));
-                    cb_got_papers(null, results.result.toString());
-                });
-                queryTx.on('error', function (err) {
-                    // Query failed
-                    cb_got_papers(err, null);
-                    console.log(util.format('Failed to query existing chaincode state: request=%j, error=%j', invokeRequestOptions, err));
-                });
             }
             else if (data.type == 'transfer_paper') {
                 console.log('transfering msg', data.transfer);

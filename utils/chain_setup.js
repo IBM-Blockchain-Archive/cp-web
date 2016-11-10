@@ -8,6 +8,7 @@ var hfc = require('hfc');
 // Things that don't really need to change
 var chain_name = 'cp_chaincode';
 var chaincode_path = 'chain_code/';
+var deployWaitTime = 80;
 
 module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, certificate, certificate_path, cb) {
     console.log(TAG, 'setting up chain object');
@@ -17,7 +18,7 @@ module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, ce
     // as these users.
     console.log(TAG, 'creating keyValStore in:', keyValStoreDir);
     chain.setKeyValStore(hfc.newFileKeyValStore(keyValStoreDir));
-    chain.setDeployWaitTime(80);
+    chain.setDeployWaitTime(deployWaitTime);
     chain.setECDSAModeForGRPC(true);
 
 
@@ -52,6 +53,7 @@ module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, ce
         }
 
         console.log(TAG, 'using registrar to deploy chaincode');
+        console.log(TAG, 'will wait for', deployWaitTime, 'seconds after deployment for chaincode to startup');
         deploy(registrar, chaincode_path, certificate_path, function (err, chaincodeID) {
             if (err) {
                 console.error(TAG, 'chaincode deployment failed:', err.message);
