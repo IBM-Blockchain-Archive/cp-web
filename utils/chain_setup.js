@@ -7,7 +7,7 @@ var hfc = require('hfc');
 
 // Things that don't really need to change
 var chain_name = 'cp_chaincode';
-var chaincode_path = 'chain_code/';
+var chaincode_path = 'chaincode/';
 var deployWaitTime = 80;
 
 module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, certificate, certificate_path, cb) {
