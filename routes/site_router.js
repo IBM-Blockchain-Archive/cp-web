@@ -102,7 +102,7 @@ function register(req, res) {
             console.error(TAG, req.session.reg_error_msg);
         } else {
             console.log(TAG, 'Registered user:', JSON.stringify(creds));
-            req.session.registration = 'Username: ' + creds.id + '\nPassword: ' + creds.secret;
+            req.session.registration = 'Enroll ID: ' + creds.id + '  Secret: ' + creds.secret;
             req.session.reg_error_msg = null;
         }
         res.redirect('/login');
