@@ -53,14 +53,14 @@ module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, ce
         }
 
         console.log(TAG, 'using registrar to deploy chaincode');
-        console.log(TAG, 'will wait for', deployWaitTime, 'seconds after deployment for chaincode to startup');
         deploy(registrar, chaincode_path, certificate_path, function (err, chaincodeID) {
             if (err) {
                 console.error(TAG, 'chaincode deployment failed:', err.message);
                 return cb(err);
             }
 
-            console.log(TAG, 'chaincode deployment successful');
+            console.log(TAG, 'chaincode deployment successful. Will wait for', deployWaitTime,
+                'seconds after deployment for chaincode to startup');
             cb(null, chain, chaincodeID);
         });
     });
