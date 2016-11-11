@@ -86,8 +86,7 @@ module.exports.registerUser = function (enrollID, cb) {
             console.log(TAG, 'Sending registration request for:', enrollID);
             var registrationRequest = {
                 enrollmentID: enrollID,
-                account: 'group1',
-                affiliation: '00001'
+                affiliation: 'group1'
             };
             usr.register(registrationRequest, function (err, enrollSecret) {
                 if (err) {
