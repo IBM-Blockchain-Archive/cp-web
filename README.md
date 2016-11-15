@@ -21,9 +21,7 @@ on IBM Blockchain.  The components of the demo are:
 2. Create an instance of the IBM Blockchain service in the Bluemix catalog.
 3. Copy the credentials from the service into the file 'my_creds.json'.
 4. Make sure the key/value store only has values for your current network (See below).
-5. Comment out the following line in app.js: ```process.env.GOPATH = __dirname;```
-6. Copy the `./src/chaincode` folder of this repository to the `$GOPATH/src/` folder on your machine.
-7. Run these commands in the cloned directory:
+5. Run these commands in the cloned directory:
 
 ```shell
 npm install
@@ -115,3 +113,43 @@ Deployment tracking can be disabled by deleting the following code in app.js:
 // Track the application deployments
 require("cf-deployment-tracker-client").track();
 ```
+
+### Troubleshooting
+Solutions for common problems with running this demo locally are included below.
+
+#### `npm install` fails with `node-gyp` errors in the output
+First, make sure you are running this demo with the latest LTS versions of Node.js and NPM.  You can check your versions of these two tools using these commands:
+
+```bash
+$ node -v
+v6.9.1
+
+$ npm -v
+3.10.8
+```
+
+Second, this demo uses modules that must be compiled, which requires you to have certain build tools on your machine.  If you are running on Windows, you should install the package here:
+
+https://github.com/felixrieseberg/windows-build-tools
+
+Finally, delete the node modules folder and give `npm install` another try.
+
+#### `Error creating deployment archive`
+
+Do your logs have a message similar to this one?
+```text
+chain_setup.js Failed to deploy chaincode: EventTransactionError {
+  error:
+   Error: Error creating deployment archive [/tmp/deployment-package.tar.gz]: Error: Error on fs.createWriteStream
+       at Error (native)
+       at C:\Users\IBM_ADMIN\Documents\obc\git\demos\cp-web\node_modules\hfc\lib\hfc.js:1411:31
+       at WriteStream.<anonymous> (C:\Users\IBM_ADMIN\Documents\obc\git\demos\cp-web\node_modules\hfc\lib\sdk_util.js:163:16)
+       at emitOne (events.js:101:20)
+       at WriteStream.emit (events.js:188:7)
+       at WriteStream.<anonymous> (fs.js:2109:12)
+       at FSReqWrap.oncomplete (fs.js:123:15),
+  msg: 'Error: Error creating deployment archive [/tmp/deployment-package.tar.gz]: Error: Error on fs.createWriteStream' }
+chain_setup.js chaincode deployment failed: undefined
+```
+
+This often happens because the `/tmp` directory is not present on your machine. `hfc` uses this folder to temporarily store and package this demo's chaincode for deployment.  Create the directory, and you should be fine.  This directory will be `C:\tmp` on Windows machines.
