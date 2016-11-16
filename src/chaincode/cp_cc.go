@@ -31,9 +31,6 @@ import (
 
 var cpPrefix = "cp:"
 var accountPrefix = "acct:"
-var accountsKey = "accounts"
-
-var recentLeapYear = 2016
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
@@ -102,21 +99,8 @@ type Transaction struct {
 	Discount    float64  `json:"discount"`
 }
 
-func (t *SimpleChaincode) init(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	// Initialize the collection of commercial paper keys
-	fmt.Println("Initializing paper keys collection")
-	var blank []string
-	blankBytes, _ := json.Marshal(&blank)
-	err := stub.PutState("PaperKeys", blankBytes)
-	if err != nil {
-		fmt.Println("Failed to initialize paper key collection")
-	}
-
-	fmt.Println("Initialization complete")
-	return nil, nil
-}
-
 func (t *SimpleChaincode) createAccounts(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Println("Creating accounts")
 
 	//  				0
 	// "number of accounts to create"
@@ -155,6 +139,8 @@ func (t *SimpleChaincode) createAccounts(stub shim.ChaincodeStubInterface, args 
 }
 
 func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Println("Creating account")
+
 	// Obtain the username to associate with the account
 	if len(args) != 1 {
 		fmt.Println("Error obtaining username")
@@ -218,14 +204,23 @@ func (t *SimpleChaincode) createAccount(stub shim.ChaincodeStubInterface, args [
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	if function == "init" {
-		fmt.Println("Firing init")
-		return t.init(stub, args)
+	fmt.Println("Init firing. Function will be ignored: " + function)
+
+	// Initialize the collection of commercial paper keys
+	fmt.Println("Initializing paper keys collection")
+	var blank []string
+	blankBytes, _ := json.Marshal(&blank)
+	err := stub.PutState("PaperKeys", blankBytes)
+	if err != nil {
+		fmt.Println("Failed to initialize paper key collection")
 	}
+
+	fmt.Println("Initialization complete")
 	return nil, nil
 }
 
 func (t *SimpleChaincode) issueCommercialPaper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Println("Creating commercial paper")
 
 	/*		0
 		json
@@ -478,6 +473,7 @@ func GetCompany(companyID string, stub shim.ChaincodeStubInterface) (Account, er
 
 // Still working on this one
 func (t *SimpleChaincode) transferPaper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Println("Transferring Paper")
 	/*		0
 		json
 	  	{
@@ -721,24 +717,16 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	fmt.Println("Invoke running. Function: " + function)
 
 	if function == "issueCommercialPaper" {
-		fmt.Println("Firing issueCommercialPaper")
-		//Create an asset with some value
 		return t.issueCommercialPaper(stub, args)
 	} else if function == "transferPaper" {
-		fmt.Println("Firing cretransferPaperateAccounts")
 		return t.transferPaper(stub, args)
 	} else if function == "createAccounts" {
-		fmt.Println("Firing createAccounts")
 		return t.createAccounts(stub, args)
 	} else if function == "createAccount" {
-		fmt.Println("Firing createAccount")
 		return t.createAccount(stub, args)
-	} else if function == "init" {
-		fmt.Println("Firing init")
-		return t.init(stub, args)
 	}
 
-	return nil, errors.New("Received unknown function invocation")
+	return nil, errors.New("Received unknown function invocation: " + function)
 }
 
 func main() {
