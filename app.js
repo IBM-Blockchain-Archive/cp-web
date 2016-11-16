@@ -129,7 +129,7 @@ var peerHosts = [];
 // Load credentials from a file
 try {
     console.log(TAG, 'Attempting to read hardcoded network credentials...');
-    var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
+    var manual = JSON.parse(fs.readFileSync('mycreds-bmx-0_6.json', 'utf8'));
 
     // Sometimes the credentials from Bluemix are wrapped, sometimes not.
     if (manual.credentials) {
