@@ -83,6 +83,19 @@ module.exports.process_msg = function (socket, data) {
             }
         });
     }
+    else if (data.type == 'get_company') {
+
+        console.log(TAG, 'getting company information');
+        chaincodeHelper.getCompany(data.user, data.company, function (e, company) {
+            if (e != null) {
+                console.error(TAG, 'Error in get_company. No response will be sent. error:', e);
+            }
+            else {
+                console.log(TAG, 'get_company result:', company);
+                sendMsg({msg: 'company', company: company});
+            }
+        });
+    }
     else if (data.type == 'chainstats') {
         var options = {
             host: peers[0].api_host,
@@ -101,7 +114,7 @@ module.exports.process_msg = function (socket, data) {
             });
             resp.on('end', function () {																	//wait for end before decision
                 if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
-                    cb_chainstats(null, JSON.parse(resp));
+                    cb_chainstats(null, resp);
                 }
                 else {
                     console.error(TAG, 'status code: ' + resp.statusCode, ', headers:', resp.headers, ', message:', str);
@@ -119,19 +132,6 @@ module.exports.process_msg = function (socket, data) {
         });
 
         request.end();
-    }
-    else if (data.type == 'get_company') {
-
-        console.log(TAG, 'getting company information');
-        chaincodeHelper.getCompany(data.user, data.company, function (e, company) {
-            if (e != null) {
-                console.error(TAG, 'Error in get_company. No response will be sent. error:', e);
-            }
-            else {
-                console.log(TAG, 'get_company result:', company);
-                sendMsg({msg: 'company', company: company});
-            }
-        });
     }
 
     //call back for getting the blockchain stats, lets get the block height now
