@@ -27,7 +27,7 @@ var peers = null;
 var chaincodeHelper;
 
 module.exports.setup = function setup(ccID, c, peerHosts, chaincode_helper) {
-    if(!(ccID && c && peerHosts && chaincode_helper))
+    if (!(ccID && c && peerHosts && chaincode_helper))
         throw new Error('Web socket handler given incomplete configuration');
     chaincode = ccID;
     chain = c;
@@ -59,16 +59,31 @@ module.exports.process_msg = function (socket, data) {
         } else {
 
             if (data.type == 'create') {
+
                 if (data.paper && data.paper.ticker) {
-                    console.log('!', data.paper);
-                    chaincodeHelper.createPaper(data.user, data.paper, cb_invoked);
+                    console.log(TAG, 'creating paper:', data.paper);
+                    chaincodeHelper.createPaper(data.user, data.paper, function (err, result) {
+                        if (err != null) {
+                            console.error(TAG, 'Error in create. No response will be sent. error:', err);
+                        }
+                        else {
+                            console.log(TAG, 'paper created.  No response will be sent. result:', result);
+                        }
+                    });
                 }
             }
             else if (data.type == 'get_papers') {
 
                 console.log(TAG, 'getting papers');
-                chaincodeHelper.getPapers(data.user, cb_got_papers);
-
+                chaincodeHelper.getPapers(data.user, function (err, papers) {
+                    if (err != null) {
+                        console.error(TAG, 'Error in get_papers. No response will be sent. error:', err);
+                    }
+                    else {
+                        console.log(TAG, 'got papers:', papers);
+                        sendMsg({msg: 'papers', papers: papers});
+                    }
+                });
             }
             else if (data.type == 'transfer_paper') {
                 console.log('transfering msg', data.transfer);
@@ -139,46 +154,17 @@ module.exports.process_msg = function (socket, data) {
                 request.end();
             }
             else if (data.type == 'get_company') {
-                invokeRequestOptions.fcn = 'query';
-                invokeRequestOptions.args = ['GetCompany', data.company];
 
-                var queryTx = usr.query(invokeRequestOptions);
-
-                // Print the query results
-                queryTx.on('complete', function (results) {
-                    // Query completed successfully
-                    console.log(util.format('Successfully queried existing chaincode state: request=%j, response=%j, value=%s', invokeRequestOptions, results, results.result.toString()));
-                    cb_got_company(null, results.result.toString());
+                console.log(TAG, 'getting company information');
+                chaincodeHelper.getCompany(data.user, data.company, function (e, company) {
+                    if (e != null) {
+                        console.error(TAG, 'Error in get_company. No response will be sent. error:', e);
+                    }
+                    else {
+                        console.log(TAG, 'get_company result:', company);
+                        sendMsg({msg: 'company', company: company});
+                    }
                 });
-                queryTx.on('error', function (err) {
-                    // Query failed
-                    cb_got_company(err, null);
-                    console.log(util.format('Failed to query existing chaincode state: request=%j, error=%j', invokeRequestOptions, err));
-                });
-            }
-
-            function cb_got_papers(e, papers) {
-                if (e != null) {
-                    console.log('papers error', e);
-                }
-                else {
-                    console.log('papers', papers);
-                    sendMsg({msg: 'papers', papers: papers});
-                }
-            }
-
-            function cb_got_company(e, company) {
-                if (e != null) {
-                    console.log('company error', e);
-                }
-                else {
-                    console.log('company', company);
-                    sendMsg({msg: 'company', company: company});
-                }
-            }
-
-            function cb_invoked(e, a) {
-                console.log('response: ', e, a);
             }
 
             //call back for getting the blockchain stats, lets get the block height now
@@ -247,22 +233,6 @@ module.exports.process_msg = function (socket, data) {
                         request.end();
                     }, function () {
                     });
-                }
-            }
-
-            //call back for getting a block's stats, lets send the chain/block stats
-            function cb_blockstats(e, stats) {
-                if (chain_stats.height) stats.height = chain_stats.height - 1;
-                sendMsg({msg: 'chainstats', e: e, chainstats: chain_stats, blockstats: stats});
-            }
-
-            //call back for getting open trades, lets send the trades
-            function cb_got_trades(e, trades) {
-                if (e != null) console.log('error:', e);
-                else {
-                    if (trades && trades.open_trades) {
-                        sendMsg({msg: 'open_trades', open_trades: trades.open_trades});
-                    }
                 }
             }
         }
