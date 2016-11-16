@@ -129,7 +129,7 @@ var peerHosts = [];
 // Load credentials from a file
 try {
     console.log(TAG, 'Attempting to read hardcoded network credentials...');
-    var manual = JSON.parse(fs.readFileSync('mycreds.json', 'utf8'));
+    var manual = JSON.parse(fs.readFileSync('mycreds-bmx-0_6.json', 'utf8'));
 
     // Sometimes the credentials from Bluemix are wrapped, sometimes not.
     if (manual.credentials) {
@@ -236,7 +236,7 @@ chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, cert
         var cpChaincode = new chaincode_ops.CPChaincode(chain, chaincodeID);
 
         // TODO web socket handler should use a CPChaincode object
-        part2.setup(chaincodeID, chain, peers, cpChaincode);
+        part2.setup(peers, cpChaincode);
         router.setup_helpers(cpChaincode);
 
         // Now that the chain is ready, start the web socket server so clients can use the demo.
