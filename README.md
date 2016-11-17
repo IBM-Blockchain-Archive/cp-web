@@ -26,50 +26,31 @@ best effort only.
 
 ## Getting Started
 
-1. Deploy the demo to your [IBM Bluemix](https://www.bluemix.net/) account using this button [![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)
+1. Deploy the demo to your [IBM Bluemix](https://www.bluemix.net/) account using this button [![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)  
 
-1. Run the demo locally on your system connecting to a Blockchain network in IBM Bluemix.
+`OR`  
 
-##### OR
+1. Deploy the app on my local machine, connecting to an IBM Blockchain network running in Bluemix  - [instructions](#manbluenetwork)
 
-1. Clone this repository.
-2. Create an instance of the IBM Blockchain service in the Bluemix catalog.
-3. Copy the credentials from the service into the file 'my_creds.json'.
-4. Make sure the key/value store only has values for your current network (See below).
-5. Run these commands in the cloned directory:
 
-```shell
-npm install
-gulp
-```
+# <a name="manbluenetwork"></a>Deploy the CP-Web App locally and connect to an IBM Blockchain Network running in Bluemix:
 
-These credentials can be obtained from the "Service Credentials" tab of the Bluemix service. They are
-in the form:
+1.  Follow these instructions to [Set up your environment for running the demos](https://github.com/ptippett/marbles/blob/break_out_common_sections/demo_prereqs)
 
-```json
-{
-  "credentials": {
-    "peers": [
-      {
-        "discovery_host": "169.53.62.121",
-        "discovery_port": "40275",
-        "api_host": "169.53.62.121",
-        "api_port": "40276",
-        "type": "peer",
-        "network_id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03",
-        "id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03_vp1",
-        "api_url": "http://169.53.62.121:40276"
-      }
-    ],
-    "users": [
-      {
-        "username": "user_type0_b7c7a1e545",
-        "secret": "89ce33e4e6"
-      }
-    ]
-  }
-}
-```
+1.  Clone the CP-Web app to your local system so you can run it here
+To do this, run ```git clone http://gopkg.in/ibm-blockchain/cp-web.v2``` to clone the v2.0 branch to your local system.  
+
+1.  Follow the instructions to [Set up a new bluemix network or grab credentials from an existing network](https://github.com/ptippett/marbles/blob/break_out_common_sections/create_blockchain_bluemix.md)
+
+
+1. Make sure the key/value store only has values for your current network (See below).
+1. Run these commands in the cloned directory (typically ```<git location>/cp-web```).
+  1.  If you're running on windows, you need to install some additional dependencies.
+    1.  Run ```npm install --global windows-build-tools``` to install the dependencies listed [here](https://github.com/felixrieseberg/windows-build-tools)
+    1.  Verify you have a `c:\tmp` directory and create it if not.  `hfc` uses this folder to temporarily store and package this demo's chaincode for deployment.
+  2. On linux, or after you've installed build tools on windows, then run  
+     `npm install`  
+     `gulp`   
 
 ## Using the Demo
 1. Register some users using the registration form on the login page.
@@ -143,28 +124,4 @@ $ npm -v
 3.10.8
 ```
 
-Second, this demo uses modules that must be compiled, which requires you to have certain build tools on your machine.  If you are running on Windows, you should install the package here:
-
-https://github.com/felixrieseberg/windows-build-tools
-
-Finally, delete the node modules folder and give `npm install` another try.
-
-#### `Error creating deployment archive`
-
-Do your logs have a message similar to this one?
-```text
-chain_setup.js Failed to deploy chaincode: EventTransactionError {
-  error:
-   Error: Error creating deployment archive [/tmp/deployment-package.tar.gz]: Error: Error on fs.createWriteStream
-       at Error (native)
-       at C:\Users\IBM_ADMIN\Documents\obc\git\demos\cp-web\node_modules\hfc\lib\hfc.js:1411:31
-       at WriteStream.<anonymous> (C:\Users\IBM_ADMIN\Documents\obc\git\demos\cp-web\node_modules\hfc\lib\sdk_util.js:163:16)
-       at emitOne (events.js:101:20)
-       at WriteStream.emit (events.js:188:7)
-       at WriteStream.<anonymous> (fs.js:2109:12)
-       at FSReqWrap.oncomplete (fs.js:123:15),
-  msg: 'Error: Error creating deployment archive [/tmp/deployment-package.tar.gz]: Error: Error on fs.createWriteStream' }
-chain_setup.js chaincode deployment failed: undefined
-```
-
-This often happens because the `/tmp` directory is not present on your machine. `hfc` uses this folder to temporarily store and package this demo's chaincode for deployment.  Create the directory, and you should be fine.  This directory will be `C:\tmp` on Windows machines.
+If you've installed new levels of node.js and npm, or want to try the install again, delete the node modules folder and give `npm install` another try.
