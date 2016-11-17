@@ -60,8 +60,6 @@ module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, ce
                 return cb(err);
             }
 
-            console.log(TAG, 'chaincode deployment successful. Will wait for', deployWaitTime,
-                'seconds after deployment for chaincode to startup');
             cb(null, chain, chaincodeID);
         });
     });
@@ -136,7 +134,7 @@ function deploy(enrolledUser, chaincode_path, cert_path, cb) {
 
     // Fix for the SDK.  Need to make sure a `/tmp` directory exists to tarball chaincode
     try {
-        if(!fs.existsSync('/tmp')) {
+        if (!fs.existsSync('/tmp')) {
             console.log(TAG, 'No /tmp directory. Creating /tmp directory');
             fs.mkdirSync('/tmp');
         }
@@ -155,6 +153,8 @@ function deploy(enrolledUser, chaincode_path, cert_path, cb) {
 
     deployTx.on('submitted', function (results) {
         console.log(TAG, 'Successfully submitted chaincode deploy transaction', results.chaincodeID);
+        console.log(TAG, 'chaincode deployment successful. Will wait for', deployWaitTime,
+            'seconds after deployment for chaincode to startup');
     });
 
     deployTx.on('complete', function (results) {
