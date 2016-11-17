@@ -11,9 +11,24 @@ on IBM Blockchain.  The components of the demo are:
 * A Trade Center for buying and selling existing trades.
 * A special interface just for auditors of the network to examine trades
 
+##### Versions and Supported Platforms
+On November 9th, 2016, we released the IBM Blockchain Service v1.0 based on HyperLedger fabric v0.6.  All new networks created in bluemix will be this version.  Support of the v0.4.2.x Bluemix Service based on the 0.5.3 Hyperledger Fabric has been deprecated.  It is strongly recommended that if you have an existing network based on 0.5.3, you redeploy a new network and follow the instructions in the 2.0 branch.
+
+- [CP-Web - Branch v2.0](https://github.com/ibm-blockchain/cp-web/tree/v2.0)
+	- Works with Hyperledger fabric `v0.6-developer-preview`
+
+If for some reason you need instructions for the v0.4.2+ level of the service, they are here, but support of these instructions is
+best effort only.
+
+- [CP-Web - Branch v1.0](https://github.com/ibm-blockchain/cp-web/tree/v1.0) (Deprecated)
+	- Works with Hyperledger fabric `v0.5-developer-preview`
+	- IBM Bluemix Blockchain Service `v0.4.2+`
+
 ## Getting Started
 
-1. Deploy the demo to your [IBM Bluemix](https://www.bluemix.net/) account using the button above.
+1. Deploy the demo to your [IBM Bluemix](https://www.bluemix.net/) account using this button [![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)
+
+1. Run the demo locally on your system connecting to a Blockchain network in IBM Bluemix.
 
 ##### OR
 
