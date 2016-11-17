@@ -154,7 +154,7 @@ function deploy(enrolledUser, chaincode_path, cert_path, cb) {
     console.log(TAG, 'Deployment request:', JSON.stringify(deployRequest));
 
     deployTx.on('submitted', function (results) {
-        console.log(TAG, 'Successfully submitted chaincode deploy transaction', results.chaincodeID); // TODO does the chaincode ID come back here?
+        console.log(TAG, 'Successfully submitted chaincode deploy transaction', results.chaincodeID);
     });
 
     deployTx.on('complete', function (results) {
