@@ -104,6 +104,7 @@ module.exports.process_msg = function (socket, data) {
             method: 'GET'
         };
 
+        console.log(TAG, 'Requesting chain stats from:', options.host + ':' + options.port);
         var request = https.request(options, function (resp) {
             var str = '', chunks = 0;
 
@@ -114,7 +115,9 @@ module.exports.process_msg = function (socket, data) {
             });
             resp.on('end', function () {																	//wait for end before decision
                 if (resp.statusCode == 204 || resp.statusCode >= 200 && resp.statusCode <= 399) {
-                    cb_chainstats(null, resp);
+                    str = JSON.parse(str);
+                    console.log(TAG, 'Chainstats API returned:', str);
+                    cb_chainstats(null, str);
                 }
                 else {
                     console.error(TAG, 'status code: ' + resp.statusCode, ', headers:', resp.headers, ', message:', str);
