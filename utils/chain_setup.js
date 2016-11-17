@@ -153,7 +153,7 @@ function deploy(enrolledUser, chaincode_path, cert_path, cb) {
 
     deployTx.on('submitted', function (results) {
         console.log(TAG, 'Successfully submitted chaincode deploy transaction', results.chaincodeID);
-        console.log(TAG, 'chaincode deployment successful. Will wait for', deployWaitTime,
+        console.log(TAG, 'Will wait for', deployWaitTime,
             'seconds after deployment for chaincode to startup');
     });
 
