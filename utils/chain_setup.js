@@ -4,6 +4,7 @@
 
 var TAG = 'chain_setup.js';
 var hfc = require('hfc');
+var fs = require('fs');
 
 // Things that don't really need to change
 var chain_name = 'cp_chaincode';
@@ -132,6 +133,16 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
  */
 function deploy(enrolledUser, chaincode_path, cert_path, cb) {
     console.log(TAG, 'Deploying commercial paper chaincode as:', enrolledUser.name);
+
+    // Fix for the SDK.  Need to make sure a `/tmp` directory exists to tarball chaincode
+    try {
+        if(!fs.existsSync('/tmp')) {
+            console.log(TAG, 'No /tmp directory. Creating /tmp directory');
+            fs.mkdirSync('/tmp');
+        }
+    } catch (err) {
+        console.error(TAG, 'Error creating /tmp directory for chaincode:', err.message);
+    }
 
     var deployRequest = {
         fcn: 'init',
