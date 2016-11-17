@@ -50,17 +50,31 @@ To do this, run ```git clone http://gopkg.in/ibm-blockchain/cp-web.v2``` to clon
     1.  Verify you have a `c:\tmp` directory and create it if not.  `hfc` uses this folder to temporarily store and package this demo's chaincode for deployment.
   2. On linux, or after you've installed build tools on windows, then run  
      `npm install`  
-     `gulp`   
+     `gulp`  
+     
+1. If all goes well you should see this message in the console:
+	
+		--------------------------------- Server Up - localhost:3000 ------------------------------------
+		
+1. The app is already coded to auto deploy the chaincode.  You should see further message about it deploying.
+ **[IMPORTANT]** You will need to wait about 60 seconds for the cc to fully deploy. The SDK will do the waiting for us by stalling our callback.
+ 
+1. Once you see this message you are good to go: 
+		
+		[ibc-js] Deploying Chaincode - Complete
+		---------------------------------------- Websocket Up ------------------------------------------
 
-## Using the Demo
-1. Register some users using the registration form on the login page.
+1. Continue by [using the CP-Web App](#use)
+
+##<a name="use"></a> Using the CP Web App  
+1. Register some users using the registration form on the login page.  If you installed the app on your local system, you can [log in here](http://localhost:3000).  
 2. Save the credentials that are created for the users you register.  They appear just above the
-registration form.
+registration form.  
 3. Use the credentials to log in to the application.  The UI you see will be determined by the role
-that was assigned to each user.
-4. Open the 'CREATE' tab to create new trades.
-5. Open the 'TRADE' tab to participate in your commercial paper trading network.
-6. Open the 'AUDIT' tab to view all of the trades on the network.
+that was assigned to each user.  
+4. Open the 'CREATE' tab to create new trades.  
+5. Open the 'TRADE' tab to participate in your commercial paper trading network.  
+6. Open the 'AUDIT' tab to view all of the trades on the network.  
 
 ## Notes on the Key Value Store
 
