@@ -16,6 +16,8 @@
 // For logging
 var TAG = 'chaincode_ops:';
 
+var async = require('async');
+
 /**
  * A helper object for interacting with the commercial paper chaincode.  Has functions for all of the query and invoke
  * functions that are present in the chaincode.
@@ -28,6 +30,12 @@ function CPChaincode(chain, chaincodeID) {
         throw new Error('Cannot create chaincode helper without both a chain object and the chaincode ID!');
     this.chain = chain;
     this.chaincodeID = chaincodeID;
+
+    // Add an optional queue for processing chaincode related tasks.  Prevents "timer start called twice" errors from
+    // the SDK by only processing one request at a time.
+    this.queue = async.queue(function(task, callback) {
+        task(callback);
+    }, 1);
 }
 module.exports.CPChaincode = CPChaincode;
 
