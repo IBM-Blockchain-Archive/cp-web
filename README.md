@@ -60,9 +60,13 @@ To do this, run ```git clone http://gopkg.in/ibm-blockchain/cp-web.v2``` to clon
  **[IMPORTANT]** You will need to wait about 60 seconds for the cc to fully deploy. The SDK will do the waiting for us by stalling our callback.
  
 1. Once you see this message you are good to go: 
-		
-		[ibc-js] Deploying Chaincode - Complete
-		---------------------------------------- Websocket Up ------------------------------------------
+
+  `chain_setup.js Deployment request: {"fcn":"init","args":  ["a","100"],"chaincodePath":"chaincode/","certificatePath":"/certs/peer/cert.pem"}`  
+  `chain_setup.js Successfully submitted chaincode deploy transaction 15b1c8e2c30a5a22fcdec456fa917332e5f070c75d3a7e73fd23500f2a4d80e4`  
+  `chain_setup.js Will wait for 80 seconds after deployment for chaincode to startup`  
+  `chain_setup.js Deploy 'complete'. Chaincode ID: 15b1c8e2c30a5a22fcdec456fa917332e5f070c75d3a7e73fd23500f2a4d80e4`  
+  `user_manager: setup() called`  
+  `------------------------------------------ Websocket Up ------------------------------------------`  
 
 1. Continue by [using the CP-Web App](#use)
 
