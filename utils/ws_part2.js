@@ -48,53 +48,91 @@ module.exports.process_msg = function (socket, data) {
 
         if (data.paper && data.paper.ticker) {
             console.log(TAG, 'creating paper:', data.paper);
-            chaincodeHelper.createPaper(data.user, data.paper, function (err, result) {
-                if (err != null) {
-                    console.error(TAG, 'Error in create. No response will be sent. error:', err);
-                }
-                else {
-                    console.log(TAG, 'paper created.  No response will be sent. result:', result);
-                }
+            chaincodeHelper.queue.push(function (cb) {
+                chaincodeHelper.createPaper(data.user, data.paper, function (err, result) {
+                    if (err != null) {
+                        console.error(TAG, 'Error in create. No response will be sent. error:', err);
+                    }
+                    else {
+                        console.log(TAG, 'paper created.  No response will be sent. result:', result);
+                    }
+
+                    cb();
+                });
+            }, function (err) {
+                if (err)
+                    console.error(TAG, 'Queued create error:', err.message);
+                else
+                    console.log(TAG, 'Queued create job complete');
             });
         }
     }
     else if (data.type == 'get_papers') {
 
         console.log(TAG, 'getting papers');
-        chaincodeHelper.getPapers(data.user, function (err, papers) {
-            if (err != null) {
-                console.error(TAG, 'Error in get_papers. No response will be sent. error:', err);
-            }
-            else {
-                console.log(TAG, 'got papers:', papers);
-                sendMsg({msg: 'papers', papers: papers});
-            }
+        chaincodeHelper.queue.push(function (cb) {
+            chaincodeHelper.getPapers(data.user, function (err, papers) {
+                if (err != null) {
+                    console.error(TAG, 'Error in get_papers. No response will be sent. error:', err);
+                }
+                else {
+                    console.log(TAG, 'got papers:', papers);
+                    sendMsg({msg: 'papers', papers: papers});
+                }
+
+                cb();
+            });
+        }, function (err) {
+            if (err)
+                console.error(TAG, 'Queued get_papers error:', err.message);
+            else
+                console.log(TAG, 'Queued get_papers job complete');
         });
     }
     else if (data.type == 'transfer_paper') {
 
         console.log(TAG, 'transferring paper:', data.transfer);
-        chaincodeHelper.transferPaper(data.user, data.transfer, function (err, result) {
-            if (err != null) {
-                console.error(TAG, 'Error in transfer_paper. No response will be sent. error:', err);
-            }
-            else {
-                console.log(TAG, 'transferred paper. No response will be sent result:', result);
-            }
+        chaincodeHelper.queue.push(function (cb) {
+            chaincodeHelper.transferPaper(data.user, data.transfer, function (err, result) {
+                if (err != null) {
+                    console.error(TAG, 'Error in transfer_paper. No response will be sent. error:', err);
+                }
+                else {
+                    console.log(TAG, 'transferred paper. No response will be sent result:', result);
+                }
+
+                cb();
+            });
+        }, function (err) {
+            if (err)
+                console.error(TAG, 'Queued transfer_paper error:', err.message);
+            else
+                console.log(TAG, 'Queued transfer_paper job complete');
         });
     }
     else if (data.type == 'get_company') {
 
         console.log(TAG, 'getting company information');
-        chaincodeHelper.getCompany(data.user, data.company, function (e, company) {
-            if (e != null) {
-                console.error(TAG, 'Error in get_company. No response will be sent. error:', e);
-            }
-            else {
-                console.log(TAG, 'get_company result:', company);
-                sendMsg({msg: 'company', company: company});
-            }
+        chaincodeHelper.queue.push(function (cb) {
+            chaincodeHelper.getCompany(data.user, data.company, function (e, company) {
+                if (e != null) {
+                    console.error(TAG, 'Error in get_company. No response will be sent. error:', e);
+                }
+                else {
+                    console.log(TAG, 'get_company result:', company);
+                    sendMsg({msg: 'company', company: company});
+                }
+
+                // Just let the queue library know that the task is finished.
+                cb();
+            });
+        }, function (err) {
+            if (err)
+                console.error(TAG, 'Queued get_company error:', err.message);
+            else
+                console.log(TAG, 'Queued get_company job complete');
         });
+
     }
     else if (data.type == 'chainstats') {
         var options = {
