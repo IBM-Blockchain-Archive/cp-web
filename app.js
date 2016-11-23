@@ -67,10 +67,6 @@ app.use(function (req, res, next) {
     req.bag = {};
     req.session.count = req.session.count + 1;
     req.bag.session = req.session;
-
-    // TODO is anything using this?
-    var url_parts = require('url').parse(req.url, true);
-    req.parameters = url_parts.query;
     next();
 });
 
@@ -235,8 +231,7 @@ chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, cert
         // Operation involving chaincode in this app should use this object.
         var cpChaincode = new chaincode_ops.CPChaincode(chain, chaincodeID);
 
-        // TODO web socket handler should use a CPChaincode object
-        part2.setup(chaincodeID, chain, peers, cpChaincode);
+        part2.setup(peers, cpChaincode);
         router.setup_helpers(cpChaincode);
 
         // Now that the chain is ready, start the web socket server so clients can use the demo.

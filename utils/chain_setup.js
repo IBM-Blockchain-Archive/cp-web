@@ -4,6 +4,7 @@
 
 var TAG = 'chain_setup.js';
 var hfc = require('hfc');
+var fs = require('fs');
 
 // Things that don't really need to change
 var chain_name = 'cp_chaincode';
@@ -59,8 +60,6 @@ module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, ce
                 return cb(err);
             }
 
-            console.log(TAG, 'chaincode deployment successful. Will wait for', deployWaitTime,
-                'seconds after deployment for chaincode to startup');
             cb(null, chain, chaincodeID);
         });
     });
@@ -133,6 +132,16 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
 function deploy(enrolledUser, chaincode_path, cert_path, cb) {
     console.log(TAG, 'Deploying commercial paper chaincode as:', enrolledUser.name);
 
+    // Fix for the SDK.  Need to make sure a `/tmp` directory exists to tarball chaincode
+    try {
+        if (!fs.existsSync('/tmp')) {
+            console.log(TAG, 'No /tmp directory. Creating /tmp directory');
+            fs.mkdirSync('/tmp');
+        }
+    } catch (err) {
+        console.error(TAG, 'Error creating /tmp directory for chaincode:', err.message);
+    }
+
     var deployRequest = {
         fcn: 'init',
         args: ['a', '100'],
@@ -143,7 +152,9 @@ function deploy(enrolledUser, chaincode_path, cert_path, cb) {
     console.log(TAG, 'Deployment request:', JSON.stringify(deployRequest));
 
     deployTx.on('submitted', function (results) {
-        console.log(TAG, 'Successfully submitted chaincode deploy transaction', results.chaincodeID); // TODO does the chaincode ID come back here?
+        console.log(TAG, 'Successfully submitted chaincode deploy transaction', results.chaincodeID);
+        console.log(TAG, 'Will wait for', deployWaitTime,
+            'seconds after deployment for chaincode to startup');
     });
 
     deployTx.on('complete', function (results) {
