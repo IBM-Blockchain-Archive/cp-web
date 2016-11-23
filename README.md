@@ -11,60 +11,74 @@ on IBM Blockchain.  The components of the demo are:
 * A Trade Center for buying and selling existing trades.
 * A special interface just for auditors of the network to examine trades
 
+##### Versions and Supported Platforms
+On November 9th, 2016, we released the IBM Blockchain Service v1.0 based on HyperLedger fabric v0.6.  All new networks created in bluemix will be this version.  Support of the v0.4.2.x Bluemix Service based on the 0.5.3 Hyperledger Fabric has been deprecated.  It is strongly recommended that if you have an existing network based on 0.5.3, you redeploy a new network and follow the instructions in the 2.0 branch.
+
+- [CP-Web - Branch v2.0](https://github.com/ibm-blockchain/cp-web/tree/v2.0)
+	- Works with Hyperledger fabric `v0.6-developer-preview`
+
+If for some reason you need instructions for the v0.4.2+ level of the service, they are here, but support of these instructions is
+best effort only.
+
+- [CP-Web - Branch v1.0](https://github.com/ibm-blockchain/cp-web/tree/v1.0) (Deprecated)
+	- Works with Hyperledger fabric `v0.5-developer-preview`
+	- IBM Bluemix Blockchain Service `v0.4.2+`
+
 ## Getting Started
 
-1. Deploy the demo to your [IBM Bluemix](https://www.bluemix.net/) account using the button above.
+1. Deploy the demo to your [IBM Bluemix](https://www.bluemix.net/) account using this button [![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)  
 
-##### OR
+`OR`  
 
-1. Clone this repository.
-2. Create an instance of the IBM Blockchain service in the Bluemix catalog.
-3. Copy the credentials from the service into the file 'my_creds.json'.
-4. Make sure the key/value store only has values for your current network (See below).
-5. Run these commands in the cloned directory:
+1. Deploy the app on my local machine, connecting to an IBM Blockchain network running in Bluemix  - [instructions](#manbluenetwork)
 
-```shell
-npm install
-gulp
-```
 
-These credentials can be obtained from the "Service Credentials" tab of the Bluemix service. They are
-in the form:
+# <a name="manbluenetwork"></a>Deploy the CP-Web App locally and connect to an IBM Blockchain Network running in Bluemix:
 
-```json
-{
-  "credentials": {
-    "peers": [
-      {
-        "discovery_host": "169.53.62.121",
-        "discovery_port": "40275",
-        "api_host": "169.53.62.121",
-        "api_port": "40276",
-        "type": "peer",
-        "network_id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03",
-        "id": "4b21f2f9-4d10-4946-a0df-f91ac09dbc03_vp1",
-        "api_url": "http://169.53.62.121:40276"
-      }
-    ],
-    "users": [
-      {
-        "username": "user_type0_b7c7a1e545",
-        "secret": "89ce33e4e6"
-      }
-    ]
-  }
-}
-```
+1.  Follow these instructions to [Set up your environment for running the demos](https://github.com/ptippett/marbles/blob/break_out_common_sections/demo_prereqs)
 
-## Using the Demo
-1. Register some users using the registration form on the login page.
+1.  Clone the CP-Web app to your local system so you can run it here
+To do this, run ```git clone http://gopkg.in/ibm-blockchain/cp-web.v2``` to clone the v2.0 branch to your local system.  
+
+1.  Follow the instructions to [Set up a new bluemix network or grab credentials from an existing network](https://github.com/ptippett/marbles/blob/break_out_common_sections/create_blockchain_bluemix.md)
+
+
+1. Make sure the key/value store only has values for your current network (See below).
+1. Run these commands in the cloned directory (typically ```<git location>/cp-web```).
+  1.  If you're running on windows, you need to install some additional dependencies.
+    1.  Run ```npm install --global windows-build-tools``` to install the dependencies listed [here](https://github.com/felixrieseberg/windows-build-tools)
+    1.  Verify you have a `c:\tmp` directory and create it if not.  `hfc` uses this folder to temporarily store and package this demo's chaincode for deployment.
+  2. On linux, or after you've installed build tools on windows, then run  
+     `npm install`  
+     `gulp`  
+     
+1. If all goes well you should see this message in the console:
+	
+		--------------------------------- Server Up - localhost:3000 ------------------------------------
+		
+1. The app is already coded to auto deploy the chaincode.  You should see further message about it deploying.
+ **[IMPORTANT]** You will need to wait about 60 seconds for the cc to fully deploy. The SDK will do the waiting for us by stalling our callback.
+ 
+1. Once you see this message you are good to go: 
+
+  `chain_setup.js Deployment request: {"fcn":"init","args":  ["a","100"],"chaincodePath":"chaincode/","certificatePath":"/certs/peer/cert.pem"}`  
+  `chain_setup.js Successfully submitted chaincode deploy transaction 15b1c8e2c30a5a22fcdec456fa917332e5f070c75d3a7e73fd23500f2a4d80e4`  
+  `chain_setup.js Will wait for 80 seconds after deployment for chaincode to startup`  
+  `chain_setup.js Deploy 'complete'. Chaincode ID: 15b1c8e2c30a5a22fcdec456fa917332e5f070c75d3a7e73fd23500f2a4d80e4`  
+  `user_manager: setup() called`  
+  `------------------------------------------ Websocket Up ------------------------------------------`  
+
+1. Continue by [using the CP-Web App](#use)
+
+##<a name="use"></a> Using the CP Web App  
+1. Register some users using the registration form on the login page.  If you installed the app on your local system, you can [log in here](http://localhost:3000).  
 2. Save the credentials that are created for the users you register.  They appear just above the
-registration form.
+registration form.  
 3. Use the credentials to log in to the application.  The UI you see will be determined by the role
-that was assigned to each user.
-4. Open the 'CREATE' tab to create new trades.
-5. Open the 'TRADE' tab to participate in your commercial paper trading network.
-6. Open the 'AUDIT' tab to view all of the trades on the network.
+that was assigned to each user.  
+4. Open the 'CREATE' tab to create new trades.  
+5. Open the 'TRADE' tab to participate in your commercial paper trading network.  
+6. Open the 'AUDIT' tab to view all of the trades on the network.  
 
 ## Notes on the Key Value Store
 
@@ -128,28 +142,4 @@ $ npm -v
 3.10.8
 ```
 
-Second, this demo uses modules that must be compiled, which requires you to have certain build tools on your machine.  If you are running on Windows, you should install the package here:
-
-https://github.com/felixrieseberg/windows-build-tools
-
-Finally, delete the node modules folder and give `npm install` another try.
-
-#### `Error creating deployment archive`
-
-Do your logs have a message similar to this one?
-```text
-chain_setup.js Failed to deploy chaincode: EventTransactionError {
-  error:
-   Error: Error creating deployment archive [/tmp/deployment-package.tar.gz]: Error: Error on fs.createWriteStream
-       at Error (native)
-       at C:\Users\IBM_ADMIN\Documents\obc\git\demos\cp-web\node_modules\hfc\lib\hfc.js:1411:31
-       at WriteStream.<anonymous> (C:\Users\IBM_ADMIN\Documents\obc\git\demos\cp-web\node_modules\hfc\lib\sdk_util.js:163:16)
-       at emitOne (events.js:101:20)
-       at WriteStream.emit (events.js:188:7)
-       at WriteStream.<anonymous> (fs.js:2109:12)
-       at FSReqWrap.oncomplete (fs.js:123:15),
-  msg: 'Error: Error creating deployment archive [/tmp/deployment-package.tar.gz]: Error: Error on fs.createWriteStream' }
-chain_setup.js chaincode deployment failed: undefined
-```
-
-This often happens because the `/tmp` directory is not present on your machine. `hfc` uses this folder to temporarily store and package this demo's chaincode for deployment.  Create the directory, and you should be fine.  This directory will be `C:\tmp` on Windows machines.
+If you've installed new levels of node.js and npm, or want to try the install again, delete the node modules folder and give `npm install` another try.
