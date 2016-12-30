@@ -41,4 +41,4 @@ The network is all setup. If you want more detail on the IBM Blockchain service,
 1. Next we need to **copy the peer data and pass it to our demo node.js application**.
 1. Click the "Service Credentials" link on the very bottom left of the dashboard.
 1. This will open the file in your browser. Replace the entire contents of the `mycreds.json` file in the root of the `/git/<project>` directory you cloned earlier with this text.
-1. Continue where you left off in [CP-WEB](../../README.md).
+1. Continue where you left off in [CP-WEB](../README.md).
