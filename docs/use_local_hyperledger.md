@@ -26,13 +26,7 @@ There is a convenient docker-compose image that will get you a network very quic
 The network is all setup. 
 
 Next we need to **copy the peer data and pass it to our demo node.js application**.
-This is done by editing the `mycreds_docker_compose.json` file which lives in the root of the marbles app.
-
-We have added two mycreds files. 
-One as a docker-compose example and one as a bluemix network example. 
-Line 154 uses `mycreds_docker_compose.json` and should NOT be commented out. 
-Line 155 with `mycreds_bluemix.json` should be commented out. 
-**Double check that [app.js](../app.js#L154) is using the correct file.** 
+This is done by editing the `mycreds.json` file which lives in the root of the marbles app.
 
 All we must do is edit the file with information about your network.
 If you want more details of setup options then take a look at the [SDK's documentation](https://github.com/IBM-Blockchain/ibm-blockchain-js).
@@ -49,18 +43,45 @@ __sample mycreds.json__
   "credentials": {
     "peers": [
       {
-        "api_host": "192.168.99.100",         //replace with your hostname or ip of a peer
-        "api_port_tls": 443,                  //replace with your https port (omit if NOT using tls)
-        "api_port": 7050,                     //replace with your http port (omit if using tls)
-        "id": "12345-_vp0"                    //unique name to identify peer (anything you want)
+        "discovery_host": "192.168.99.100",    //replace with your hostname or ip of a peer
+        "discovery_port": 7051,                //replace with your grpc port (omit if using tls)
+        "api_host": "192.168.99.100",          //replace with your hostname or ip of a peer
+        "api_port_tls": 7051,                  //replace with your grpc port (omit if NOT using tls)
+        "api_port": 7051,                      //replace with your grpc port (omit if using tls)
+        "type": "peer",
+        "id": "vp0"                            //unique name to identify peer (anything you want)
       }
     ],
+    "ca": {
+      "sub-ca": {
+        "url": "192.168.99.100:7054",          //replace with your hostname or ip of ca with the port
+        "discovery_host": "192.168.99.100",    //replace with your hostname or ip of can
+        "discovery_port": 7054,                //replace with your grpc port (omit if using tls)
+        "api_host": "192.168.99.100",          //replace with your hostname or ip of ca
+        "api_port_tls": 7054,                  //replace with your grpc port (omit if NOT using tls)
+        "api_port": 7054,
+        "type": "ca",
+        "newUsersObj": [
+          {
+            "enrollId": "WebAppAdmin",         //Registrar
+            "enrollSecret": "DJY27pEnl16d",    //Registrar secret
+            "group": "1",                      //Registrar group
+            "affiliation": "institution_a",    //Registrar affiliation
+            "username": "WebAppAdmin",         //Registrar username
+            "secret": "DJY27pEnl16d"           //Registrar secret
+          }
+        ]
+      }
+    },
     "users": [
       {
-        "enrollId": "bob",                    //enroll username
-        "enrollSecret": "NOE63pEQbL25 "       //enroll's secret
+        "username": "WebAppAdmin",
+        "secret": "DJY27pEnl16d",
+        "enrollId": "WebAppAdmin",
+        "enrollSecret": "DJY27pEnl16d"
       }
-    ]
+    ],
+    "cert": "https://blockchain-certs.mybluemix.net/us.blockchain.ibm.com.cert"
   }
 }
 ```
@@ -69,31 +90,13 @@ Remove any comments in your json file
 
 **Do you see the "credentials" field in your json file?** 
 It should be the outter most field like in the sample above. 
-If its not there you need to add it such that `peers` and `users` are inside `credentials`.
+If its not there you need to add it such that `peers`, `ca` and `users` are inside `credentials`.
 
-Marbles only talks to 1 peer. 
-Therefore, you should have 1 entry in the `peers` array and 1 entry in the `users` array. 
-You can omit the `users` array entirely if the network does not use Membership Services. 
-The default docker-compose example does use Membership Services. 
-You will need to look up the default enroll ID/users for your Hyperledger Fabric version to populate the `users` array. 
-Fabric version 0.6.1 enroll Ids can be found in the [membersrvc.yaml](https://github.com/hyperledger/fabric/blob/v0.6/membersrvc/membersrvc.yaml#L121) file.
-(pick IDs that have a `1` next to the ID, not a `4`) 
-
-Example membersrvc.yaml line:
-
-	alice: 1 CMS10pEQlB16 bank_a
-
-Maps to:
-
-```json
-{
-	"enrollId": "alice",
-	"enrollSecret": "CMS10pEQlB16"
-}
-```
+Note that only one user (Registrar) is added to the `users` section because cp-web allows you to create new users. 
+However, you are welcome to add new users by referring to [Fabric's documentation](https://github.com/hyperledger/fabric/blob/v0.6/membersrvc/membersrvc.yaml)
 
 You can omit the field `api_port_tls` if the network does not support TLS. 
 The default docker-compose example does not support TLS. 
 Once you have edited `mycreds_docker_compose.json` you are ready to run Marbles. 
 
-1. Continue where you left off in [tutorial 1](./tutorial_part1.md#hostmarbles).
+1. Continue where you left off in [CP-WEB](../README.md).
