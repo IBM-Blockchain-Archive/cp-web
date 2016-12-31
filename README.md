@@ -17,7 +17,7 @@ on IBM Blockchain.  The components of the demo are:
 
 ##### OR
 
-You need a blockchain network to run this demo.
+You need a blockchain network to run this demo. You have two options: 
 
 - **Option 1:** Create a Bluemix IBM Blockchain network - [instructions](./docs/use_bluemix_hyperledger.md)
 
@@ -65,9 +65,9 @@ in the form:
 2. Create an instance of the IBM Blockchain on your local Hyperledger network.
 3. Copy the credentials from the service into the file 'mycreds.json'.
 4. Make sure the key/value store only has values for your current network (See below).
-5. In users.js, change the **affiliation** in the registration request on **line 89** 
+5. In users.js, change the **affiliation** in the registration request on **line 89**.  
    Depending upon your registrar user's affiliation, it should look something like this:
-```json
+```
  var registrationRequest = {
                 enrollmentID: enrollID,
                 affiliation: 'institution_a'    //change from "group1" to registrar's affiliation
