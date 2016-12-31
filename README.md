@@ -17,7 +17,7 @@ on IBM Blockchain.  The components of the demo are:
 
 ##### OR
 
-You need a blockchain network to run this demo. 
+You need to create a blockchain network to run this demo. 
 
 **You have two options:** 
 
