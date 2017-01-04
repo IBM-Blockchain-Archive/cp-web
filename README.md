@@ -17,9 +17,15 @@ on IBM Blockchain.  The components of the demo are:
 
 ##### OR
 
+You need to create a blockchain network to run this demo. 
+
+**You have two options:** 
+
+- **Option 1:** Create a Bluemix IBM Blockchain network - [instructions](./docs/use_bluemix_hyperledger.md)
+
 1. Clone this repository.
 2. Create an instance of the IBM Blockchain service in the Bluemix catalog.
-3. Copy the credentials from the service into the file 'my_creds.json'.
+3. Copy the credentials from the service into the file 'mycreds.json'.
 4. Make sure the key/value store only has values for your current network (See below).
 5. Run these commands in the cloned directory:
 
@@ -55,6 +61,47 @@ in the form:
   }
 }
 ```
+- **Option 2:** Use a locally hosted Hyperledger Network (such as one from docker-compose) - [instructions](./docs/use_local_hyperledger.md)
+
+1. Clone this repository.
+2. Create an instance of the IBM Blockchain on your local Hyperledger network.
+3. Copy the credentials from the service into the file 'mycreds.json'.
+4. Make sure the key/value store only has values for your current network (See below).
+5. In users.js, change the ```affiliation``` in the registration request on **line 89**.  
+   Depending upon your registrar user's affiliation, it should look something like this:
+```
+ var registrationRequest = {
+                enrollmentID: enrollID,
+                affiliation: 'institution_a'    //change from "group1" to registrar's affiliation
+            };
+```
+6. Since the peers on the local network are listening using http, you need to make a few changes (see below).
+  - In [ws_part2.js](./utils/ws_part2.js), 
+    1. add ```var http = require('http');```
+    2. change ```https``` to ```http``` on **line 146**. It should look like this:
+    ```var request = http.request(options, function (resp) {```
+    3. change ```https``` to ```http``` on **line 215**. It should look like this:
+    ```var request = http.request(options, function (resp) {```
+  - In [app.js](./app.js),
+    1. change ```https``` to ```http``` on **line 304**. It should look like this:
+    ```var request = http.request(options, function (resp) {```
+    2. change ```grpcs``` headers to ```grpc``` on **line 137** and **line 142**. It should look like this:  
+       ```peerURLs.push('grpc://' + peers[i].discovery_host + ':' + peers[i].discovery_port);```
+       and 
+       ```caURL = 'grpc://' + ca[i].url;```
+7. Run these commands in the cloned directory:
+
+```shell
+npm install
+gulp
+```
+To debug the code, run these commands:
+
+```shell
+npm install
+DEBUG=hfc GRPC_TRACE=all gulp
+```
+
 
 ## Using the Demo
 1. Register some users using the registration form on the login page.
