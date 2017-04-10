@@ -2,6 +2,11 @@
 
 [![Deploy to Bluemix](https://bluemix.net/deploy/button.png)](https://bluemix.net/deploy?repository=https://github.com/IBM-Blockchain/cp-web.git)
 
+## NOTICE
+
+This demo will only ever support Hyperledger Fabric v0.6.  If you are interested in seeing the latest that Hyperledger
+Fabric has to offer, see the [Marbles Demo](https://github.com/IBM-Blockchain/marbles).
+
 ## Description
 This application is a demonstration of how a commercial paper trading network might be implemented
 on IBM Blockchain.  The components of the demo are:
