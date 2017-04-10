@@ -9,7 +9,7 @@ var fs = require('fs');
 // Things that don't really need to change
 var chain_name = 'cp_chaincode';
 var chaincode_path = 'chaincode/';
-var deployWaitTime = 5;
+var deployWaitTime = 80;
 
 module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, certificate, certificate_path, cb) {
     console.log(TAG, 'setting up chain object');
