@@ -16,7 +16,7 @@ var router = express.Router();
 var setup = require('../setup.js');
 
 // Load our modules.
-var user_manager = require('../utils/users');
+var userManager;
 var chaincode_ops;
 
 // Use tags to make logs easier to find
@@ -61,10 +61,11 @@ router.post('/:page', function (req, res) {
 
 module.exports = router;
 
-module.exports.setup_helpers = function(configured_chaincode_ops) {
+module.exports.setup_helpers = function(configured_chaincode_ops, user_manager) {
     if(!configured_chaincode_ops)
         throw new Error('Router needs a chaincode helper in order to function');
     chaincode_ops = configured_chaincode_ops;
+    userManager = user_manager;
 };
 
 function isAuthenticated(req, res, next) {
@@ -94,7 +95,7 @@ function register(req, res) {
         role = 3;
     }
 
-    user_manager.registerUser(req.body.username, function (err, creds) {
+    userManager.registerUser(req.body.username, function (err, creds) {
         //console.log('! do i make it here?');
         if (err) {
             req.session.reg_error_msg = 'Failed to register user:' + err.message;
@@ -121,7 +122,7 @@ function login(req, res) {
 
     // Registering the user against a peer can serve as a login checker, for now
     console.log(TAG, 'attempting login for:', req.body.username);
-    user_manager.enrollUser(req.body.username, req.body.password, function (err) {
+    userManager.enrollUser(req.body.username, req.body.password, function (err) {
         if (err) {
             console.error(TAG, 'User enrollment failed:', err.message);
             return res.redirect('/login');

@@ -9,7 +9,7 @@ var fs = require('fs');
 // Things that don't really need to change
 var chain_name = 'cp_chaincode';
 var chaincode_path = 'chaincode/';
-var deployWaitTime = 80;
+var deployWaitTime = 5;
 
 module.exports.setupChain = function (keyValStoreDir, users, peerURLs, caURL, certificate, certificate_path, cb) {
     console.log(TAG, 'setting up chain object');
@@ -80,7 +80,7 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
     console.log(TAG, 'configuring the blockchain network');
 
     console.log(TAG, 'Setting membership service url:', caURL);
-    if (certificate) {
+    if (certificate && caURL.toLowerCase().indexOf('grpcs://') > -1) {
         console.log(TAG, 'Using certificate for membership service connection');
         console.log(TAG, 'certificate being used:', certificate);
         chain.setMemberServicesUrl(caURL, {pem: certificate});
@@ -92,7 +92,7 @@ function configure_network(chain, peerURLs, caURL, registrarCredentials, certifi
     console.log(TAG, 'setting peer urls:', peerURLs);
     if (certificate) console.log(TAG, 'using certificate for peer connections');
     for (var i in peerURLs) {
-        if (certificate)
+        if (certificate && peerURLs[i].toLowerCase().indexOf('grpcs://') > -1)
             chain.addPeer(peerURLs[i], {pem: certificate});
         else
             chain.addPeer(peerURLs[i]);

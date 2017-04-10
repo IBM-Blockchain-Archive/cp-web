@@ -1,0 +1,40 @@
+{
+  "peers": [
+    {
+      "discovery_host": "192.168.99.100",
+      "discovery_port": 7051,
+      "api_host": "192.168.99.100",
+      "api_port_tls": 7050,
+      "api_port": 7050,
+      "type": "peer",
+      "id": "vp0"
+    }
+  ],
+  "ca": {
+    "sub-ca": {
+      "url": "192.168.99.100:7054",
+      "discovery_host": "192.168.99.100",
+      "discovery_port": 7054,
+      "api_host": "192.168.99.100",
+      "api_port_tls": 7054,
+      "api_port": 7054,
+      "type": "ca",
+      "newUsersObj": [
+        {
+          "username": "WebAppAdmin",
+          "secret": "DJY27pEnl16d",
+          "enrollId": "WebAppAdmin",
+          "enrollSecret": "DJY27pEnl16d"
+        }
+      ]
+    }
+  },
+  "users": [
+    {
+      "username": "WebAppAdmin",
+      "secret": "DJY27pEnl16d",
+      "enrollId": "WebAppAdmin",
+      "enrollSecret": "DJY27pEnl16d"
+    }
+  ]
+}

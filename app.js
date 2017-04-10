@@ -122,6 +122,10 @@ var caURL = null;
 var users = null;
 var peerHosts = [];
 
+// Requests to the peers may or may not be TLS.
+let useTLS = false;
+let requestLib = http;
+
 // Load credentials from a file
 try {
     console.log(TAG, 'Attempting to read hardcoded network credentials...');
@@ -131,15 +135,24 @@ try {
     if (manual.credentials) {
         manual = manual.credentials;
     }
+    
+    // Local networks typically don't have TLS enabled, so don't use TLS urls.  Bluemix networks do.
+    // cert is a link to the bluemix blockchain service certificate
+    let prefix = 'grpc://';
+    if(manual.cert) {
+        prefix = 'grpcs://';
+        requestLib = https;
+        useTLS = true;
+    }
 
     var peers = manual.peers;
     for (var i in peers) {
-        peerURLs.push('grpcs://' + peers[i].discovery_host + ':' + peers[i].discovery_port);
+        peerURLs.push(prefix + peers[i].discovery_host + ':' + peers[i].discovery_port);
         peerHosts.push('' + peers[i].discovery_host);
     }
     var ca = manual.ca;
     for (var i in ca) {
-        caURL = 'grpcs://' + ca[i].url;
+        caURL = prefix + ca[i].url;
     }
     console.log(TAG, 'loading hardcoded peers');
     users = null;																			//users are only found if security is on
@@ -165,6 +178,7 @@ if (process.env.VCAP_SERVICES) {
                 };
             }
             if (servicesObject[i][0].credentials && servicesObject[i][0].credentials.peers) {
+                useTLS = true;
                 console.log('overwritting peers, loading from a vcap service: ', i);
                 peers = servicesObject[i][0].credentials.peers;
                 peerURLs = [];
@@ -226,13 +240,13 @@ chain_setup.setupChain(keyValStoreDir, users, peerURLs, caURL, certificate, cert
         }
 
         // Setup anyone who needs the chain object or the chaincode
-        user_manager.setup(chain);
+        user_manager = user_manager(chain, useTLS);
 
         // Operation involving chaincode in this app should use this object.
         var cpChaincode = new chaincode_ops.CPChaincode(chain, chaincodeID);
 
-        part2.setup(peers, cpChaincode);
-        router.setup_helpers(cpChaincode);
+        part2.setup(peers, cpChaincode, useTLS);
+        router.setup_helpers(cpChaincode, user_manager);
 
         // Now that the chain is ready, start the web socket server so clients can use the demo.
         start_websocket_server();
@@ -301,7 +315,7 @@ function start_websocket_server(error, d) {
                     '\n  message: ' + msg + ')');
             }
 
-            var request = https.request(options, function (resp) {
+            var request = requestLib.request(options, function (resp) {
                 var str = '', chunks = 0;
                 resp.setEncoding('utf8');
                 resp.on('data', function (chunk) {                                                            //merge chunks of request

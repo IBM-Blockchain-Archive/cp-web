@@ -20,14 +20,17 @@ var TAG = 'web_socket:';
 // ==================================
 var async = require('async');
 var https = require('https');
+var http = require('http');
 var peers = null;
 var chaincodeHelper;
+let requestLib = https;
 
-module.exports.setup = function setup(peerHosts, chaincode_helper) {
+module.exports.setup = function setup(peerHosts, chaincode_helper, useTLS) {
     if (!(peerHosts && chaincode_helper))
         throw new Error('Web socket handler given incomplete configuration');
     peers = peerHosts;
     chaincodeHelper = chaincode_helper;
+    if (!useTLS) requestLib = http;
 };
 
 /**
@@ -143,7 +146,7 @@ module.exports.process_msg = function (socket, data) {
         };
 
         console.log(TAG, 'Requesting chain stats from:', options.host + ':' + options.port);
-        var request = https.request(options, function (resp) {
+        var request = requestLib.request(options, function (resp) {
             var str = '', chunks = 0;
 
             resp.setEncoding('utf8');
@@ -212,7 +215,7 @@ module.exports.process_msg = function (socket, data) {
                     cb(null);
                 }
 
-                var request = https.request(options, function (resp) {
+                var request = requestLib.request(options, function (resp) {
                     var str = '', chunks = 0;
                     resp.setEncoding('utf8');
                     resp.on('data', function (chunk) {															//merge chunks of request

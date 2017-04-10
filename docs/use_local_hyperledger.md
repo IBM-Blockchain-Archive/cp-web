@@ -1,10 +1,11 @@
-#Use Local Hyperledger Network:
+# Use Local Hyperledger Network
 
-### Creating a Local Hyperledger Network
+## Creating a Local Hyperledger Network
+
 It's easy to stand up a local hyperledger network using docker compose.
 
 1. Follow the docker compose [Setup Instructions](https://hub.docker.com/r/ibmblockchain/fabric-peer).
-1. Make sure your network is alive and reachable by testing the HTTP chain endpoint. To do this open your browser and browse to the peer.
+1. Make sure your network is alive and reachable by testing the HTTP `/chain` endpoint served up by your peer(s). You can do this using your browser.
   - If you are running Windows with docker-toolbox then click [http://192.168.99.100:7050/chain](http://192.168.99.100:7050/chain)
 	- If you are running Linux/OS X/Windows 10 with native docker then click [http://localhost:7050/chain](http://localhost:7050/chain)
 	- If you changed the default port for peer 0 then you will need to edit the URL above to use that port instead of `7050`.
@@ -21,11 +22,11 @@ It's easy to stand up a local hyperledger network using docker compose.
 	- It will not be identical, but as long as you see some JSON response things are good and you can continue
 	- If you get a timeout or some other error message then your network is not yet running or you are not entering the correct URL.
 
+## Running Commercial Paper
 
-### Finished
 The network is all setup. 
 
-Next we need to **copy the peer data and pass it to our demo node.js application**.
+Next we need to configure the cp-web app to connect to the local peer(s).
 This is done by editing the `mycreds.json` file which lives in the root of the cp-web app.
 
 All we must do is edit the file with information about your network.
@@ -34,7 +35,7 @@ You may see other example JSON files that include much more information.
 Those extra fields are either legacy or simply extra. 
 You only need to set the fields that are in the sample below:
 
-__sample mycreds.json__
+__Sample mycreds.json__
 
 ```js
 {
@@ -44,8 +45,8 @@ __sample mycreds.json__
         "discovery_host": "192.168.99.100",    //replace with your hostname or ip of a peer
         "discovery_port": 7051,                //replace with your grpc port (omit if using tls)
         "api_host": "192.168.99.100",          //replace with your hostname or ip of a peer
-        "api_port_tls": 7051,                  //replace with your grpc port (omit if NOT using tls)
-        "api_port": 7051,                      //replace with your grpc port (omit if using tls)
+        "api_port_tls": 7050,                  //replace with your grpc port (omit if NOT using tls)
+        "api_port": 7050,                      //replace with your grpc port (omit if using tls)
         "type": "peer",
         "id": "vp0"                            //unique name to identify peer (anything you want)
       }
@@ -78,8 +79,7 @@ __sample mycreds.json__
         "enrollId": "WebAppAdmin",
         "enrollSecret": "DJY27pEnl16d"
       }
-    ],
-    "cert": "https://blockchain-certs.mybluemix.net/us.blockchain.ibm.com.cert"
+    ]
   }
 }
 ```
