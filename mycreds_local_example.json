@@ -15,9 +15,6 @@
       "url": "192.168.99.100:7054",
       "discovery_host": "192.168.99.100",
       "discovery_port": 7054,
-      "api_host": "192.168.99.100",
-      "api_port_tls": 7054,
-      "api_port": 7054,
       "type": "ca",
       "newUsersObj": [
         {

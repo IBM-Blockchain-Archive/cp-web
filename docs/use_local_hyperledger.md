@@ -43,10 +43,10 @@ __Sample mycreds.json__
     "peers": [
       {
         "discovery_host": "192.168.99.100",    //replace with your hostname or ip of a peer
-        "discovery_port": 7051,                //replace with your grpc port (omit if using tls)
+        "discovery_port": 7051,                //replace with your grpc port
         "api_host": "192.168.99.100",          //replace with your hostname or ip of a peer
-        "api_port_tls": 7050,                  //replace with your grpc port (omit if NOT using tls)
-        "api_port": 7050,                      //replace with your grpc port (omit if using tls)
+        "api_port_tls": 7050,                  //replace with your rest port
+        "api_port": 7050,                      //replace with your rest port
         "type": "peer",
         "id": "vp0"                            //unique name to identify peer (anything you want)
       }
@@ -55,10 +55,7 @@ __Sample mycreds.json__
       "sub-ca": {
         "url": "192.168.99.100:7054",          //replace with your hostname or ip of ca with the port
         "discovery_host": "192.168.99.100",    //replace with your hostname or ip of can
-        "discovery_port": 7054,                //replace with your grpc port (omit if using tls)
-        "api_host": "192.168.99.100",          //replace with your hostname or ip of ca
-        "api_port_tls": 7054,                  //replace with your grpc port (omit if NOT using tls)
-        "api_port": 7054,
+        "discovery_port": 7054,                //replace with your grpc port
         "type": "ca",
         "newUsersObj": [
           {
