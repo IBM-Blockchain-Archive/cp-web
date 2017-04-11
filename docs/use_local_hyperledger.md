@@ -83,10 +83,6 @@ __Sample mycreds.json__
 
 Remove any comments in your json file
 
-**Do you see the "credentials" field in your json file?** 
-It should be the outter most field like in the sample above. 
-If its not there you need to add it such that `peers`, `ca` and `users` are inside `credentials`.
-
 Note that only one user (Registrar) is added to the `users` section because cp-web allows you to create new users. 
 However, you are welcome to add new users by referring to [Fabric's documentation](https://github.com/hyperledger/fabric/blob/v0.6/membersrvc/membersrvc.yaml)
 

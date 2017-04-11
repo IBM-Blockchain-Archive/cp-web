@@ -93,7 +93,8 @@ registration form.
 that was assigned to each user.
 4. Open the 'CREATE' tab to create new trades.
 5. Open the 'TRADE' tab to participate in your commercial paper trading network.
-6. Open the 'AUDIT' tab to view all of the trades on the network.
+6. Open the 'AUDIT' tab to view all of the trades on the network.  To access the auditor tab, create a user with 'auditor'
+  in their enrollID. (ex. myauditor, auditor34, etc.)  Login as this user, and you will see the 'AUDIT' tab.
 
 ## Notes on the Key Value Store
 
