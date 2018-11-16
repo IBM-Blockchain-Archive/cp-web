@@ -2,7 +2,7 @@
 declared-services:
   cpblockchain:
     label: ibm-blockchain-5-prod
-    plan: ibm-blockchain-plan-5-prod
+    plan: ibm-blockchain-plan-v1-ga1-starter-prod
 applications:
 - disk_quota: 1024M
   name: cp-web
